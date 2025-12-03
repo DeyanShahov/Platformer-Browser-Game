@@ -43,48 +43,7 @@ function initMenu() {
       <button id="backToMainBtn">Back</button>
     </div>
   `;
-  menuDiv.style.cssText = `
-    position: fixed;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    background: rgba(0,0,0,0.8);
-    display: none;
-    justify-content: center;
-    align-items: center;
-    z-index: 1000;
-    font-family: Arial, sans-serif;
-    color: white;
-  `;
   document.body.appendChild(menuDiv);
-
-  // Menu styles
-  const style = document.createElement('style');
-  style.textContent = `
-    .menu { text-align: center; }
-    .menu h2 { margin-bottom: 20px; }
-    .menu button {
-      display: block;
-      margin: 10px auto;
-      padding: 10px 20px;
-      background: #444;
-      color: white;
-      border: none;
-      border-radius: 5px;
-      cursor: pointer;
-    }
-    .menu button:hover { background: #666; }
-    .control-item {
-      margin: 10px 0;
-      display: flex;
-      justify-content: center;
-      align-items: center;
-    }
-    .control-item span { margin: 0 10px; }
-    .rebinding { color: yellow; }
-  `;
-  document.head.appendChild(style);
 
   // Event listeners
   document.getElementById('changeControlsBtn').addEventListener('click', showControlsMenu);
@@ -93,7 +52,7 @@ function initMenu() {
 
   // Menu toggle
   document.addEventListener('keydown', (e) => {
-    if (e.key === 'Escape') {
+    if (e.key === 'Escape' || e.key === 's') {
       if (menuActive) {
         hideMenu();
       } else {
