@@ -49,8 +49,8 @@ function createEntity(x, y, z, w, h, color) {
 }
 
 const hero = createEntity(100, 400, 0, 50, 50, "#3AA0FF");
-const enemy = createEntity(450, 350, 50, 60, 60, "#FF3020"); // Enemy is slightly different Z
-const ally = createEntity(420, 340, 80, 50, 50, "#00FF00"); // Ally with different Z
+const enemy = createEntity(450, 400, 50, 60, 60, "#FF3020"); // Enemy is slightly different Z
+const ally = createEntity(420, 400, 90, 50, 50, "#00FF00"); // Ally with different Z
 
 //--------------------------------------------------
 // COLLISION LOGIC (ABSTRACT)
@@ -85,7 +85,7 @@ function canMoveTo(entity, proposedX, proposedY, proposedZ) {
   for (const other of others) {
     if (checkCollision(proposedX, proposedY, proposedZ, entity.w, entity.h,
                       other.x, other.y, other.z, other.w, other.h,
-                      { zTolerance: 1, zThickness: 0 })) {
+                      { zTolerance: 10, zThickness: 0 })) {
       return false;
     }
   }
