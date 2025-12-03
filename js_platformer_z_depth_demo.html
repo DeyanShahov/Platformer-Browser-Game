@@ -9,6 +9,7 @@
 </style>
 </head>
 <body>
+<script src="menu.js"></script>
 <canvas id="game" width="900" height="500"></canvas>
 <script>
 //--------------------------------------------------
@@ -21,7 +22,11 @@ const ctx = canvas.getContext("2d");
 // INPUT
 //--------------------------------------------------
 const keys = {};
-window.addEventListener("keydown", e => keys[e.key] = true);
+window.addEventListener("keydown", e => {
+  if (!menuActive && !rebindingAction) {
+    keys[e.key] = true;
+  }
+});
 window.addEventListener("keyup", e => keys[e.key] = false);
 
 //--------------------------------------------------
@@ -104,8 +109,8 @@ function update(dt) {
   hero.vz = 0; // ВАЖНО – нулираме преди нов вход
 
   // X движение
-  if (keys["ArrowLeft"]) hero.vx = -speed;
-  if (keys["ArrowRight"]) hero.vx = speed;
+  if (keys[controls.left]) hero.vx = -speed;
+  if (keys[controls.right]) hero.vx = speed;
 
   // Check X movement collision
   const proposedX = hero.x + hero.vx * dt;
@@ -114,18 +119,11 @@ function update(dt) {
   }
 
   // Z движение (с граници)
-  if (keys["ArrowUp"]) hero.vz = zSpeed;
-  if (keys["ArrowDown"]) hero.vz = -zSpeed;
+  if (keys[controls.up]) hero.vz = zSpeed;
+  if (keys[controls.down]) hero.vz = -zSpeed;
 
   // Опит за движение по Z
   const proposedZ = hero.z + hero.vz * dt;
-
-
-  // if (proposedZ >= Z_MIN && proposedZ <= Z_MAX) {
-  //   hero.z = proposedZ;
-  // } else {
-  //   // Ако се удари в граница — clamp
-  //   hero.z = Math.min(Math.max(hero.z, Z_MIN), Z_MAX);
 
   const clampedZ = Math.min(Math.max(proposedZ, Z_MIN), Z_MAX);
 
@@ -135,13 +133,13 @@ function update(dt) {
   }
 
   // Скок
-  if (keys["w"] && hero.onGround) {
+  if (keys[controls.jump] && hero.onGround) {
     hero.vy = -350;
     hero.onGround = false;
   }
 
   // Атака
-  if (keys["q"] && !hero.attacking) {
+  if (keys[controls.attack] && !hero.attacking) {
     hero.attacking = true;
     hero.attackTimer = 0.2;
   }
@@ -241,6 +239,10 @@ function loop(ts) {
 
   requestAnimationFrame(loop);
 }
+
+// Initialize menu
+initMenu();
+
 requestAnimationFrame(loop);
 </script>
 </body>
