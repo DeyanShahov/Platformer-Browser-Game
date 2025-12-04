@@ -3,6 +3,7 @@ let menuActive = false;
 let currentMenu = 'main'; // 'main', 'controls'
 window.controls = {
   player1: {
+    inputMode: 'keyboard',
     left: 'ArrowLeft',
     right: 'ArrowRight',
     up: 'ArrowUp',
@@ -11,6 +12,7 @@ window.controls = {
     attack: 'q'
   },
   player2: {
+    inputMode: 'controller',
     left: '4',
     right: '6',
     up: '8',
@@ -51,6 +53,7 @@ function initMenu() {
   menuDiv.innerHTML = `
     <div id="mainMenu" class="menu">
       <h2>Game Menu</h2>
+      <div id="gamepadStatus"></div>
       <button id="changeControlsBtn">Change Controls</button>
       <button id="backToGameBtn">Back to Game</button>
     </div>
@@ -78,7 +81,35 @@ function initMenu() {
     }
   });
 
+  updateGamepadStatus();
+
+  // Gamepad events
+  window.addEventListener('gamepadconnected', updateGamepadStatus);
+  window.addEventListener('gamepaddisconnected', updateGamepadStatus);
+
   updateControlsDisplay();
+}
+
+function updateGamepadStatus() {
+  const gamepadStatus = document.getElementById('gamepadStatus');
+  const gamepads = navigator.getGamepads();
+  let statusText = '';
+
+  let connectedCount = 0;
+  for (let i = 0; i < gamepads.length; i++) {
+    if (gamepads[i]) {
+      connectedCount++;
+      statusText += `Gamepad ${i + 1}: ${gamepads[i].id}<br>`;
+    }
+  }
+
+  if (connectedCount === 0) {
+    statusText = 'No gamepads connected';
+  } else {
+    statusText = `Gamepads connected: ${connectedCount}<br>` + statusText;
+  }
+
+  gamepadStatus.innerHTML = `<p style="color: #fff; margin: 10px 0;">${statusText}</p>`;
 }
 
 function showMenu() {
@@ -87,6 +118,7 @@ function showMenu() {
   document.getElementById('gameMenu').style.display = 'flex';
   document.getElementById('mainMenu').style.display = 'block';
   document.getElementById('controlsMenu').style.display = 'none';
+  updateGamepadStatus();
 }
 
 function hideMenu() {
@@ -136,6 +168,56 @@ function updateControlsDisplay() {
   }
 
   table.appendChild(headerRow);
+
+  // Input Mode row
+  const inputModeRow = document.createElement('tr');
+  const inputModeLabel = document.createElement('td');
+  inputModeLabel.textContent = 'Input Mode';
+  inputModeLabel.style.padding = '8px';
+  inputModeLabel.style.border = '1px solid #444';
+  inputModeLabel.style.color = '#fff';
+  inputModeLabel.style.fontWeight = 'bold';
+  inputModeRow.appendChild(inputModeLabel);
+
+  for (let i = 1; i <= 4; i++) {
+    const player = `player${i}`;
+    const inputModeCell = document.createElement('td');
+    inputModeCell.style.padding = '8px';
+    inputModeCell.style.border = '1px solid #444';
+    inputModeCell.style.textAlign = 'center';
+
+    if (window.controls[player]) {
+      const select = document.createElement('select');
+      select.style.background = '#444';
+      select.style.color = '#fff';
+      select.style.border = '1px solid #666';
+
+      const keyboardOption = document.createElement('option');
+      keyboardOption.value = 'keyboard';
+      keyboardOption.textContent = 'Keyboard';
+      select.appendChild(keyboardOption);
+
+      const controllerOption = document.createElement('option');
+      controllerOption.value = 'controller';
+      controllerOption.textContent = 'Controller';
+      select.appendChild(controllerOption);
+
+      select.value = window.controls[player].inputMode || 'keyboard';
+      select.onchange = () => {
+        window.controls[player].inputMode = select.value;
+        saveControls();
+      };
+
+      inputModeCell.appendChild(select);
+    } else {
+      inputModeCell.textContent = 'N/A';
+      inputModeCell.style.color = '#666';
+    }
+
+    inputModeRow.appendChild(inputModeCell);
+  }
+
+  table.appendChild(inputModeRow);
 
   // Action rows
   const actions = [

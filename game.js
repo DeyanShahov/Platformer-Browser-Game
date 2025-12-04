@@ -1,21 +1,67 @@
 // Game logic and loop
-function updatePlayer(player, dt) {
+function updatePlayer(player, playerIndex, dt) {
   player.vx = 0;
   player.vz = 0;
 
-  // X движение
-  if (keys[player.controls.left]) player.vx = -SPEED;
-  if (keys[player.controls.right]) player.vx = SPEED;
+  const inputMode = player.controls.inputMode || 'keyboard';
+
+  if (inputMode === 'keyboard') {
+    // Keyboard input only
+    if (keys[player.controls.left]) player.vx = -SPEED;
+    if (keys[player.controls.right]) player.vx = SPEED;
+    if (keys[player.controls.up]) player.vz = Z_SPEED;
+    if (keys[player.controls.down]) player.vz = -Z_SPEED;
+
+    if (keys[player.controls.jump] && player.onGround) {
+      player.vy = JUMP_FORCE;
+      player.onGround = false;
+    }
+
+    if (keys[player.controls.attack] && !player.attacking) {
+      player.attacking = true;
+      player.attackTimer = ATTACK_TIMER;
+    }
+  } else if (inputMode === 'controller') {
+    // Gamepad input only
+    const gamepads = navigator.getGamepads();
+    const gamepad = gamepads[playerIndex];
+
+    if (gamepad) {
+      // Left stick horizontal
+      if (Math.abs(gamepad.axes[0]) > 0.1) {
+        player.vx = gamepad.axes[0] * SPEED;
+      }
+
+      // Left stick vertical (for Z movement)
+      if (Math.abs(gamepad.axes[1]) > 0.1) {
+        player.vz = -gamepad.axes[1] * Z_SPEED;
+      }
+
+      // D-pad
+      if (gamepad.buttons[12].pressed) player.vz = Z_SPEED; // Up
+      if (gamepad.buttons[13].pressed) player.vz = -Z_SPEED; // Down
+      if (gamepad.buttons[14].pressed) player.vx = -SPEED; // Left
+      if (gamepad.buttons[15].pressed) player.vx = SPEED; // Right
+
+      // Jump (A/X button)
+      if (gamepad.buttons[0].pressed && player.onGround) {
+        player.vy = JUMP_FORCE;
+        player.onGround = false;
+      }
+
+      // Attack (B/Circle button)
+      if (gamepad.buttons[1].pressed && !player.attacking) {
+        player.attacking = true;
+        player.attackTimer = ATTACK_TIMER;
+      }
+    }
+  }
 
   // Check X movement collision
   const proposedX = player.x + player.vx * dt;
   if (!canMoveTo(player, proposedX, player.y, player.z)) {
     player.vx = 0;
   }
-
-  // Z движение (с граници)
-  if (keys[player.controls.up]) player.vz = Z_SPEED;
-  if (keys[player.controls.down]) player.vz = -Z_SPEED;
 
   // Опит за движение по Z
   const proposedZ = player.z + player.vz * dt;
@@ -24,18 +70,6 @@ function updatePlayer(player, dt) {
   //Check Z movement collision
   if (canMoveTo(player, player.x, player.y, clampedZ)) {
     player.z = clampedZ;
-  }
-
-  // Скок
-  if (keys[player.controls.jump] && player.onGround) {
-    player.vy = JUMP_FORCE;
-    player.onGround = false;
-  }
-
-  // Атака
-  if (keys[player.controls.attack] && !player.attacking) {
-    player.attacking = true;
-    player.attackTimer = ATTACK_TIMER;
   }
 
   // Реално движение X
@@ -69,7 +103,7 @@ function updatePlayer(player, dt) {
 }
 
 function update(dt) {
-  players.forEach(player => updatePlayer(player, dt));
+  players.forEach((player, index) => updatePlayer(player, index, dt));
 }
 
 // Game loop
