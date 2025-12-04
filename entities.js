@@ -1,4 +1,23 @@
-// Entity management
+class Player {
+  constructor(controls, x, y, z, color) {
+    this.controls = controls;
+    this.x = x;
+    this.y = y;
+    this.z = z;
+    this.w = 50;
+    this.h = 50;
+    this.vx = 0;
+    this.vy = 0;
+    this.vz = 0;
+    this.color = color;
+    this.onGround = false;
+    this.attacking = false;
+    this.attackTimer = 0;
+    this.hit = false;
+  }
+}
+
+// Entity management for NPCs
 function createEntity(x, y, z, w, h, color) {
   return {
     x, y, z,
@@ -19,4 +38,5 @@ function createEntity(x, y, z, w, h, color) {
 }
 
 // Global entities
-let hero, enemy, ally;
+window.players = [];
+let enemy, ally;

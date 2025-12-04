@@ -1,13 +1,23 @@
 // Menu system for Platformer Game
 let menuActive = false;
 let currentMenu = 'main'; // 'main', 'controls'
-let controls = {
-  left: 'ArrowLeft',
-  right: 'ArrowRight',
-  up: 'ArrowUp',
-  down: 'ArrowDown',
-  jump: 'w',
-  attack: 'q'
+window.controls = {
+  player1: {
+    left: 'ArrowLeft',
+    right: 'ArrowRight',
+    up: 'ArrowUp',
+    down: 'ArrowDown',
+    jump: 'w',
+    attack: 'q'
+  },
+  player2: {
+    left: '4',
+    right: '6',
+    up: '8',
+    down: '5',
+    jump: '9',
+    attack: '7'
+  }
 };
 let rebindingAction = null;
 
@@ -15,13 +25,20 @@ let rebindingAction = null;
 function loadControls() {
   const saved = localStorage.getItem('platformerControls');
   if (saved) {
-    controls = JSON.parse(saved);
+    const savedControls = JSON.parse(saved);
+    Object.keys(savedControls).forEach(player => {
+      if (window.controls[player]) {
+        Object.assign(window.controls[player], savedControls[player]);
+      } else {
+        window.controls[player] = savedControls[player];
+      }
+    });
   }
 }
 
 // Save controls to localStorage
 function saveControls() {
-  localStorage.setItem('platformerControls', JSON.stringify(controls));
+  localStorage.setItem('platformerControls', JSON.stringify(window.controls));
 }
 
 // Initialize menu
@@ -94,25 +111,96 @@ function updateControlsDisplay() {
   const controlsList = document.getElementById('controlsList');
   controlsList.innerHTML = '';
 
-  Object.keys(controls).forEach(action => {
-    const div = document.createElement('div');
-    div.className = 'control-item';
-    div.innerHTML = `
-      <span>${action.toUpperCase()}:</span>
-      <span id="key-${action}" class="${rebindingAction === action ? 'rebinding' : ''}">${controls[action]}</span>
-      <button onclick="startRebinding('${action}')">Change</button>
-    `;
-    controlsList.appendChild(div);
+  // Create table structure
+  const table = document.createElement('table');
+  table.style.borderCollapse = 'collapse';
+  table.style.width = '100%';
+
+  // Header row
+  const headerRow = document.createElement('tr');
+  const actionHeader = document.createElement('th');
+  actionHeader.textContent = 'Action';
+  actionHeader.style.padding = '10px';
+  actionHeader.style.border = '1px solid #444';
+  actionHeader.style.color = '#fff';
+  headerRow.appendChild(actionHeader);
+
+  // Fixed 4 player columns
+  for (let i = 1; i <= 4; i++) {
+    const playerHeader = document.createElement('th');
+    playerHeader.textContent = `Player ${i}`;
+    playerHeader.style.padding = '10px';
+    playerHeader.style.border = '1px solid #444';
+    playerHeader.style.color = '#fff';
+    headerRow.appendChild(playerHeader);
+  }
+
+  table.appendChild(headerRow);
+
+  // Action rows
+  const actions = [
+    { key: 'left', label: 'Move Left' },
+    { key: 'right', label: 'Move Right' },
+    { key: 'up', label: 'Move Up (Z+)' },
+    { key: 'down', label: 'Move Down (Z-)' },
+    { key: 'jump', label: 'Jump' },
+    { key: 'attack', label: 'Attack' }
+  ];
+
+  actions.forEach(action => {
+    const row = document.createElement('tr');
+
+    // Action label
+    const actionCell = document.createElement('td');
+    actionCell.textContent = action.label;
+    actionCell.style.padding = '8px';
+    actionCell.style.border = '1px solid #444';
+    actionCell.style.color = '#fff';
+    row.appendChild(actionCell);
+
+    // 4 Player control cells
+    for (let i = 1; i <= 4; i++) {
+      const player = `player${i}`;
+      const controlCell = document.createElement('td');
+      controlCell.style.padding = '8px';
+      controlCell.style.border = '1px solid #444';
+      controlCell.style.textAlign = 'center';
+
+      if (window.controls[player]) {
+        const keySpan = document.createElement('span');
+        keySpan.id = `key-${player}-${action.key}`;
+        keySpan.className = rebindingAction === `${player}-${action.key}` ? 'rebinding' : '';
+        keySpan.textContent = window.controls[player][action.key];
+        keySpan.style.marginRight = '10px';
+        keySpan.style.color = rebindingAction === `${player}-${action.key}` ? 'yellow' : '#fff';
+
+        const changeBtn = document.createElement('button');
+        changeBtn.textContent = 'Change';
+        changeBtn.setAttribute('onclick', `startRebinding('${player}', '${action.key}')`);
+
+        controlCell.appendChild(keySpan);
+        controlCell.appendChild(changeBtn);
+      } else {
+        controlCell.textContent = 'N/A';
+        controlCell.style.color = '#666';
+      }
+
+      row.appendChild(controlCell);
+    }
+
+    table.appendChild(row);
   });
+
+  controlsList.appendChild(table);
 }
 
-function startRebinding(action) {
-  rebindingAction = action;
+function startRebinding(player, action) {
+  rebindingAction = `${player}-${action}`;
   updateControlsDisplay();
 
   const handler = (e) => {
     e.preventDefault();
-    controls[action] = e.key;
+    window.controls[player][action] = e.key;
     rebindingAction = null;
     saveControls();
     updateControlsDisplay();

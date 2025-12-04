@@ -1,65 +1,64 @@
 // Game logic and loop
-function update(dt) {
-  hero.vx = 0;
-  hero.vz = 0; // ВАЖНО – нулираме преди нов вход
+function updatePlayer(player, dt) {
+  player.vx = 0;
+  player.vz = 0;
 
   // X движение
-  if (keys[controls.left]) hero.vx = -SPEED;
-  if (keys[controls.right]) hero.vx = SPEED;
+  if (keys[player.controls.left]) player.vx = -SPEED;
+  if (keys[player.controls.right]) player.vx = SPEED;
 
   // Check X movement collision
-  const proposedX = hero.x + hero.vx * dt;
-  if (!canMoveTo(hero, proposedX, hero.y, hero.z)) {
-    hero.vx = 0;
+  const proposedX = player.x + player.vx * dt;
+  if (!canMoveTo(player, proposedX, player.y, player.z)) {
+    player.vx = 0;
   }
 
   // Z движение (с граници)
-  if (keys[controls.up]) hero.vz = Z_SPEED;
-  if (keys[controls.down]) hero.vz = -Z_SPEED;
+  if (keys[player.controls.up]) player.vz = Z_SPEED;
+  if (keys[player.controls.down]) player.vz = -Z_SPEED;
 
   // Опит за движение по Z
-  const proposedZ = hero.z + hero.vz * dt;
-
+  const proposedZ = player.z + player.vz * dt;
   const clampedZ = Math.min(Math.max(proposedZ, Z_MIN), Z_MAX);
 
   //Check Z movement collision
-  if (canMoveTo(hero, hero.x, hero.y, clampedZ)) {
-    hero.z = clampedZ;
+  if (canMoveTo(player, player.x, player.y, clampedZ)) {
+    player.z = clampedZ;
   }
 
   // Скок
-  if (keys[controls.jump] && hero.onGround) {
-    hero.vy = JUMP_FORCE;
-    hero.onGround = false;
+  if (keys[player.controls.jump] && player.onGround) {
+    player.vy = JUMP_FORCE;
+    player.onGround = false;
   }
 
   // Атака
-  if (keys[controls.attack] && !hero.attacking) {
-    hero.attacking = true;
-    hero.attackTimer = ATTACK_TIMER;
+  if (keys[player.controls.attack] && !player.attacking) {
+    player.attacking = true;
+    player.attackTimer = ATTACK_TIMER;
   }
 
   // Реално движение X
-  hero.x += hero.vx * dt;
+  player.x += player.vx * dt;
 
   // Гравитация
-  hero.vy += GRAVITY * dt;
-  hero.y += hero.vy * dt;
+  player.vy += GRAVITY * dt;
+  player.y += player.vy * dt;
 
   // Земя
-  if (hero.y >= CANVAS_HEIGHT - 100) {
-    hero.y = CANVAS_HEIGHT - 100;
-    hero.vy = 0;
-    hero.onGround = true;
+  if (player.y >= CANVAS_HEIGHT - 100) {
+    player.y = CANVAS_HEIGHT - 100;
+    player.vy = 0;
+    player.onGround = true;
   }
 
   // Проверки за атака
-  if (hero.attacking) {
-    hero.attackTimer -= dt;
-    if (hero.attackTimer <= 0) hero.attacking = false;
+  if (player.attacking) {
+    player.attackTimer -= dt;
+    if (player.attackTimer <= 0) player.attacking = false;
 
     if (!enemy.hit) {
-      const hit = checkHitboxCollision(hero, enemy, {
+      const hit = checkHitboxCollision(player, enemy, {
         zTolerance: 20,
         zThickness: 40
       });
@@ -67,6 +66,10 @@ function update(dt) {
       if (hit) enemy.hit = true;
     }
   }
+}
+
+function update(dt) {
+  players.forEach(player => updatePlayer(player, dt));
 }
 
 // Game loop

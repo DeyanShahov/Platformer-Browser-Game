@@ -25,7 +25,7 @@ function checkHitboxCollision(attacker, target, params) {
 }
 
 function canMoveTo(entity, proposedX, proposedY, proposedZ) {
-  const others = [enemy, ally].filter(e => e !== entity);
+  const others = [...players, enemy, ally].filter(e => e !== entity);
   for (const other of others) {
     if (checkCollision(proposedX, proposedY, proposedZ, entity.w, entity.h,
                       other.x, other.y, other.z, other.w, other.h,

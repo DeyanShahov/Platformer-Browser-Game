@@ -34,7 +34,7 @@ function render() {
   ctx.stroke();
 
   // Draw entities in Z order based on bottom position (lower effective Y = background, higher effective Y = foreground)
-  const entities = [enemy, hero, ally];
+  const entities = [...players, enemy, ally];
   entities.sort((a, b) => (a.y - a.z) - (b.y - b.z)); // Sort by effective bottom Y ascending
   entities.forEach((entity, index) => {
     drawEntity(entity);
