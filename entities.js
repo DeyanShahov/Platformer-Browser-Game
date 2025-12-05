@@ -11,9 +11,62 @@ class Player {
     this.vz = 0;
     this.color = color;
     this.onGround = false;
-    this.attacking = false;
-    this.attackTimer = 0;
+
+    // Нова система за действия
+    this.currentAction = null;      // Текущо изпълнявано действие
+    this.executionTimer = 0;        // Таймер за изпълнение
+    this.cooldownTimers = {};       // Таймери за презареждане
+
+    // Инициализация на cooldown таймери за всички действия
+    Object.values(ACTION_TYPES).forEach(actionType => {
+      this.cooldownTimers[actionType] = 0;
+    });
+
     this.hit = false;
+  }
+
+  // Проверка дали може да се изпълни дадено действие
+  canPerformAction(actionType) {
+    return this.cooldownTimers[actionType] <= 0 && !this.currentAction;
+  }
+
+  // Започване на действие
+  startAction(actionType) {
+    if (this.canPerformAction(actionType)) {
+      this.currentAction = actionType;
+      this.executionTimer = EXECUTION_TIMERS[actionType];
+      this.cooldownTimers[actionType] = COOLDOWN_TIMERS[actionType];
+      return true;
+    }
+    return false;
+  }
+
+  // Обновяване на таймерите
+  updateTimers(dt) {
+    // Намаляване на cooldown таймерите
+    Object.keys(this.cooldownTimers).forEach(actionType => {
+      if (this.cooldownTimers[actionType] > 0) {
+        this.cooldownTimers[actionType] -= dt;
+        if (this.cooldownTimers[actionType] < 0) {
+          this.cooldownTimers[actionType] = 0;
+        }
+      }
+    });
+
+    // Намаляване на таймера за изпълнение
+    if (this.currentAction) {
+      if (this.executionTimer > 0) {
+        this.executionTimer -= dt;
+        if (this.executionTimer <= 0) {
+          this.currentAction = null;
+          this.executionTimer = 0;
+        }
+      } else {
+        // Действия с 0 време за изпълнение (като скок) се изчистват веднага
+        this.currentAction = null;
+        this.executionTimer = 0;
+      }
+    }
   }
 }
 

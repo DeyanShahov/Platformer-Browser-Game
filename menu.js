@@ -1,24 +1,102 @@
 // Menu system for Platformer Game
 let menuActive = false;
 let currentMenu = 'main'; // 'main', 'controls'
+
+const buttonNames = {
+  0: 'X',      // Cross бутон (долен)
+  1: '◯',      // Circle бутон (десен)
+  2: '□',      // Square бутон (ляв)
+  3: '△',      // Triangle бутон (горен)
+  4: 'L1',     // Ляв shoulder бутон
+  5: 'R1',     // Десен shoulder бутон
+  6: 'L2',     // Ляв trigger (L2)
+  7: 'R2',     // Десен trigger (R2)
+  8: 'Share',  // Share/Select бутон
+  9: 'Options', // Options/Start бутон
+  12: 'D-pad ↑', // D-pad нагоре
+  13: 'D-pad ↓', // D-pad надолу
+  14: 'D-pad ←', // D-pad наляво
+  15: 'D-pad →'  // D-pad надясно
+};
+
 window.controls = {
   player1: {
     inputMode: 'keyboard',
-    left: 'ArrowLeft',
-    right: 'ArrowRight',
-    up: 'ArrowUp',
-    down: 'ArrowDown',
-    jump: 'w',
-    attack: 'q'
+    keyboard: {
+      // Движения
+      left: 'ArrowLeft',
+      right: 'ArrowRight',
+      up: 'ArrowUp',
+      down: 'ArrowDown',
+      jump: 'z',
+
+      // Основни атаки
+      basicAttackLight: 'q',      // Лека основна атака
+      basicAttackMedium: 'w',     // Средна основна атака
+      basicAttackHeavy: 'e',      // Тежка основна атака
+
+      // Допълнителни атаки
+      secondaryAttackLight: 'a',  // Лека допълнителна атака
+      secondaryAttackMedium: 's', // Средна допълнителна атака
+      secondaryAttackHeavy: 'd'   // Тежка допълнителна атака
+    },
+    controller: {
+      // Движения (D-pad)
+      left: 14,   // D-pad Left
+      right: 15,  // D-pad Right
+      up: 12,     // D-pad Up
+      down: 13,   // D-pad Down
+      jump: 7,    // R2 бутон
+
+      // Основни атаки
+      basicAttackLight: 2,        // □ Square бутон - лека основна атака
+      basicAttackMedium: 3,       // ◯ Circle бутон - средна основна атака
+      basicAttackHeavy: 4,        // △ Triangle бутон - тежка основна атака
+
+      // Допълнителни атаки
+      secondaryAttackLight: 0,    // X Cross бутон - лека допълнителна атака
+      secondaryAttackMedium: 1,   // L1 бутон - средна допълнителна атака
+      secondaryAttackHeavy: 5     // R1 бутон - тежка допълнителна атака
+    }
   },
   player2: {
     inputMode: 'controller',
-    left: '4',
-    right: '6',
-    up: '8',
-    down: '5',
-    jump: '9',
-    attack: '7'
+    keyboard: {
+      // Движения
+      left: '4',
+      right: '6',
+      up: '8',
+      down: '5',
+      jump: '9',
+
+      // Основни атаки
+      basicAttackLight: 'u',      // Лека основна атака
+      basicAttackMedium: 'i',     // Средна основна атака
+      basicAttackHeavy: 'o',      // Тежка основна атака
+
+      // Допълнителни атаки
+      secondaryAttackLight: 'j',  // Лека допълнителна атака
+      secondaryAttackMedium: 'k', // Средна допълнителна атака
+      secondaryAttackHeavy: 'l'   // Тежка допълнителна атака
+    },
+    controller: {
+      // Движения (D-pad)
+      left: 14,   // D-pad Left
+      right: 15,  // D-pad Right
+      up: 12,     // D-pad Up
+      down: 13,   // D-pad Down
+      jump: 7,    // X бутон
+
+      // Основни атаки (PS3 контролер бутони)
+      basicAttackLight: 2,        // □ Square бутон - лека основна атака
+      basicAttackMedium: 3,       // ◯ Circle бутон - средна основна атака
+      basicAttackHeavy: 4,        // △ Triangle бутон - тежка основна атака
+
+      // Допълнителни атаки (PS3 контролер бутони)
+      secondaryAttackLight: 0,    // X Cross бутон - лека допълнителна атака
+      secondaryAttackMedium: 1,   // L1 бутон - средна допълнителна атака
+      secondaryAttackHeavy: 5     // R1 бутон - тежка допълнителна атака
+    }
   }
 };
 let rebindingAction = null;
@@ -72,7 +150,7 @@ function initMenu() {
 
   // Menu toggle
   document.addEventListener('keydown', (e) => {
-    if (e.key === 'Escape' || e.key === 's') {
+    if (e.key === 'Escape' || e.key === 'm') {
       if (menuActive) {
         hideMenu();
       } else {
@@ -143,108 +221,165 @@ function updateControlsDisplay() {
   const controlsList = document.getElementById('controlsList');
   controlsList.innerHTML = '';
 
-  // Create table structure
+  // Разделяне на контролите на две групи
+  const basicActions = [
+    { key: 'left', label: 'Move Left' },
+    { key: 'right', label: 'Move Right' },
+    { key: 'up', label: 'Move Up (Z+)' },
+    { key: 'down', label: 'Move Down (Z-)' },
+    { key: 'jump', label: 'Jump' }
+  ];
+
+  const attackActions = [
+    { key: 'basicAttackLight', label: 'Basic Attack Light' },
+    { key: 'basicAttackMedium', label: 'Basic Attack Medium' },
+    { key: 'basicAttackHeavy', label: 'Basic Attack Heavy' },
+    { key: 'secondaryAttackLight', label: 'Secondary Attack Light' },
+    { key: 'secondaryAttackMedium', label: 'Secondary Attack Medium' },
+    { key: 'secondaryAttackHeavy', label: 'Secondary Attack Heavy' }
+  ];
+
+  // Лява таблица - основни контроли
+  const leftContainer = document.createElement('div');
+  leftContainer.style.position = 'absolute';
+  leftContainer.style.left = '20px';
+  leftContainer.style.top = '80px';
+  leftContainer.style.width = '45%';
+
+  const leftTitle = document.createElement('h3');
+  leftTitle.textContent = 'Movement Controls';
+  leftTitle.style.color = '#fff';
+  leftTitle.style.marginBottom = '10px';
+  leftContainer.appendChild(leftTitle);
+
+  const leftTable = createControlsTable(basicActions, true); // true = include input mode
+  leftContainer.appendChild(leftTable);
+
+  // Дясна таблица - атаки
+  const rightContainer = document.createElement('div');
+  rightContainer.style.position = 'absolute';
+  rightContainer.style.right = '20px';
+  rightContainer.style.top = '80px';
+  rightContainer.style.width = '50%';
+
+  const rightTitle = document.createElement('h3');
+  rightTitle.textContent = 'Attack Controls';
+  rightTitle.style.color = '#fff';
+  rightTitle.style.marginBottom = '10px';
+  rightContainer.appendChild(rightTitle);
+
+  const rightTable = createControlsTable(attackActions, false); // false = no input mode
+  rightContainer.appendChild(rightTable);
+
+  controlsList.appendChild(leftContainer);
+  controlsList.appendChild(rightContainer);
+}
+
+// Помощна функция за създаване на таблица с контроли
+function createControlsTable(actions, includeInputMode) {
   const table = document.createElement('table');
   table.style.borderCollapse = 'collapse';
   table.style.width = '100%';
+  table.style.background = '#222';
+  table.style.border = '2px solid #444';
 
   // Header row
   const headerRow = document.createElement('tr');
   const actionHeader = document.createElement('th');
   actionHeader.textContent = 'Action';
-  actionHeader.style.padding = '10px';
+  actionHeader.style.padding = '8px';
   actionHeader.style.border = '1px solid #444';
   actionHeader.style.color = '#fff';
+  actionHeader.style.background = '#333';
   headerRow.appendChild(actionHeader);
 
-  // Fixed 4 player columns
-  for (let i = 1; i <= 4; i++) {
+  // Player columns
+  for (let i = 1; i <= 2; i++) { // Само 2 играча за по-компактно меню
     const playerHeader = document.createElement('th');
     playerHeader.textContent = `Player ${i}`;
-    playerHeader.style.padding = '10px';
+    playerHeader.style.padding = '8px';
     playerHeader.style.border = '1px solid #444';
     playerHeader.style.color = '#fff';
+    playerHeader.style.background = '#333';
     headerRow.appendChild(playerHeader);
   }
 
   table.appendChild(headerRow);
 
-  // Input Mode row
-  const inputModeRow = document.createElement('tr');
-  const inputModeLabel = document.createElement('td');
-  inputModeLabel.textContent = 'Input Mode';
-  inputModeLabel.style.padding = '8px';
-  inputModeLabel.style.border = '1px solid #444';
-  inputModeLabel.style.color = '#fff';
-  inputModeLabel.style.fontWeight = 'bold';
-  inputModeRow.appendChild(inputModeLabel);
+  // Input Mode row (само за лявата таблица)
+  if (includeInputMode) {
+    const inputModeRow = document.createElement('tr');
+    const inputModeLabel = document.createElement('td');
+    inputModeLabel.textContent = 'Input Mode';
+    inputModeLabel.style.padding = '6px';
+    inputModeLabel.style.border = '1px solid #444';
+    inputModeLabel.style.color = '#fff';
+    inputModeLabel.style.fontWeight = 'bold';
+    inputModeLabel.style.background = '#2a2a2a';
+    inputModeRow.appendChild(inputModeLabel);
 
-  for (let i = 1; i <= 4; i++) {
-    const player = `player${i}`;
-    const inputModeCell = document.createElement('td');
-    inputModeCell.style.padding = '8px';
-    inputModeCell.style.border = '1px solid #444';
-    inputModeCell.style.textAlign = 'center';
+    for (let i = 1; i <= 2; i++) {
+      const player = `player${i}`;
+      const inputModeCell = document.createElement('td');
+      inputModeCell.style.padding = '6px';
+      inputModeCell.style.border = '1px solid #444';
+      inputModeCell.style.textAlign = 'center';
+      inputModeCell.style.background = '#2a2a2a';
 
-    if (window.controls[player]) {
-      const select = document.createElement('select');
-      select.style.background = '#444';
-      select.style.color = '#fff';
-      select.style.border = '1px solid #666';
+      if (window.controls[player]) {
+        const select = document.createElement('select');
+        select.style.background = '#444';
+        select.style.color = '#fff';
+        select.style.border = '1px solid #666';
+        select.style.fontSize = '12px';
+        select.style.padding = '2px';
 
-      const keyboardOption = document.createElement('option');
-      keyboardOption.value = 'keyboard';
-      keyboardOption.textContent = 'Keyboard';
-      select.appendChild(keyboardOption);
+        const keyboardOption = document.createElement('option');
+        keyboardOption.value = 'keyboard';
+        keyboardOption.textContent = 'Keyboard';
+        select.appendChild(keyboardOption);
 
-      const controllerOption = document.createElement('option');
-      controllerOption.value = 'controller';
-      controllerOption.textContent = 'Controller';
-      select.appendChild(controllerOption);
+        const controllerOption = document.createElement('option');
+        controllerOption.value = 'controller';
+        controllerOption.textContent = 'Controller';
+        select.appendChild(controllerOption);
 
-      select.value = window.controls[player].inputMode || 'keyboard';
-      select.onchange = () => {
-        window.controls[player].inputMode = select.value;
-        saveControls();
-      };
+        select.value = window.controls[player].inputMode || 'keyboard';
+        select.onchange = () => {
+          window.controls[player].inputMode = select.value;
+          saveControls();
+        };
 
-      inputModeCell.appendChild(select);
-    } else {
-      inputModeCell.textContent = 'N/A';
-      inputModeCell.style.color = '#666';
+        inputModeCell.appendChild(select);
+      } else {
+        inputModeCell.textContent = 'N/A';
+        inputModeCell.style.color = '#666';
+      }
+
+      inputModeRow.appendChild(inputModeCell);
     }
 
-    inputModeRow.appendChild(inputModeCell);
+    table.appendChild(inputModeRow);
   }
 
-  table.appendChild(inputModeRow);
-
   // Action rows
-  const actions = [
-    { key: 'left', label: 'Move Left' },
-    { key: 'right', label: 'Move Right' },
-    { key: 'up', label: 'Move Up (Z+)' },
-    { key: 'down', label: 'Move Down (Z-)' },
-    { key: 'jump', label: 'Jump' },
-    { key: 'attack', label: 'Attack' }
-  ];
-
   actions.forEach(action => {
     const row = document.createElement('tr');
 
     // Action label
     const actionCell = document.createElement('td');
     actionCell.textContent = action.label;
-    actionCell.style.padding = '8px';
+    actionCell.style.padding = '6px';
     actionCell.style.border = '1px solid #444';
     actionCell.style.color = '#fff';
+    actionCell.style.fontSize = '12px';
     row.appendChild(actionCell);
 
-    // 4 Player control cells
-    for (let i = 1; i <= 4; i++) {
+    // Player control cells
+    for (let i = 1; i <= 2; i++) {
       const player = `player${i}`;
       const controlCell = document.createElement('td');
-      controlCell.style.padding = '8px';
+      controlCell.style.padding = '6px';
       controlCell.style.border = '1px solid #444';
       controlCell.style.textAlign = 'center';
 
@@ -253,18 +388,22 @@ function updateControlsDisplay() {
         keySpan.id = `key-${player}-${action.key}`;
         keySpan.className = rebindingAction === `${player}-${action.key}` ? 'rebinding' : '';
         keySpan.textContent = window.controls[player][action.key];
-        keySpan.style.marginRight = '10px';
+        keySpan.style.marginRight = '5px';
         keySpan.style.color = rebindingAction === `${player}-${action.key}` ? 'yellow' : '#fff';
+        keySpan.style.fontSize = '11px';
 
         const changeBtn = document.createElement('button');
         changeBtn.textContent = 'Change';
         changeBtn.setAttribute('onclick', `startRebinding('${player}', '${action.key}')`);
+        changeBtn.style.fontSize = '10px';
+        changeBtn.style.padding = '2px 4px';
 
         controlCell.appendChild(keySpan);
         controlCell.appendChild(changeBtn);
       } else {
         controlCell.textContent = 'N/A';
         controlCell.style.color = '#666';
+        controlCell.style.fontSize = '11px';
       }
 
       row.appendChild(controlCell);
@@ -273,7 +412,7 @@ function updateControlsDisplay() {
     table.appendChild(row);
   });
 
-  controlsList.appendChild(table);
+  return table;
 }
 
 function startRebinding(player, action) {
@@ -282,7 +421,16 @@ function startRebinding(player, action) {
 
   const handler = (e) => {
     e.preventDefault();
-    window.controls[player][action] = e.key;
+    
+    // Намери текущия input mode
+    const inputMode = window.controls[player].inputMode || 'keyboard';
+    
+    // Запиши в правилната суб-структура
+    if (!window.controls[player][inputMode]) {
+      window.controls[player][inputMode] = {};
+    }
+    window.controls[player][inputMode][action] = e.key;
+    
     rebindingAction = null;
     saveControls();
     updateControlsDisplay();

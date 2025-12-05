@@ -20,8 +20,52 @@ function checkCollision(ax, ay, az, aw, ah, tx, ty, tz, tw, th, params) {
 }
 
 function checkHitboxCollision(attacker, target, params) {
-  return checkCollision(attacker.x, attacker.y, attacker.z, attacker.w, attacker.h,
-                        target.x, target.y, target.z, target.w, target.h, params);
+  // Основни атаки - само дясната страна
+  if (attacker.currentAction === ACTION_TYPES.BASIC_ATTACK_LIGHT) {
+    // Лека основна атака: 1 черта вдясно
+    return checkCollision(
+      attacker.x + attacker.w + 5, attacker.y, attacker.z,  // позиция
+      2, attacker.h,  // размер (тънка вертикална линия)
+      target.x, target.y, target.z, target.w, target.h,
+      params
+    );
+  } else if (attacker.currentAction === ACTION_TYPES.BASIC_ATTACK_MEDIUM) {
+    // Средна основна атака: 2 черти вдясно
+    return checkCollision(
+      attacker.x + attacker.w + 5, attacker.y, attacker.z,  // позиция
+      15, attacker.h,  // размер (по-широка област)
+      target.x, target.y, target.z, target.w, target.h,
+      params
+    );
+  } else if (attacker.currentAction === ACTION_TYPES.BASIC_ATTACK_HEAVY) {
+    // Тежка основна атака: 3 черти вдясно
+    return checkCollision(
+      attacker.x + attacker.w + 5, attacker.y, attacker.z,  // позиция
+      25, attacker.h,  // размер (най-широка област)
+      target.x, target.y, target.z, target.w, target.h,
+      params
+    );
+  }
+
+  // Допълнителни атаки - около целия герой
+  else if (attacker.currentAction === ACTION_TYPES.SECONDARY_ATTACK_LIGHT) {
+    // Лека допълнителна атака: единично очертание
+    return checkCollision(attacker.x, attacker.y, attacker.z, attacker.w, attacker.h,
+                          target.x, target.y, target.z, target.w, target.h, params);
+  } else if (attacker.currentAction === ACTION_TYPES.SECONDARY_ATTACK_MEDIUM) {
+    // Средна допълнителна атака: двойно очертание (по-голям хитбокс)
+    return checkCollision(attacker.x - 10, attacker.y - 10, attacker.z,
+                          attacker.w + 20, attacker.h + 20,
+                          target.x, target.y, target.z, target.w, target.h, params);
+  } else if (attacker.currentAction === ACTION_TYPES.SECONDARY_ATTACK_HEAVY) {
+    // Тежка допълнителна атака: тройно очертание (най-голям хитбокс)
+    return checkCollision(attacker.x - 20, attacker.y - 20, attacker.z,
+                          attacker.w + 40, attacker.h + 40,
+                          target.x, target.y, target.z, target.w, target.h, params);
+  }
+
+  // По подразбиране - няма колизия
+  return false;
 }
 
 function canMoveTo(entity, proposedX, proposedY, proposedZ) {
