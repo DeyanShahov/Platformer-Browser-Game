@@ -288,6 +288,12 @@ function initGameWithSelections() {
 
   // Create NPCs
   enemy = createEntity(450, CANVAS_HEIGHT - 100, 50, 60, 60, "#FF3020");
+  enemy.maxHealth = 200;
+  enemy.health = enemy.maxHealth;
+  enemy.currentAction = null;
+  enemy.executionTimer = 0;
+  enemy.hit = false;
+
   ally = createEntity(520, CANVAS_HEIGHT - 100, 90, 50, 50, "#00FF00");
 
   // Initialize menu

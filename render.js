@@ -77,4 +77,9 @@ function render() {
     const effectiveY = entity.y - entity.z;
     ctx.fillText(`Z:${entity.z.toFixed(1)} EffY:${effectiveY.toFixed(1)} Order:${index+1}`, entity.x, entity.y - entity.h - entity.z - 20);
   });
+
+  // Render UI on top of everything else
+  if (window.UISystem) {
+    window.UISystem.renderPlayerPortraits(ctx);
+  }
 }

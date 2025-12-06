@@ -22,6 +22,14 @@ class Player {
       this.cooldownTimers[actionType] = 0;
     });
 
+    // UI Stats
+    this.maxHealth = 100;
+    this.health = this.maxHealth;
+    this.maxEnergy = 50;
+    this.energy = this.maxEnergy;
+    this.maxMana = 30;
+    this.mana = this.maxMana;
+
     this.hit = false;
   }
 

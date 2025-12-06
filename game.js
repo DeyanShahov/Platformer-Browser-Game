@@ -29,6 +29,21 @@ function updatePlayer(player, playerIndex, dt) {
       if (hit) enemy.hit = true;
     }
   }
+
+  // Проверка дали играчът е ударен от врага
+  if (!player.hit && enemy.currentAction && isAttackAction(enemy.currentAction)) {
+    const hit = checkHitboxCollision(enemy, player, {
+      zTolerance: 20,
+      zThickness: 40
+    });
+
+    if (hit) {
+      player.hit = true;
+      // Нанасяне на щети
+      player.health = Math.max(0, player.health - 15);
+      console.log(`Player ${players.indexOf(player) + 1} took damage! HP: ${player.health}`);
+    }
+  }
 }
 
 // Обработка на клавиатурен вход
@@ -278,6 +293,50 @@ function getButtonName(buttonIndex) {
 
 function update(dt) {
   players.forEach((player, index) => updatePlayer(player, index, dt));
+
+  // Simple enemy AI - attack randomly
+  updateEnemyAI(dt);
+}
+
+function updateEnemyAI(dt) {
+  if (!enemy) return;
+
+  // Simple AI: randomly attack every few seconds
+  if (Math.random() < 0.01) { // 1% chance per frame to attack
+    if (!enemy.currentAction) {
+      const attackTypes = [
+        ACTION_TYPES.BASIC_ATTACK_LIGHT,
+        ACTION_TYPES.BASIC_ATTACK_MEDIUM,
+        ACTION_TYPES.BASIC_ATTACK_HEAVY,
+        ACTION_TYPES.SECONDARY_ATTACK_LIGHT,
+        ACTION_TYPES.SECONDARY_ATTACK_MEDIUM,
+        ACTION_TYPES.SECONDARY_ATTACK_HEAVY
+      ];
+      const randomAttack = attackTypes[Math.floor(Math.random() * attackTypes.length)];
+      enemy.currentAction = randomAttack;
+      enemy.executionTimer = EXECUTION_TIMERS[randomAttack] || 0.5;
+      console.log(`Enemy attacks with ${getActionDisplayName(randomAttack)}`);
+    }
+  }
+
+  // Update enemy action timer
+  if (enemy.currentAction) {
+    if (enemy.executionTimer > 0) {
+      enemy.executionTimer -= dt;
+      if (enemy.executionTimer <= 0) {
+        enemy.currentAction = null;
+        enemy.executionTimer = 0;
+      }
+    } else {
+      enemy.currentAction = null;
+      enemy.executionTimer = 0;
+    }
+  }
+
+  // Reset hit flag after a short time
+  if (enemy.hit) {
+    enemy.hit = false;
+  }
 }
 
 // Game loop
