@@ -348,6 +348,7 @@ function createControlsTable(actions, includeInputMode) {
         select.onchange = () => {
           window.controls[player].inputMode = select.value;
           saveControls();
+          updateControlsDisplay(); // Refresh display to show correct key/button names
         };
 
         inputModeCell.appendChild(select);

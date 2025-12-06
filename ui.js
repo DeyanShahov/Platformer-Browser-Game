@@ -25,6 +25,13 @@ function renderStatusBar(ctx, label, current, max, x, y, width, height, color, b
 
 // Render character portrait/icon
 function renderCharacterPortrait(ctx, player, x, y, size = 40) {
+  // Player number - now positioned to the left of portrait
+  ctx.fillStyle = '#fff';
+  ctx.font = '16px Arial';
+  ctx.textAlign = 'right';
+  const playerIndex = window.players.indexOf(player) + 1;
+  ctx.fillText(`P${playerIndex}`, x - 10, y + size/2 + 6);
+
   // Portrait background
   ctx.fillStyle = '#222';
   ctx.fillRect(x, y, size, size);
@@ -36,13 +43,6 @@ function renderCharacterPortrait(ctx, player, x, y, size = 40) {
   // Border
   ctx.strokeStyle = '#666';
   ctx.strokeRect(x, y, size, size);
-
-  // Player number
-  ctx.fillStyle = '#fff';
-  ctx.font = '16px Arial';
-  ctx.textAlign = 'center';
-  const playerIndex = window.players.indexOf(player) + 1;
-  ctx.fillText(`P${playerIndex}`, x + size/2, y - 5);
 }
 
 // Render complete status UI for a single player
@@ -73,8 +73,8 @@ function renderPlayerPortraits(ctx) {
 
   // Define half-screen positions for up to 4 players
   const halfPositions = [
-    { x: 20, y: 20 },           // Top-left half (Player 1)
-    { x: CANVAS_WIDTH/2 + 20, y: 20 },    // Top-right half (Player 2)
+    { x: 30, y: 10 },           // Top-left half (Player 1) - moved left to account for P# label
+    { x: CANVAS_WIDTH/2 + 30, y: 10 },    // Top-right half (Player 2) - moved left to account for P# label
     { x: 20, y: CANVAS_HEIGHT - 100 },  // Bottom-left half (Player 3)
     { x: CANVAS_WIDTH/2 + 20, y: CANVAS_HEIGHT - 100 }  // Bottom-right half (Player 4)
   ];
