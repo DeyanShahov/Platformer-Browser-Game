@@ -97,8 +97,8 @@ function updatePlayerDetection() {
   }
   detectedPlayers = 1 + controllerCount; // Keyboard + controllers
 
-  const statusEl = document.getElementById('playerStatus');
-  statusEl.textContent = `${detectedPlayers} player${detectedPlayers > 1 ? 's' : ''} detected`;
+  // Update status with joined players info
+  updatePlayerStatus();
 }
 
 function startScreenLoop() {
@@ -119,8 +119,12 @@ function renderStartScreen() {
   ctx.textAlign = 'center';
   ctx.fillText('Demo Game', CANVAS_WIDTH / 2, 100);
 
-  ctx.font = '24px Arial';
-  ctx.fillText(`${detectedPlayers} player${detectedPlayers > 1 ? 's' : ''} detected`, CANVAS_WIDTH / 2, 150);
+  // Show joined players count on canvas
+  const joinedCount = activePlayers.size;
+  if (joinedCount > 0) {
+    ctx.font = '24px Arial';
+    ctx.fillText(`${joinedCount} player${joinedCount > 1 ? 's' : ''} joined`, CANVAS_WIDTH / 2, 150);
+  }
 
   // Render character options
   characters.forEach((char, index) => {
@@ -162,7 +166,7 @@ function handleStartScreenInput() {
   // Character selection for active players
   activePlayers.forEach(playerId => {
     if (playerId === 1) {
-      // Player 1 controls (keyboard)
+      // Player 1 controls (main keyboard)
       if (isStartScreenKeyPressed('ArrowLeft') || isStartScreenKeyPressed('a')) {
         selectCharacter(1, 'previous');
         startScreenKeysPressed['ArrowLeft'] = false;
@@ -176,8 +180,21 @@ function handleStartScreenInput() {
         startScreenKeysPressed['Enter'] = false;
         startScreenKeysPressed[' '] = false;
       }
+    } else if (playerId === 2) {
+      // Player 2 controls (numpad)
+      if (isStartScreenKeyPressed('Numpad4')) { // Numpad 4 (left)
+        selectCharacter(2, 'previous');
+        startScreenKeysPressed['Numpad4'] = false;
+      } else if (isStartScreenKeyPressed('Numpad6')) { // Numpad 6 (right)
+        selectCharacter(2, 'next');
+        startScreenKeysPressed['Numpad6'] = false;
+      } else if (isStartScreenKeyPressed('Numpad0') || isStartScreenKeyPressed('NumpadEnter')) { // Numpad 0 or Enter
+        confirmSelection(2);
+        startScreenKeysPressed['Numpad0'] = false;
+        startScreenKeysPressed['NumpadEnter'] = false;
+      }
     }
-    // Additional players would use controller input here
+    // Players 3-4 would use controller input
   });
 
   // Controller inputs for joined players
@@ -215,8 +232,16 @@ function joinPlayer(playerId) {
 function updatePlayerStatus() {
   const statusEl = document.getElementById('playerStatus');
   const joinedPlayers = Array.from(activePlayers).sort();
-  const joinedText = joinedPlayers.length > 0 ? `Players joined: ${joinedPlayers.join(', ')}` : 'No players joined yet';
-  statusEl.textContent = `${detectedPlayers} player${detectedPlayers > 1 ? 's' : ''} detected | ${joinedText}`;
+
+  if (joinedPlayers.length === 0) {
+    // No players joined yet - show join instructions
+    statusEl.textContent = 'Press 1-4 to join as Player X';
+  } else {
+    // Show joined players and device detection
+    const joinedText = `Players joined: ${joinedPlayers.join(', ')}`;
+    const deviceText = detectedPlayers > 1 ? ` | ${detectedPlayers} devices detected` : '';
+    statusEl.textContent = joinedText + deviceText;
+  }
 }
 
 function selectCharacter(playerId, direction) {
