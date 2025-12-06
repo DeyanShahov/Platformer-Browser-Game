@@ -384,10 +384,26 @@ function createControlsTable(actions, includeInputMode) {
       controlCell.style.textAlign = 'center';
 
       if (window.controls[player]) {
+        // Get current input mode
+        const inputMode = window.controls[player].inputMode || 'keyboard';
+        const currentControls = window.controls[player][inputMode];
+
+        // Get the current key/button for this action
+        let displayText = 'N/A';
+        if (currentControls && currentControls[action.key] !== undefined) {
+          if (inputMode === 'keyboard') {
+            displayText = currentControls[action.key];
+          } else if (inputMode === 'controller') {
+            // Convert button number to readable name
+            const buttonNumber = currentControls[action.key];
+            displayText = buttonNames[buttonNumber] || `Button ${buttonNumber}`;
+          }
+        }
+
         const keySpan = document.createElement('span');
         keySpan.id = `key-${player}-${action.key}`;
         keySpan.className = rebindingAction === `${player}-${action.key}` ? 'rebinding' : '';
-        keySpan.textContent = window.controls[player][action.key];
+        keySpan.textContent = displayText;
         keySpan.style.marginRight = '5px';
         keySpan.style.color = rebindingAction === `${player}-${action.key}` ? 'yellow' : '#fff';
         keySpan.style.fontSize = '11px';
