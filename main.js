@@ -11,13 +11,16 @@ const characters = [
 ];
 
 // Player selections and active players
-let playerSelections = {};
+let playerSelections = {}; // Temporary selections
+let confirmedSelections = {}; // Confirmed/final selections
 let activePlayers = new Set(); // Track which players have joined
 let detectedPlayers = 1; // Keyboard always available
 
-// Start screen key tracking
+// Start screen key/code tracking
 let startScreenKeys = {};
 let startScreenKeysPressed = {};
+let startScreenCodes = {};
+let startScreenCodesPressed = {};
 
 function initStartScreen() {
   // Setup canvas
@@ -45,22 +48,36 @@ function setupStartScreenInput() {
 
 function handleStartScreenKeyDown(e) {
   if (gameState === 'start') {
+    // Track both key and code
     startScreenKeys[e.key] = true;
+    startScreenCodes[e.code] = true;
+
     if (!startScreenKeysPressed[e.key]) {
       startScreenKeysPressed[e.key] = true;
+    }
+    if (!startScreenCodesPressed[e.code]) {
+      startScreenCodesPressed[e.code] = true;
     }
   }
 }
 
 function handleStartScreenKeyUp(e) {
   if (gameState === 'start') {
+    // Clear both key and code
     startScreenKeys[e.key] = false;
+    startScreenCodes[e.code] = false;
+
     startScreenKeysPressed[e.key] = false;
+    startScreenCodesPressed[e.code] = false;
   }
 }
 
 function isStartScreenKeyPressed(key) {
   return startScreenKeysPressed[key];
+}
+
+function isStartScreenCodePressed(code) {
+  return startScreenCodesPressed[code];
 }
 
 function createStartScreen() {
@@ -148,19 +165,19 @@ function renderStartScreen() {
 }
 
 function handleStartScreenInput() {
-  // Player join keys (1-4)
-  if (isStartScreenKeyPressed('1')) {
+  // Player join keys (1-4) - ONLY main keyboard, not numpad
+  if (isStartScreenCodePressed('Digit1')) {
     joinPlayer(1);
-    startScreenKeysPressed['1'] = false;
-  } else if (isStartScreenKeyPressed('2')) {
+    startScreenCodesPressed['Digit1'] = false;
+  } else if (isStartScreenCodePressed('Digit2')) {
     joinPlayer(2);
-    startScreenKeysPressed['2'] = false;
-  } else if (isStartScreenKeyPressed('3')) {
+    startScreenCodesPressed['Digit2'] = false;
+  } else if (isStartScreenCodePressed('Digit3')) {
     joinPlayer(3);
-    startScreenKeysPressed['3'] = false;
-  } else if (isStartScreenKeyPressed('4')) {
+    startScreenCodesPressed['Digit3'] = false;
+  } else if (isStartScreenCodePressed('Digit4')) {
     joinPlayer(4);
-    startScreenKeysPressed['4'] = false;
+    startScreenCodesPressed['Digit4'] = false;
   }
 
   // Character selection for active players
@@ -182,16 +199,16 @@ function handleStartScreenInput() {
       }
     } else if (playerId === 2) {
       // Player 2 controls (numpad)
-      if (isStartScreenKeyPressed('Numpad4')) { // Numpad 4 (left)
+      if (isStartScreenCodePressed('Numpad4')) { // Numpad 4 (left)
         selectCharacter(2, 'previous');
-        startScreenKeysPressed['Numpad4'] = false;
-      } else if (isStartScreenKeyPressed('Numpad6')) { // Numpad 6 (right)
+        startScreenCodesPressed['Numpad4'] = false;
+      } else if (isStartScreenCodePressed('Numpad6')) { // Numpad 6 (right)
         selectCharacter(2, 'next');
-        startScreenKeysPressed['Numpad6'] = false;
-      } else if (isStartScreenKeyPressed('Numpad0') || isStartScreenKeyPressed('NumpadEnter')) { // Numpad 0 or Enter
+        startScreenCodesPressed['Numpad6'] = false;
+      } else if (isStartScreenCodePressed('Numpad0') || isStartScreenCodePressed('NumpadEnter')) { // Numpad 0 or Enter
         confirmSelection(2);
-        startScreenKeysPressed['Numpad0'] = false;
-        startScreenKeysPressed['NumpadEnter'] = false;
+        startScreenCodesPressed['Numpad0'] = false;
+        startScreenCodesPressed['NumpadEnter'] = false;
       }
     }
     // Players 3-4 would use controller input
@@ -225,7 +242,27 @@ function joinPlayer(playerId) {
   if (!activePlayers.has(playerId)) {
     activePlayers.add(playerId);
     console.log(`Player ${playerId} joined!`);
+
+    // Auto-assign first available character
+    assignFirstAvailableCharacter(playerId);
+
     updatePlayerStatus();
+
+    // Reset start button state - new player needs to confirm selection
+    updateStartButton();
+  }
+}
+
+function assignFirstAvailableCharacter(playerId) {
+  // Find first available character (not taken by any player)
+  for (let i = 0; i < characters.length; i++) {
+    const char = characters[i];
+    if (!isCharacterTaken(char.id, null)) { // null = check if taken by anyone
+      playerSelections[char.id] = playerId;
+      updateSelectionUI(char.id);
+      console.log(`Player ${playerId} auto-assigned to ${char.name}`);
+      break;
+    }
   }
 }
 
@@ -272,7 +309,7 @@ function selectCharacter(playerId, direction) {
     return;
   }
 
-  // Clear previous selection
+  // Clear previous selection and confirmed selection for this player
   for (let charId in playerSelections) {
     if (playerSelections[charId] === playerId) {
       delete playerSelections[charId];
@@ -280,10 +317,24 @@ function selectCharacter(playerId, direction) {
     }
   }
 
+  // Remove any confirmed selections for this player (they must reconfirm)
+  for (let charId in confirmedSelections) {
+    if (confirmedSelections[charId] === playerId) {
+      delete confirmedSelections[charId];
+      // Update UI for the old confirmed character
+      updateSelectionUI(charId);
+      console.log(`Player ${playerId} changed selection, removed confirmed choice`);
+      break; // Should only have one confirmed selection per player
+    }
+  }
+
   // Set new selection (temporarily highlight)
   const newChar = characters[newIndex];
   playerSelections[newChar.id] = playerId;
   updateSelectionUI(newChar.id);
+
+  // Update start button since confirmed selections may have changed
+  updateStartButton();
 }
 
 function isCharacterTaken(charId, excludePlayerId) {
@@ -307,12 +358,17 @@ function confirmSelection(playerId) {
   }
 
   if (selectedChar) {
+    // Move from temporary to confirmed selections
+    confirmedSelections[selectedChar] = playerId;
+
     // Mark as confirmed (permanent)
     const indicator = document.getElementById(`selection-${selectedChar}`);
     if (indicator) {
       indicator.textContent = `Player ${playerId}`;
       indicator.classList.add('confirmed');
     }
+
+    console.log(`Player ${playerId} confirmed selection of ${characters.find(c => c.id === selectedChar).name}`);
 
     // Check if we can start the game
     updateStartButton();
@@ -334,9 +390,25 @@ function updateSelectionUI(charId) {
 
 function updateStartButton() {
   const startBtn = document.getElementById('startGameBtn');
-  const hasSelections = Object.keys(playerSelections).length > 0;
-  startBtn.disabled = !hasSelections;
-  startBtn.textContent = hasSelections ? 'Start Game' : 'Select Characters First';
+
+  // Check if all joined players have confirmed their selections
+  const joinedPlayers = Array.from(activePlayers);
+  const allConfirmed = joinedPlayers.every(playerId => {
+    // Check if this player has a confirmed selection
+    return Object.values(confirmedSelections).includes(playerId);
+  });
+
+  const hasSelections = Object.keys(confirmedSelections).length > 0;
+
+  if (joinedPlayers.length === 1) {
+    // Single player - just needs any selection
+    startBtn.disabled = !hasSelections;
+    startBtn.textContent = hasSelections ? 'Start Game' : 'Select Character First';
+  } else {
+    // Multiple players - all must confirm
+    startBtn.disabled = !allConfirmed;
+    startBtn.textContent = allConfirmed ? 'Start Game' : 'All Players Must Confirm Selection';
+  }
 }
 
 function startGame() {
@@ -358,11 +430,11 @@ function initGameWithSelections() {
   const canvas = document.getElementById("game");
   ctx = canvas.getContext("2d");
 
-  // Create players based on selections
-  const selectedChars = Object.keys(playerSelections);
+  // Create players based on confirmed selections
+  const selectedChars = Object.keys(confirmedSelections);
   selectedChars.forEach((charId, index) => {
     const char = characters.find(c => c.id === charId);
-    const playerId = playerSelections[charId];
+    const playerId = confirmedSelections[charId];
     const playerKey = `player${playerId}`;
 
     if (window.controls[playerKey]) {
