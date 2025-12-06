@@ -67,18 +67,23 @@ function renderCharacterStatusUI(ctx, player, x, y) {
   renderStatusBar(ctx, 'MP', player.mana, player.maxMana, currentX, barStartY + spacing * 2, barWidth, barHeight, '#0088ff');
 }
 
-// Main UI rendering function - renders all player status UIs
+// Main UI rendering function - renders all player status UIs in corners
 function renderPlayerPortraits(ctx) {
   if (!window.players || window.players.length === 0) return;
 
-  const startX = 20;
-  const startY = 20;
-  const panelWidth = 150; // Space for portrait + bars
+  // Define corner positions for up to 4 players
+  const cornerPositions = [
+    { x: 20, y: 20 },           // Top-left (Player 1)
+    { x: CANVAS_WIDTH - 170, y: 20 },    // Top-right (Player 2)
+    { x: 20, y: CANVAS_HEIGHT - 100 },  // Bottom-left (Player 3)
+    { x: CANVAS_WIDTH - 170, y: CANVAS_HEIGHT - 100 }  // Bottom-right (Player 4)
+  ];
 
   window.players.forEach((player, index) => {
-    const x = startX + (index * (panelWidth + 20)); // 20px spacing between panels
-    const y = startY;
-    renderCharacterStatusUI(ctx, player, x, y);
+    if (index < cornerPositions.length) {
+      const position = cornerPositions[index];
+      renderCharacterStatusUI(ctx, player, position.x, position.y);
+    }
   });
 }
 
