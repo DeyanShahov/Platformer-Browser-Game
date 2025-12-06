@@ -10,8 +10,9 @@ const characters = [
   { id: 'red', name: 'Hero 4', color: '#FF0000', position: 90 }
 ];
 
-// Player selections
+// Player selections and active players
 let playerSelections = {};
+let activePlayers = new Set(); // Track which players have joined
 let detectedPlayers = 1; // Keyboard always available
 
 // Start screen key tracking
@@ -79,7 +80,7 @@ function createStartScreen() {
         `).join('')}
       </div>
       <button id="startGameBtn" class="start-button" disabled>Start Game</button>
-      <div class="instructions">Use keyboard/controller to select characters</div>
+      <div class="instructions">Press 1-4 to join as Player X, then select unique character</div>
     </div>
   `;
   document.body.appendChild(startScreen);
@@ -143,41 +144,79 @@ function renderStartScreen() {
 }
 
 function handleStartScreenInput() {
-  // Keyboard input for player 1
-  if (isStartScreenKeyPressed('ArrowLeft') || isStartScreenKeyPressed('a')) {
-    selectCharacter(1, 'previous');
-    startScreenKeysPressed['ArrowLeft'] = false; // Reset to prevent continuous input
-    startScreenKeysPressed['a'] = false;
-  } else if (isStartScreenKeyPressed('ArrowRight') || isStartScreenKeyPressed('d')) {
-    selectCharacter(1, 'next');
-    startScreenKeysPressed['ArrowRight'] = false;
-    startScreenKeysPressed['d'] = false;
-  } else if (isStartScreenKeyPressed('Enter') || isStartScreenKeyPressed(' ')) {
-    confirmSelection(1);
-    startScreenKeysPressed['Enter'] = false;
-    startScreenKeysPressed[' '] = false;
+  // Player join keys (1-4)
+  if (isStartScreenKeyPressed('1')) {
+    joinPlayer(1);
+    startScreenKeysPressed['1'] = false;
+  } else if (isStartScreenKeyPressed('2')) {
+    joinPlayer(2);
+    startScreenKeysPressed['2'] = false;
+  } else if (isStartScreenKeyPressed('3')) {
+    joinPlayer(3);
+    startScreenKeysPressed['3'] = false;
+  } else if (isStartScreenKeyPressed('4')) {
+    joinPlayer(4);
+    startScreenKeysPressed['4'] = false;
   }
 
-  // Controller inputs for additional players
+  // Character selection for active players
+  activePlayers.forEach(playerId => {
+    if (playerId === 1) {
+      // Player 1 controls (keyboard)
+      if (isStartScreenKeyPressed('ArrowLeft') || isStartScreenKeyPressed('a')) {
+        selectCharacter(1, 'previous');
+        startScreenKeysPressed['ArrowLeft'] = false;
+        startScreenKeysPressed['a'] = false;
+      } else if (isStartScreenKeyPressed('ArrowRight') || isStartScreenKeyPressed('d')) {
+        selectCharacter(1, 'next');
+        startScreenKeysPressed['ArrowRight'] = false;
+        startScreenKeysPressed['d'] = false;
+      } else if (isStartScreenKeyPressed('Enter') || isStartScreenKeyPressed(' ')) {
+        confirmSelection(1);
+        startScreenKeysPressed['Enter'] = false;
+        startScreenKeysPressed[' '] = false;
+      }
+    }
+    // Additional players would use controller input here
+  });
+
+  // Controller inputs for joined players
   const gamepads = navigator.getGamepads();
   for (let i = 0; i < gamepads.length; i++) {
     if (gamepads[i]) {
       const playerId = i + 2; // Player 2, 3, 4...
-      const gp = gamepads[i];
+      if (activePlayers.has(playerId)) {
+        const gp = gamepads[i];
 
-      // D-pad left/right for selection
-      if (gp.buttons[14].pressed) { // D-pad left
-        selectCharacter(playerId, 'previous');
-      } else if (gp.buttons[15].pressed) { // D-pad right
-        selectCharacter(playerId, 'next');
-      }
+        // D-pad left/right for selection
+        if (gp.buttons[14].pressed) { // D-pad left
+          selectCharacter(playerId, 'previous');
+        } else if (gp.buttons[15].pressed) { // D-pad right
+          selectCharacter(playerId, 'next');
+        }
 
-      // Jump button to confirm
-      if (gp.buttons[7].pressed) { // R2
-        confirmSelection(playerId);
+        // Jump button to confirm
+        if (gp.buttons[7].pressed) { // R2
+          confirmSelection(playerId);
+        }
       }
     }
   }
+}
+
+function joinPlayer(playerId) {
+  if (!activePlayers.has(playerId)) {
+    activePlayers.add(playerId);
+    console.log(`Player ${playerId} joined!`);
+    updatePlayerStatus();
+  }
+}
+
+function updatePlayerStatus() {
+  const statusEl = document.getElementById('playerStatus');
+  const joinedPlayers = Array.from(activePlayers).sort();
+  const joinedText = joinedPlayers.length > 0 ? `Players joined: ${joinedPlayers.join(', ')}` : 'No players joined yet';
+  statusEl.textContent = `${detectedPlayers} player${detectedPlayers > 1 ? 's' : ''} detected | ${joinedText}`;
 }
 
 function selectCharacter(playerId, direction) {
@@ -190,11 +229,22 @@ function selectCharacter(playerId, direction) {
     }
   }
 
-  // Calculate new index
-  if (direction === 'next') {
-    currentIndex = (currentIndex + 1) % characters.length;
-  } else if (direction === 'previous') {
-    currentIndex = currentIndex <= 0 ? characters.length - 1 : currentIndex - 1;
+  // Calculate new index (skip taken characters)
+  let attempts = 0;
+  let newIndex = currentIndex;
+
+  do {
+    if (direction === 'next') {
+      newIndex = (newIndex + 1) % characters.length;
+    } else if (direction === 'previous') {
+      newIndex = newIndex <= 0 ? characters.length - 1 : newIndex - 1;
+    }
+    attempts++;
+  } while (isCharacterTaken(characters[newIndex].id, playerId) && attempts < characters.length);
+
+  // If we couldn't find an available character, don't change selection
+  if (isCharacterTaken(characters[newIndex].id, playerId)) {
+    return;
   }
 
   // Clear previous selection
@@ -206,9 +256,19 @@ function selectCharacter(playerId, direction) {
   }
 
   // Set new selection (temporarily highlight)
-  const newChar = characters[currentIndex];
+  const newChar = characters[newIndex];
   playerSelections[newChar.id] = playerId;
   updateSelectionUI(newChar.id);
+}
+
+function isCharacterTaken(charId, excludePlayerId) {
+  // Check if character is selected by another player
+  for (let selectedCharId in playerSelections) {
+    if (selectedCharId === charId && playerSelections[selectedCharId] !== excludePlayerId) {
+      return true;
+    }
+  }
+  return false;
 }
 
 function confirmSelection(playerId) {
