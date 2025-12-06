@@ -192,9 +192,9 @@ function handleStartScreenInput() {
         selectCharacter(1, 'next');
         startScreenKeysPressed['ArrowRight'] = false;
         startScreenKeysPressed['d'] = false;
-      } else if (isStartScreenKeyPressed('Enter') || isStartScreenKeyPressed(' ')) {
+      } else if (isStartScreenCodePressed('Enter') || isStartScreenKeyPressed(' ')) {
         confirmSelection(1);
-        startScreenKeysPressed['Enter'] = false;
+        startScreenCodesPressed['Enter'] = false;
         startScreenKeysPressed[' '] = false;
       }
     } else if (playerId === 2) {
@@ -246,12 +246,47 @@ function joinPlayer(playerId) {
     // Auto-assign first available character
     assignFirstAvailableCharacter(playerId);
 
+    // Auto-confirm for Players 3 & 4 (console testing only)
+    if (playerId >= 3) {
+      confirmSelection(playerId);
+    }
+
     updatePlayerStatus();
 
     // Reset start button state - new player needs to confirm selection
     updateStartButton();
   }
 }
+
+function removePlayer(playerId) {
+  if (activePlayers.has(playerId)) {
+    activePlayers.delete(playerId);
+
+    // Clean up selections for this player
+    for (let charId in playerSelections) {
+      if (playerSelections[charId] === playerId) {
+        delete playerSelections[charId];
+        updateSelectionUI(charId);
+      }
+    }
+
+    for (let charId in confirmedSelections) {
+      if (confirmedSelections[charId] === playerId) {
+        delete confirmedSelections[charId];
+        updateSelectionUI(charId);
+      }
+    }
+
+    updatePlayerStatus();
+    updateStartButton();
+
+    console.log(`Player ${playerId} removed!`);
+  }
+}
+
+// Make functions globally accessible for testing
+window.joinPlayer = joinPlayer;
+window.removePlayer = removePlayer;
 
 function assignFirstAvailableCharacter(playerId) {
   // Find first available character (not taken by any player)
