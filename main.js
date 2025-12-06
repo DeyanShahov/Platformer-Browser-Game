@@ -383,6 +383,8 @@ function isCharacterTaken(charId, excludePlayerId) {
 }
 
 function confirmSelection(playerId) {
+  console.log(`Player ${playerId} trying to confirm. Current playerSelections:`, playerSelections);
+
   // Find if player has a selection
   let selectedChar = null;
   for (let charId in playerSelections) {
@@ -392,6 +394,8 @@ function confirmSelection(playerId) {
     }
   }
 
+  console.log(`Player ${playerId} selected character: ${selectedChar}`);
+
   if (selectedChar) {
     // Move from temporary to confirmed selections
     confirmedSelections[selectedChar] = playerId;
@@ -400,7 +404,11 @@ function confirmSelection(playerId) {
     const indicator = document.getElementById(`selection-${selectedChar}`);
     if (indicator) {
       indicator.textContent = `Player ${playerId}`;
+      console.log(`Confirmed: ${selectedChar} -> Player ${playerId}`);
+      console.log(`confirmedSelections now:`, confirmedSelections);
       indicator.classList.add('confirmed');
+    } else {
+    console.log(`ERROR: Player ${playerId} has no selection!`);
     }
 
     console.log(`Player ${playerId} confirmed selection of ${characters.find(c => c.id === selectedChar).name}`);
@@ -461,15 +469,20 @@ function startGame() {
 }
 
 function initGameWithSelections() {
+  console.log(`Starting game with confirmedSelections:`, confirmedSelections);
+
   // Setup canvas
   const canvas = document.getElementById("game");
   ctx = canvas.getContext("2d");
 
-  // Create players based on confirmed selections
-  const selectedChars = Object.keys(confirmedSelections);
+  // Create players based on confirmed selections (sorted by player ID for consistent ordering)
+  const selectedChars = Object.keys(confirmedSelections).sort((a, b) =>
+    confirmedSelections[a] - confirmedSelections[b]
+  );
   selectedChars.forEach((charId, index) => {
     const char = characters.find(c => c.id === charId);
     const playerId = confirmedSelections[charId];
+    console.log(`Creating Player ${playerId} with ${char.name} (${charId}) at position ${index}`);
     const playerKey = `player${playerId}`;
 
     if (window.controls[playerKey]) {
