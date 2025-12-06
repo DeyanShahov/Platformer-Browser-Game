@@ -73,10 +73,10 @@ function renderPlayerPortraits(ctx) {
 
   // Define half-screen positions for up to 4 players
   const halfPositions = [
-    { x: 30, y: 10 },           // Top-left half (Player 1) - moved left to account for P# label
-    { x: CANVAS_WIDTH/2 + 30, y: 10 },    // Top-right half (Player 2) - moved left to account for P# label
-    { x: 20, y: CANVAS_HEIGHT - 100 },  // Bottom-left half (Player 3)
-    { x: CANVAS_WIDTH/2 + 20, y: CANVAS_HEIGHT - 100 }  // Bottom-right half (Player 4)
+    { x: 40, y: 10 },           // Top-left half (Player 1) - moved left to account for P# label
+    { x: CANVAS_WIDTH/2 + 40, y: 10 },    // Top-right half (Player 2) - moved left to account for P# label
+    { x: 40, y: CANVAS_HEIGHT - 100 },  // Bottom-left half (Player 3)
+    { x: CANVAS_WIDTH/2 + 40, y: CANVAS_HEIGHT - 100 }  // Bottom-right half (Player 4)
   ];
 
   window.players.forEach((player, index) => {
