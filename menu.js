@@ -97,6 +97,84 @@ window.controls = {
       secondaryAttackMedium: 1,   // L1 бутон - средна допълнителна атака
       secondaryAttackHeavy: 5     // R1 бутон - тежка допълнителна атака
     }
+  },
+  player3: {
+    inputMode: 'keyboard',
+    keyboard: {
+      // Движения (допълнителни клавиши за Player 3)
+      left: 'j',
+      right: 'l',
+      up: 'i',
+      down: 'k',
+      jump: 'space',
+
+      // Основни атаки (числа за Player 3)
+      basicAttackLight: '1',      // Лека основна атака
+      basicAttackMedium: '2',     // Средна основна атака
+      basicAttackHeavy: '3',      // Тежка основна атака
+
+      // Допълнителни атаки
+      secondaryAttackLight: '4',  // Лека допълнителна атака
+      secondaryAttackMedium: '5', // Средна допълнителна атака
+      secondaryAttackHeavy: '6'   // Тежка допълнителна атака
+    },
+    controller: {
+      // Движения (D-pad)
+      left: 14,   // D-pad Left
+      right: 15,  // D-pad Right
+      up: 12,     // D-pad Up
+      down: 13,   // D-pad Down
+      jump: 7,    // R2 бутон
+
+      // Основни атаки
+      basicAttackLight: 2,        // □ Square бутон - лека основна атака
+      basicAttackMedium: 3,       // ◯ Circle бутон - средна основна атака
+      basicAttackHeavy: 4,        // △ Triangle бутон - тежка основна атака
+
+      // Допълнителни атаки
+      secondaryAttackLight: 0,    // X Cross бутон - лека допълнителна атака
+      secondaryAttackMedium: 1,   // L1 бутон - средна допълнителна атака
+      secondaryAttackHeavy: 5     // R1 бутон - тежка допълнителна атака
+    }
+  },
+  player4: {
+    inputMode: 'controller',
+    keyboard: {
+      // Движения (букви за Player 4)
+      left: 'a',
+      right: 'd',
+      up: 'w',
+      down: 's',
+      jump: 'space',
+
+      // Основни атаки
+      basicAttackLight: 'q',      // Лека основна атака
+      basicAttackMedium: 'e',     // Средна основна атака
+      basicAttackHeavy: 'r',      // Тежка основна атака
+
+      // Допълнителни атаки
+      secondaryAttackLight: 't',  // Лека допълнителна атака
+      secondaryAttackMedium: 'y', // Средна допълнителна атака
+      secondaryAttackHeavy: 'u'   // Тежка допълнителна атака
+    },
+    controller: {
+      // Движения (D-pad)
+      left: 14,   // D-pad Left
+      right: 15,  // D-pad Right
+      up: 12,     // D-pad Up
+      down: 13,   // D-pad Down
+      jump: 7,    // R2 бутон
+
+      // Основни атаки (PS4 контролер бутони)
+      basicAttackLight: 2,        // □ Square бутон - лека основна атака
+      basicAttackMedium: 3,       // ◯ Circle бутон - средна основна атака
+      basicAttackHeavy: 4,        // △ Triangle бутон - тежка основна атака
+
+      // Допълнителни атаки (PS4 контролер бутони)
+      secondaryAttackLight: 0,    // X Cross бутон - лека допълнителна атака
+      secondaryAttackMedium: 1,   // L1 бутон - средна допълнителна атака
+      secondaryAttackHeavy: 5     // R1 бутон - тежка допълнителна атака
+    }
   }
 };
 let rebindingAction = null;
