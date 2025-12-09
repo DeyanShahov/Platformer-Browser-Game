@@ -93,6 +93,92 @@ function handleKeyboardInput(player) {
   }
 }
 
+// Skill Tree Key Handling (separate function to avoid cluttering player input)
+let lastSkillTreeToggleTime = 0; // Timestamp to prevent rapid toggling
+
+// Key press tracking variables
+let key5Pressed = false;
+let key5WasPressed = false;
+let key6Pressed = false;
+let key6WasPressed = false;
+let key7Pressed = false;
+let key7WasPressed = false;
+let key8Pressed = false;
+let key8WasPressed = false;
+
+function handleSkillTreeKeys() {
+  const now = performance.now();
+  if (now - lastSkillTreeToggleTime < 300) return; // 300ms debounce
+
+  // Toggle main menu (Escape or 'm')
+  if (keys['Escape'] || keys['m']) {
+    toggleMenu();
+    lastSkillTreeToggleTime = now;
+    keys['Escape'] = false;
+    keys['m'] = false;
+  }
+
+  // Player 1 skill tree (key 5) - toggle player's own menu
+  key5Pressed = keys['5'];
+  if (key5Pressed && !key5WasPressed && players.length >= 1) { // Key just pressed
+    if (currentMenu === 'skills' && currentSkillTreePlayer === 0) {
+      // Close if player's own skill tree is open
+      hideSkillTree();
+    } else if (!menuActive) {
+      // Open only if no menu is active
+      showSkillTreeForPlayer(0);
+    }
+    // If another player's skill tree is open, do nothing
+    lastSkillTreeToggleTime = now;
+  }
+  key5WasPressed = key5Pressed;
+
+  // Player 2 skill tree (key 6) - toggle player's own menu
+  key6Pressed = keys['6'];
+  if (key6Pressed && !key6WasPressed && players.length >= 2) {
+    if (currentMenu === 'skills' && currentSkillTreePlayer === 1) {
+      // Close if player's own skill tree is open
+      hideSkillTree();
+    } else if (!menuActive) {
+      // Open only if no menu is active
+      showSkillTreeForPlayer(1);
+    }
+    // If another player's skill tree is open, do nothing
+    lastSkillTreeToggleTime = now;
+  }
+  key6WasPressed = key6Pressed;
+
+  // Player 3 skill tree (key 7) - toggle player's own menu
+  key7Pressed = keys['7'];
+  if (key7Pressed && !key7WasPressed && players.length >= 3) {
+    if (currentMenu === 'skills' && currentSkillTreePlayer === 2) {
+      // Close if player's own skill tree is open
+      hideSkillTree();
+    } else if (!menuActive) {
+      // Open only if no menu is active
+      showSkillTreeForPlayer(2);
+    }
+    // If another player's skill tree is open, do nothing
+    lastSkillTreeToggleTime = now;
+  }
+  key7WasPressed = key7Pressed;
+
+  // Player 4 skill tree (key 8) - toggle player's own menu
+  key8Pressed = keys['8'];
+  if (key8Pressed && !key8WasPressed && players.length >= 4) {
+    if (currentMenu === 'skills' && currentSkillTreePlayer === 3) {
+      // Close if player's own skill tree is open
+      hideSkillTree();
+    } else if (!menuActive) {
+      // Open only if no menu is active
+      showSkillTreeForPlayer(3);
+    }
+    // If another player's skill tree is open, do nothing
+    lastSkillTreeToggleTime = now;
+  }
+  key8WasPressed = key8Pressed;
+}
+
 // Обработка на контролерен вход
 function handleControllerInput(player, playerIndex) {
   const gamepads = navigator.getGamepads();
@@ -292,10 +378,16 @@ function getButtonName(buttonIndex) {
 }
 
 function update(dt) {
-  players.forEach((player, index) => updatePlayer(player, index, dt));
+  // Handle skill tree key inputs
+  handleSkillTreeKeys();
 
-  // Simple enemy AI - attack randomly
-  updateEnemyAI(dt);
+  // Ако имаме активно меню, не ъпдейтвай играчите и враговете.
+  // Това ефективно "паузира" играта.
+  if (!menuActive) {
+    players.forEach((player, index) => updatePlayer(player, index, dt));
+    // Simple enemy AI - attack randomly
+    updateEnemyAI(dt);
+  }
 }
 
 function updateEnemyAI(dt) {

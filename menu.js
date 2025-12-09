@@ -1,6 +1,7 @@
 // Menu system for Platformer Game
 let menuActive = false;
-let currentMenu = 'main'; // 'main', 'controls'
+let currentMenu = 'main'; // 'main', 'controls', 'skills'
+let currentSkillTreePlayer = null; // Index of player whose skills are being viewed
 
 const buttonNames = {
   0: 'X',      // Cross бутон (долен)
@@ -218,24 +219,42 @@ function initMenu() {
       <div id="controlsList"></div>
       <button id="backToMainBtn">Back</button>
     </div>
+    <div id="skillTreeMenu" class="menu" style="display:none;">
+      <h2 id="skillTreeTitle">Дърво на уменията</h2>
+      <div id="skillPointsDisplay">Налични точки: 0</div>
+      <div id="skillTreeSplitContainer">
+        <div id="skillTreeLeftPanel">
+          <div id="skillGrid"></div>
+          <div id="skillCursor"></div>
+        </div>
+        <div id="skillTreeRightPanel">
+          <div id="skillDetails">
+          <div id="skillInfoContainer">
+              <div id="skillInfo">
+                <h3 id="skillInfoName">Изберете умение</h3>
+                <p id="skillInfoDescription">Използвайте стрелките за навигация</p>
+                <div id="skillRequirements">
+                  <div id="skillPrerequisites">Prerequisites: None</div>
+                  <div id="skillResourceCost">Resource Cost: None</div>
+                  <div id="skillPointCost">Skill Points: 0</div>
+                  <div id="skillStatus">Status: Select skill</div>
+                </div>
+              </div>
+            </div>
+            <button id="unlockSkillBtn" style="display:none;">Отключи умение</button>
+          </div>
+        </div>
+      </div>
+    </div>
   `;
   document.body.appendChild(menuDiv);
 
   // Event listeners
-  document.getElementById('changeControlsBtn').addEventListener('click', showControlsMenu);
-  document.getElementById('backToGameBtn').addEventListener('click', hideMenu);
-  document.getElementById('backToMainBtn').addEventListener('click', showMainMenu);
+  document.getElementById('changeControlsBtn').onclick = showControlsMenu;
+  document.getElementById('backToGameBtn').onclick = hideMenu;
+  document.getElementById('backToMainBtn').onclick = showMainMenu;
+  document.getElementById('unlockSkillBtn').onclick = handleUnlockClick; // Централизираме го тук
 
-  // Menu toggle
-  document.addEventListener('keydown', (e) => {
-    if (e.key === 'Escape' || e.key === 'm') {
-      if (menuActive) {
-        hideMenu();
-      } else {
-        showMenu();
-      }
-    }
-  });
 
   updateGamepadStatus();
 
@@ -278,8 +297,23 @@ function showMenu() {
 }
 
 function hideMenu() {
+  // Ако сме били в менюто с умения, извикай неговата функция за затваряне,
+  // за да се почистят event listener-ите.
+  if (currentMenu === 'skills') {
+    hideSkillTree();
+    return; // hideSkillTree() ще се погрижи за останалото.
+  }
+
   menuActive = false;
   document.getElementById('gameMenu').style.display = 'none';
+  document.getElementById('mainMenu').style.display = 'none';
+  document.getElementById('controlsMenu').style.display = 'none';
+  document.getElementById('skillTreeMenu').style.display = 'none';
+
+  // Нулираме състоянието
+  currentMenu = 'main';
+  currentSkillTreePlayer = null;
+  cleanupSkillTreeInput(); // Почистваме за всеки случай
 }
 
 function showMainMenu() {
@@ -537,3 +571,329 @@ function startRebinding(player, action) {
 
 // Make functions global for onclick
 window.startRebinding = startRebinding;
+
+// Skill Tree Navigation Variables
+let skillCursorRow = 0;
+let skillCursorCol = 0;
+let skillIcons = {}; // Cache for loaded icons
+
+// Skill grid layout: 2 columns x 3 rows
+const SKILL_GRID_LAYOUT = [
+  [SKILL_TYPES.BASIC_ATTACK_LIGHT, SKILL_TYPES.SECONDARY_ATTACK_LIGHT],
+  [SKILL_TYPES.BASIC_ATTACK_MEDIUM, SKILL_TYPES.SECONDARY_ATTACK_MEDIUM],
+  [SKILL_TYPES.BASIC_ATTACK_HEAVY, SKILL_TYPES.SECONDARY_ATTACK_HEAVY]
+];
+
+// Skill Tree Functions
+function showSkillTreeForPlayer(playerIndex) {
+  console.log(`[SKILL TREE] Attempting to show for player ${playerIndex + 1} (index: ${playerIndex})`);
+  if (playerIndex < 0 || playerIndex >= window.players.length) {
+    console.log(`[SKILL TREE] Invalid player index: ${playerIndex}`);
+    return;
+  }
+
+  currentSkillTreePlayer = playerIndex;
+  const player = window.players[playerIndex];
+  console.log(`[SKILL TREE] Setting currentSkillTreePlayer to index ${playerIndex}`);
+
+  // Reset cursor to top-left
+  skillCursorRow = 0;
+  skillCursorCol = 0;
+
+  // Update title
+  const titleEl = document.getElementById('skillTreeTitle');
+  titleEl.textContent = `Дърво на уменията - Играч ${playerIndex + 1}`;
+
+  // Update skill points
+  const pointsEl = document.getElementById('skillPointsDisplay');
+  pointsEl.textContent = `Налични точки: ${player.skillPoints}`;
+
+  // Render skill tree
+  console.log(`[SKILL TREE] Rendering skill tree for player ${playerIndex + 1}`);
+  renderSkillTree(player);
+
+  // Show skill tree menu
+  console.log(`[SKILL TREE] Setting menu states: menuActive=true, currentMenu='skills'`);
+  menuActive = true;
+  currentMenu = 'skills';
+  document.getElementById('gameMenu').style.display = 'flex';
+  document.getElementById('skillTreeMenu').style.display = 'block';
+  document.getElementById('mainMenu').style.display = 'none';
+  document.getElementById('controlsMenu').style.display = 'none';
+
+  // Update cursor position after menu is shown (CSS layout applied)
+  setTimeout(() => {
+    updateCursorPosition();
+  }, 0);
+
+  // Set up input handling for skill tree navigation
+  console.log(`[SKILL TREE] Setting up input handling`);
+  cleanupSkillTreeInput(); // Почистваме стари listener-и преди да добавим нови
+  setupSkillTreeInput();
+
+  console.log(`[SKILL TREE] Show completed successfully`);
+}
+
+function hideSkillTree() {
+  console.log(`[SKILL TREE] Hiding skill tree (was for player index: ${currentSkillTreePlayer})`);
+  currentSkillTreePlayer = null;
+  menuActive = false;
+  currentMenu = 'main';
+  document.getElementById('gameMenu').style.display = 'none';
+  document.getElementById('skillTreeMenu').style.display = 'none';
+  console.log(`[SKILL TREE] Hide completed`);
+}
+
+function renderSkillTree(player) {
+  try {
+    console.log('Rendering skill tree...');
+    const gridEl = document.getElementById('skillGrid');
+    if (!gridEl) {
+      console.error('skillGrid element not found!');
+      return;
+    }
+
+    gridEl.innerHTML = '';
+
+    // Create skill icons in grid
+    for (let row = 0; row < SKILL_GRID_LAYOUT.length; row++) {
+      for (let col = 0; col < SKILL_GRID_LAYOUT[row].length; col++) {
+        const skillType = SKILL_GRID_LAYOUT[row][col];
+        const skillInfo = SKILL_TREE[skillType];
+
+        const skillIcon = document.createElement('div');
+        skillIcon.className = 'skill-icon';
+        skillIcon.dataset.skillType = skillType;
+        skillIcon.dataset.row = row;
+        skillIcon.dataset.col = col;
+
+        // Determine icon state
+        if (player.unlockedSkills.has(skillType)) {
+          skillIcon.classList.add('unlocked');
+        } else if (window.skillTreeManager.canUnlockSkill(player, skillType)) {
+          skillIcon.classList.add('available');
+        } else {
+          skillIcon.classList.add('locked');
+        }
+
+        // Load and display icon
+        loadSkillIconForElement(skillIcon, row, col);
+
+        gridEl.appendChild(skillIcon);
+      }
+    }
+
+    // Update selected skill info
+    updateSelectedSkillInfo();
+
+    console.log('Skill tree rendered successfully');
+  } catch (error) {
+    console.error('Error in renderSkillTree:', error);
+  }
+}
+
+function loadSkillIconForElement(element, row, col) {
+  // Get the skill type for this grid position
+  const skillType = SKILL_GRID_LAYOUT[row][col];
+  const skillInfo = SKILL_TREE[skillType];
+
+  // Use CSS clipping to show the correct icon from sprite sheet
+  const { x, y } = getIconPosition(skillInfo.iconRow, skillInfo.iconCol);
+
+  element.innerHTML = `<img src="Assets/Swordsman-Skill-Icons.webp"
+    style="
+      width: 100%;
+      height: 100%;
+      object-fit: none;
+      object-position: -${x}px -${y}px;
+      border-radius: 6px;
+    "
+    onerror="this.style.display='none'; this.nextSibling.style.display='block';"
+  ><div style="display:none; font-size:10px; text-align:center; color:yellow; line-height:64px;">${skillInfo.iconRow}-${skillInfo.iconCol}</div>`;
+}
+
+function updateCursorPosition() {
+  const cursorEl = document.getElementById('skillCursor');
+  const leftPanelEl = document.getElementById('skillTreeLeftPanel');
+
+  // Find the currently selected skill icon
+  const selectedIcon = document.querySelector(`.skill-icon[data-row="${skillCursorRow}"][data-col="${skillCursorCol}"]`);
+
+  if (selectedIcon) {
+    // Get positions relative to the left panel
+    const iconRect = selectedIcon.getBoundingClientRect();
+    const panelRect = leftPanelEl.getBoundingClientRect();
+
+    // Calculate cursor position to center it over the icon
+    const iconCenterX = iconRect.left + iconRect.width / 2 - panelRect.left;
+    const iconCenterY = iconRect.top + iconRect.height / 2 - panelRect.top;
+
+    // Position cursor so its center aligns with icon center
+    const cursorX = iconCenterX - 39.3; // 70px cursor width / 2
+    const cursorY = iconCenterY - 39.3; // 70px cursor height / 2
+
+    cursorEl.style.left = `${cursorX}px`;
+    cursorEl.style.top = `${cursorY}px`;
+  }
+
+  // Update selected class on skill icons
+  document.querySelectorAll('.skill-icon').forEach(icon => {
+    const row = parseInt(icon.dataset.row);
+    const col = parseInt(icon.dataset.col);
+    if (row === skillCursorRow && col === skillCursorCol) {
+      icon.classList.add('selected');
+    } else {
+      icon.classList.remove('selected');
+    }
+  });
+}
+
+function updateSelectedSkillInfo() {
+  if (currentSkillTreePlayer === null) return;
+
+  const player = window.players[currentSkillTreePlayer];
+  const skillType = SKILL_GRID_LAYOUT[skillCursorRow][skillCursorCol];
+  const skillInfo = SKILL_TREE[skillType];
+
+  // Update skill info
+  document.getElementById('skillInfoName').textContent = skillInfo.name;
+  document.getElementById('skillInfoDescription').textContent = skillInfo.description;
+
+  // Update requirements
+  const prereqText = skillInfo.prerequisites.length > 0
+    ? skillInfo.prerequisites.map(p => SKILL_TREE[p].name).join(', ')
+    : 'Няма';
+  document.getElementById('skillPrerequisites').textContent = `Prerequisites: ${prereqText}`;
+
+  document.getElementById('skillResourceCost').textContent = `Resource Cost: ${getResourceDisplay(skillInfo)}`;
+  document.getElementById('skillPointCost').textContent = `Skill Points: ${skillInfo.skillPointsCost}`;
+
+  // Update status
+  let statusText = 'Status: ';
+  if (player.unlockedSkills.has(skillType)) {
+    statusText += 'Unlocked';
+  } else if (window.skillTreeManager.canUnlockSkill(player, skillType)) {
+    statusText += 'Available';
+  } else {
+    statusText += 'Locked';
+  }
+  document.getElementById('skillStatus').textContent = statusText;
+
+  // Update unlock button
+  const unlockBtn = document.getElementById('unlockSkillBtn');
+  const canUnlock = window.skillTreeManager.canUnlockSkill(player, skillType);
+  unlockBtn.style.display = canUnlock ? 'block' : 'none';
+  unlockBtn.disabled = !canUnlock;
+}
+
+function getResourceDisplay(skillInfo) {
+  if (skillInfo.resourceType === RESOURCE_TYPES.NONE) {
+    return 'None';
+  } else if (skillInfo.resourceType === RESOURCE_TYPES.MANA) {
+    return `${skillInfo.resourceCost} Mana`;
+  } else if (skillInfo.resourceType === RESOURCE_TYPES.ENERGY) {
+    return `${skillInfo.resourceCost} Energy`;
+  }
+  return 'Unknown';
+}
+
+function moveCursor(direction) {
+  switch (direction) {
+    case 'up':
+      skillCursorRow = Math.max(0, skillCursorRow - 1);
+      break;
+    case 'down':
+      skillCursorRow = Math.min(SKILL_GRID_LAYOUT.length - 1, skillCursorRow + 1);
+      break;
+    case 'left':
+      skillCursorCol = Math.max(0, skillCursorCol - 1);
+      break;
+    case 'right':
+      skillCursorCol = Math.min(SKILL_GRID_LAYOUT[0].length - 1, skillCursorCol + 1);
+      break;
+  }
+
+  updateCursorPosition();
+  updateSelectedSkillInfo();
+}
+
+function setupSkillTreeInput() {
+  // Add event listeners for skill tree navigation
+  document.addEventListener('keydown', handleSkillTreeKeyDown);
+}
+
+function cleanupSkillTreeInput() {
+  document.removeEventListener('keydown', handleSkillTreeKeyDown);
+}
+
+function handleSkillTreeKeyDown(e) {
+  if (currentMenu !== 'skills') return;
+
+  switch (e.key) {
+    case 'ArrowUp':
+    case 'w':
+    case 'W':
+      e.preventDefault();
+      moveCursor('up');
+      break;
+    case 'ArrowDown':
+    case 's':
+    case 'S':
+      e.preventDefault();
+      moveCursor('down');
+      break;
+    case 'ArrowLeft':
+    case 'a':
+    case 'A':
+      e.preventDefault();
+      moveCursor('left');
+      break;
+    case 'ArrowRight':
+    case 'd':
+    case 'D':
+      e.preventDefault();
+      moveCursor('right');
+      break;
+    case 'Enter':
+    case ' ':
+      e.preventDefault();
+      tryUnlockSelectedSkill();
+      break;
+  }
+}
+
+function handleUnlockClick() {
+  tryUnlockSelectedSkill();
+}
+
+function tryUnlockSelectedSkill() {
+  if (currentSkillTreePlayer === null) return;
+
+  const player = window.players[currentSkillTreePlayer];
+  const skillType = SKILL_GRID_LAYOUT[skillCursorRow][skillCursorCol];
+
+  if (window.skillTreeManager.unlockSkill(player, skillType)) {
+    console.log(`Player ${currentSkillTreePlayer + 1} unlocked skill: ${SKILL_TREE[skillType].name}`);
+
+    // Update UI
+    const pointsEl = document.getElementById('skillPointsDisplay');
+    pointsEl.textContent = `Налични точки: ${player.skillPoints}`;
+
+    // Refresh skill tree
+    renderSkillTree(player);
+  }
+}
+
+// Глобална функция за превключване на главното меню
+function toggleMenu() {
+  if (menuActive) {
+    hideMenu();
+  } else {
+    showMenu();
+  }
+}
+
+// Make skill tree functions global
+window.showSkillTreeForPlayer = showSkillTreeForPlayer;
+window.hideSkillTree = hideSkillTree;
+window.toggleMenu = toggleMenu;

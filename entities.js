@@ -30,17 +30,34 @@ class Player {
     this.maxMana = 30;
     this.mana = this.maxMana;
 
+    // Skill Tree System
+    this.skillPoints = 0;  // Available skill points for unlocking skills
+    this.unlockedSkills = new Set([
+      SKILL_TYPES.BASIC_ATTACK_LIGHT,
+      SKILL_TYPES.SECONDARY_ATTACK_LIGHT
+    ]); // Skills that are unlocked and can be used
+
     this.hit = false;
   }
 
   // Проверка дали може да се изпълни дадено действие
   canPerformAction(actionType) {
-    return this.cooldownTimers[actionType] <= 0 && !this.currentAction;
+    // First check cooldowns and current action
+    const baseCheck = this.cooldownTimers[actionType] <= 0 && !this.currentAction;
+
+    // Then check skill and resources
+    const skillCheck = window.skillTreeManager.canPerformActionWithResources(this, actionType);
+
+    return baseCheck && skillCheck;
   }
 
   // Започване на действие
   startAction(actionType) {
     if (this.canPerformAction(actionType)) {
+      // Consume resources before starting action
+      const resourcesConsumed = window.skillTreeManager.consumeResources(this, actionType);
+      if (!resourcesConsumed) return false;
+
       this.currentAction = actionType;
       this.executionTimer = EXECUTION_TIMERS[actionType];
       this.cooldownTimers[actionType] = COOLDOWN_TIMERS[actionType];

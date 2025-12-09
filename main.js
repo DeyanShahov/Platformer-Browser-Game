@@ -476,7 +476,12 @@ function initGameWithSelections() {
 
     if (window.controls[playerKey]) {
       const x = 100 + (index * 100);
-      players.push(new Player(window.controls[playerKey], x, CANVAS_HEIGHT - 100, char.position, char.color));
+      const player = new Player(window.controls[playerKey], x, CANVAS_HEIGHT - 100, char.position, char.color);
+
+      // Give some skill points for testing (remove in production)
+      player.skillPoints = 5;
+
+      players.push(player);
     }
   });
 

@@ -170,4 +170,225 @@ canvas {
   color: #ccc;
 }
 
+/* Skill Tree Menu */
+#skillTreeMenu {
+  background: #1a1a1a;
+  border: 2px solid #444;
+  border-radius: 10px;
+  width: 90%;
+  max-width: 1200px;
+  height: 80%;
+  max-height: 600px;
+  padding: 20px;
+  box-sizing: border-box;
+  color: white;
+  overflow-y: auto;
+}
+
+/* Skill Tree Styles */
+#skillTreeSplitContainer {
+  display: flex;
+  width: 100%;
+  height: 500px;
+  margin: 20px 0;
+  gap: 20px;
+}
+
+#skillTreeLeftPanel {
+  flex: 1;
+  background: #1a1a1a;
+  border: 2px solid #444;
+  border-radius: 10px;
+  position: relative;
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+#skillTreeRightPanel {
+  flex: 1;
+  background: #1a1a1a;
+  border: 2px solid #444;
+  border-radius: 10px;
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+}
+
+#skillGrid {
+  display: grid;
+  grid-template-columns: repeat(2, 64px);
+  grid-template-rows: repeat(3, 64px);
+  gap: 15px;
+  justify-content: center;
+  width: fit-content;
+}
+
+.skill-icon {
+  width: 64px;
+  height: 64px;
+  background: #333;
+  border: 2px solid #666;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.2s;
+  position: relative;
+  overflow: hidden; /* Ensure canvas doesn't overflow */
+}
+
+.skill-icon.unlocked {
+  background: linear-gradient(135deg, #00aa00, #008800);
+  border: 2px solid #00ff00;
+  box-shadow: 0 0 10px rgba(0, 255, 0, 0.3);
+}
+
+.skill-icon.available {
+  background: linear-gradient(135deg, #4444ff, #2222aa);
+  border: 2px solid #8888ff;
+  box-shadow: 0 0 10px rgba(68, 68, 255, 0.3);
+}
+
+.skill-icon.available:hover {
+  /* transform: scale(1.1); */
+}
+
+.skill-icon.locked {
+  background: linear-gradient(135deg, #444444, #222222);
+  border: 2px solid #666666;
+  opacity: 0.5;
+}
+
+.skill-icon.selected {
+  box-shadow: 0 0 15px rgba(255, 255, 0, 0.8);
+  border: 3px solid #ffff00;
+}
+
+#skillCursor {
+  position: absolute;
+  width: 70px;
+  height: 70px;
+  border: 3px solid #ffff00;
+  border-radius: 10px;
+  pointer-events: none;
+  transition: all 0.2s ease;
+  box-shadow: 0 0 10px rgba(255, 255, 0, 0.5);
+  z-index: 10;
+  background: rgba(255, 255, 0, 0.1);
+}
+
+#skillDetails {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+}
+
+#skillInfoContainer {
+  margin-bottom: 20px;
+  flex: 1;
+}
+
+#skillInfo {
+  flex: 1;
+}
+
+#skillInfo h3 {
+  margin: 0 0 10px 0;
+  color: #fff;
+  font-size: 18px;
+}
+
+#skillInfo p {
+  margin: 0 0 15px 0;
+  color: #ccc;
+  line-height: 1.4;
+}
+
+#skillRequirements {
+  background: #222;
+  padding: 15px;
+  border-radius: 8px;
+  border: 1px solid #444;
+}
+
+#skillRequirements div {
+  margin-bottom: 8px;
+  color: #fff;
+  font-size: 14px;
+}
+
+#skillRequirements div:last-child {
+  margin-bottom: 0;
+}
+
+#unlockSkillBtn {
+  align-self: flex-start;
+  padding: 10px 20px;
+  background: #444;
+  color: white;
+  border: none;
+  border-radius: 5px;
+  cursor: pointer;
+  font-size: 16px;
+}
+
+#unlockSkillBtn:hover:not(:disabled) {
+  background: #666;
+}
+
+#unlockSkillBtn:disabled {
+  background: #333;
+  color: #666;
+  cursor: not-allowed;
+}
+
+.skill-node.unlocked {
+  background: linear-gradient(135deg, #00aa00, #008800);
+  border: 2px solid #00ff00;
+  color: white;
+  box-shadow: 0 0 10px rgba(0, 255, 0, 0.3);
+}
+
+.skill-node.available {
+  background: linear-gradient(135deg, #4444ff, #2222aa);
+  border: 2px solid #8888ff;
+  color: white;
+  box-shadow: 0 0 10px rgba(68, 68, 255, 0.3);
+}
+
+.skill-node.available:hover {
+  background: linear-gradient(135deg, #6666ff, #4444cc);
+  transform: scale(1.05);
+}
+
+.skill-node.locked {
+  background: linear-gradient(135deg, #444444, #222222);
+  border: 2px solid #666666;
+  color: #aaaaaa;
+  opacity: 0.7;
+}
+
+.skill-name {
+  font-weight: bold;
+  margin-bottom: 2px;
+}
+
+.skill-cost {
+  font-size: 10px;
+  margin-bottom: 1px;
+}
+
+.skill-resource {
+  font-size: 10px;
+  color: #ffaa00;
+}
+
+.skill-connection {
+  position: absolute;
+  background: #666;
+  height: 2px;
+  transform-origin: 0 0;
+  pointer-events: none;
+}
+
 /* Future styles can be added here */
