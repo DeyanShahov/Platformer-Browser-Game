@@ -1,5 +1,15 @@
 // Game logic and loop
 function updatePlayer(player, playerIndex, dt) {
+  console.log('[UPDATE_PLAYER] Called with player:', player, 'index:', playerIndex, 'type:', typeof player);
+
+  // Safety check for undefined/null players
+  if (!player || typeof player !== 'object') {
+    console.warn('[UPDATE_PLAYER] Invalid player, returning early');
+    return;
+  }
+
+  console.log('[UPDATE_PLAYER] Player properties - currentAction:', player.currentAction, 'controls:', !!player.controls);
+
   player.vx = 0;
   player.vz = 0;
 
@@ -22,39 +32,39 @@ function updatePlayer(player, playerIndex, dt) {
   if (player.currentAction && isAttackAction(player.currentAction)) {
     // Only check for damage if we haven't dealt damage for this attack yet
     if (!player.damageDealt) {
-      const hit = checkHitboxCollision(player, enemy, {
+      const hit = checkHitboxCollision(player, window.enemy, {
         zTolerance: 20,
         zThickness: 40
       });
 
       if (hit) {
         // Use combat system to calculate and apply damage
-        const combatEvent = window.combatResolver.resolveAttack(player, enemy, player.currentAction);
+        const combatEvent = window.combatResolver.resolveAttack(player, window.enemy, player.currentAction);
 
         // Add damage number for visual feedback
         if (combatEvent && combatEvent.actualDamage > 0) {
-          const damageX = enemy.x + enemy.w / 2;
-          const damageY = enemy.y - 10;
+          const damageX = window.enemy.x + window.enemy.w / 2;
+          const damageY = window.enemy.y - 10;
           window.damageNumberManager.addDamageNumber(damageX, damageY, combatEvent.actualDamage, combatEvent.damageResult.isCritical);
         }
 
         // Mark damage as dealt for this attack and set visual hit flag
         player.damageDealt = true;
-        enemy.hit = true;
+        window.enemy.hit = true;
       }
     }
   }
 
   // Проверка дали играчът е ударен от врага
-  if (!player.hit && enemy.currentAction && isAttackAction(enemy.currentAction)) {
-    const hit = checkHitboxCollision(enemy, player, {
+  if (!player.hit && window.enemy && window.enemy.currentAction && isAttackAction(window.enemy.currentAction)) {
+    const hit = checkHitboxCollision(window.enemy, player, {
       zTolerance: 20,
       zThickness: 40
     });
 
     if (hit) {
       // Use combat system to calculate and apply damage
-      const combatEvent = window.combatResolver.resolveAttack(enemy, player, enemy.currentAction);
+      const combatEvent = window.combatResolver.resolveAttack(window.enemy, player, window.enemy.currentAction);
 
       // Add damage number for visual feedback
       if (combatEvent && combatEvent.actualDamage > 0) {
@@ -485,53 +495,68 @@ function update(dt) {
   handleSkillTreeKeys();
   handleCharacterStatsKeys();
 
+  console.log('[UPDATE] Starting update, menuActive:', menuActive, 'players:', players, 'window.players:', window.players);
+
   // Ако имаме активно меню, не ъпдейтвай играчите и враговете.
   // Това ефективно "паузира" играта.
   if (!menuActive) {
-    players.forEach((player, index) => updatePlayer(player, index, dt));
+    console.log('[UPDATE] Processing players:', players.length, 'players');
+    players.forEach((player, index) => {
+      console.log(`[UPDATE] Processing player at index ${index}:`, player);
+      updatePlayer(player, index, dt);
+    });
     // Simple enemy AI - attack randomly
     updateEnemyAI(dt);
   }
 }
 
 function updateEnemyAI(dt) {
-  if (!enemy) return;
+  if (!window.enemy) return;
 
-  // Simple AI: randomly attack every few seconds
-  if (Math.random() < 0.01) { // 1% chance per frame to attack
-    if (!enemy.currentAction) {
-      const attackTypes = [
-        ACTION_TYPES.BASIC_ATTACK_LIGHT,
-        ACTION_TYPES.BASIC_ATTACK_MEDIUM,
-        ACTION_TYPES.BASIC_ATTACK_HEAVY,
-        ACTION_TYPES.SECONDARY_ATTACK_LIGHT,
-        ACTION_TYPES.SECONDARY_ATTACK_MEDIUM,
-        ACTION_TYPES.SECONDARY_ATTACK_HEAVY
-      ];
-      const randomAttack = attackTypes[Math.floor(Math.random() * attackTypes.length)];
-      enemy.currentAction = randomAttack;
-      enemy.executionTimer = EXECUTION_TIMERS[randomAttack] || 0.5;
-      console.log(`Enemy attacks with ${getActionDisplayName(randomAttack)}`);
-    }
+  // If enemy is dying, update death sequence instead of normal AI
+  if (window.enemy.isDying) {
+    const isDead = window.combatResolver.updateEnemyDeath(window.enemy, dt);
+    return; // Don't run normal AI while dying
   }
 
-  // Update enemy action timer
-  if (enemy.currentAction) {
-    if (enemy.executionTimer > 0) {
-      enemy.executionTimer -= dt;
-      if (enemy.executionTimer <= 0) {
-        enemy.currentAction = null;
-        enemy.executionTimer = 0;
+  // Normal AI only runs if enemy is alive and not dying
+  if (window.enemy.health > 0) {
+    // Simple AI: randomly attack every few seconds
+    if (Math.random() < 0.01) { // 1% chance per frame to attack
+      if (!window.enemy.currentAction) {
+        const attackTypes = [
+          ACTION_TYPES.BASIC_ATTACK_LIGHT,
+          ACTION_TYPES.BASIC_ATTACK_MEDIUM,
+          ACTION_TYPES.BASIC_ATTACK_HEAVY,
+          ACTION_TYPES.SECONDARY_ATTACK_LIGHT,
+          ACTION_TYPES.SECONDARY_ATTACK_MEDIUM,
+          ACTION_TYPES.SECONDARY_ATTACK_HEAVY
+        ];
+        const randomAttack = attackTypes[Math.floor(Math.random() * attackTypes.length)];
+        window.enemy.currentAction = randomAttack;
+        window.enemy.executionTimer = EXECUTION_TIMERS[randomAttack] || 0.5;
+        console.log(`Enemy attacks with ${getActionDisplayName(randomAttack)}`);
       }
-    } else {
-      enemy.currentAction = null;
-      enemy.executionTimer = 0;
+    }
+
+    // Update enemy action timer
+    if (window.enemy.currentAction) {
+      if (window.enemy.executionTimer > 0) {
+        window.enemy.executionTimer -= dt;
+        if (window.enemy.executionTimer <= 0) {
+          window.enemy.currentAction = null;
+          window.enemy.executionTimer = 0;
+        }
+      } else {
+        window.enemy.currentAction = null;
+        window.enemy.executionTimer = 0;
+      }
     }
   }
 
   // Reset hit flag after a short time
-  if (enemy.hit) {
-    enemy.hit = false;
+  if (window.enemy.hit) {
+    window.enemy.hit = false;
   }
 }
 

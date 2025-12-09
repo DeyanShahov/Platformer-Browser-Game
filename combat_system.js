@@ -139,6 +139,13 @@ class CombatResolver {
     // Apply damage to defender
     const actualDamage = this.applyDamage(defender, damageResult.damage);
 
+    // Check for enemy defeat
+    const defenderDied = defender.health <= 0;
+    if (defenderDied && defender === enemy && !defender.isDying) {
+      // Enemy was defeated - start death sequence instead of immediate removal
+      this.startEnemyDeathSequence(attacker, defender);
+    }
+
     // Create combat event
     const combatEvent = {
       timestamp: Date.now(),
@@ -147,7 +154,7 @@ class CombatResolver {
       skillType: skillType,
       damageResult: damageResult,
       actualDamage: actualDamage,
-      defenderDied: defender.health <= 0
+      defenderDied: defenderDied
     };
 
     // Log the event
@@ -156,6 +163,9 @@ class CombatResolver {
     // Console logging for debugging
     console.log(`[COMBAT] ${attacker.characterInfo?.getDisplayName() || 'Unknown'} attacked ${defender.characterInfo?.getDisplayName() || 'Unknown'} with ${skillType}`);
     console.log(`[COMBAT] Attack Power: ${damageResult.attackPower}, Defense: ${damageResult.defense}, Damage: ${actualDamage}${damageResult.isCritical ? ' (CRITICAL!)' : ''}`);
+    if (defenderDied) {
+      console.log(`[COMBAT] ${defender.characterInfo?.getDisplayName() || 'Enemy'} was defeated!`);
+    }
 
     return combatEvent;
   }
@@ -193,6 +203,107 @@ class CombatResolver {
   // Get recent combat events
   getRecentEvents(count = 10) {
     return this.combatLog.slice(-count);
+  }
+
+  // Handle enemy defeat
+  handleEnemyDefeat(attacker, defeatedEnemy) {
+    console.log(`[COMBAT] handleEnemyDefeat called with attacker:`, attacker, `defeatedEnemy:`, defeatedEnemy);
+    console.log(`[COMBAT] window.enemy before removal:`, window.enemy);
+    console.log(`[COMBAT] window.enemy === defeatedEnemy:`, window.enemy === defeatedEnemy);
+
+    console.log(`[COMBAT] Enemy defeated! ${attacker ? `Awarding experience to ${attacker.characterInfo?.getDisplayName() || 'Player'}` : 'Experience already awarded'}`);
+
+    // Award experience to the attacker (only if attacker is provided)
+    if (attacker && attacker.characterInfo) {
+      const experienceReward = 200; // 200 XP for enemy defeat
+      attacker.characterInfo.addExperience(experienceReward, attacker);
+      console.log(`[COMBAT] ${attacker.characterInfo.getDisplayName()} gained ${experienceReward} experience!`);
+    }
+
+    // Remove enemy from the game world
+    this.removeEnemyFromGame(defeatedEnemy);
+
+    // Trigger any post-defeat effects
+    this.onEnemyDefeated(attacker, defeatedEnemy);
+  }
+
+  // Remove enemy from the game
+  removeEnemyFromGame(defeatedEnemy) {
+    console.log(`[COMBAT] Removing enemy from game world...`);
+
+    // Set global enemy reference to null for respawn
+    if (window.enemy === defeatedEnemy) {
+      console.log(`[COMBAT] Setting window.enemy to null`);
+      window.enemy = null;
+    }
+
+    console.log(`[COMBAT] Enemy removal complete. Current enemy:`, window.enemy);
+  }
+
+  // Post-defeat effects and events
+  onEnemyDefeated(attacker, defeatedEnemy) {
+    // Future: trigger quest updates, loot drops, achievements, etc.
+    console.log(`[COMBAT] Enemy defeat processing complete`);
+
+    // For now, trigger respawn after a short delay
+    setTimeout(() => {
+      this.respawnEnemy();
+    }, 2000); // 2 second delay before respawn
+  }
+
+  // Respawn enemy (for testing purposes)
+  respawnEnemy() {
+    if (window.enemy === null) {
+      console.log(`[COMBAT] Respawning enemy...`);
+      // Use the new enemy creation system
+      window.enemy = window.createEnemyWithData('basic', 1);
+      console.log(`[COMBAT] Enemy respawned with ${window.enemy.health}/${window.enemy.maxHealth} HP`);
+    }
+  }
+
+  // Start enemy death sequence
+  startEnemyDeathSequence(attacker, defeatedEnemy) {
+    console.log(`[COMBAT] Starting enemy death sequence for ${defeatedEnemy.enemyData?.getDisplayName() || 'Enemy'}`);
+
+    // Set enemy to dying state
+    defeatedEnemy.isDying = true;
+    defeatedEnemy.deathTimer = 0;
+    defeatedEnemy.blinkCount = 0;
+    defeatedEnemy.visible = true;
+
+    // Award experience immediately
+    const experienceReward = 200; // 200 XP for enemy defeat
+    if (attacker.characterInfo) {
+      attacker.characterInfo.addExperience(experienceReward, attacker);
+      console.log(`[COMBAT] ${attacker.characterInfo.getDisplayName()} gained ${experienceReward} experience!`);
+    }
+  }
+
+  // Update enemy death sequence (called from game loop)
+  updateEnemyDeath(defeatedEnemy, dt) {
+    if (!defeatedEnemy.isDying) return false;
+
+    defeatedEnemy.deathTimer += dt;
+
+    // 3 blinks total, each blink is 0.5 seconds (0.25 visible, 0.25 invisible)
+    const blinkDuration = 0.5; // 0.5 seconds per blink
+    const totalDeathTime = blinkDuration * 3; // 1.5 seconds total
+
+    if (defeatedEnemy.deathTimer >= totalDeathTime && !defeatedEnemy.defeatHandled) {
+      // Death animation complete - remove enemy (only once)
+      defeatedEnemy.defeatHandled = true;
+      this.handleEnemyDefeat(null, defeatedEnemy); // Pass null for attacker since rewards already given
+      return true; // Enemy is dead and removed
+    }
+
+    // Calculate blink state
+    const currentBlink = Math.floor(defeatedEnemy.deathTimer / blinkDuration);
+    const timeInBlink = defeatedEnemy.deathTimer % blinkDuration;
+
+    // Alternate visibility every 0.25 seconds within each blink
+    defeatedEnemy.visible = (timeInBlink < 0.25);
+
+    return false; // Enemy still dying
   }
 
   // Placeholder for UI notifications

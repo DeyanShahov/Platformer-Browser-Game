@@ -50,18 +50,18 @@ class CharacterInfo {
   }
 
   // Add experience and check for level up
-  addExperience(amount) {
+  addExperience(amount, player = null) {
     this.experience += amount;
     console.log(`${this.getDisplayName()} получи ${amount} опит. Общо: ${this.experience}`);
 
     // Check for level up
     while (this.experience >= this.experienceToNext) {
-      this.levelUp();
+      this.levelUp(player);
     }
   }
 
   // Level up the character
-  levelUp() {
+  levelUp(player = null) {
     this.experience -= this.experienceToNext;
     this.level++;
     this.experienceToNext = this.calculateExperienceToNext();
@@ -73,6 +73,14 @@ class CharacterInfo {
 
     // Give 5 free points for manual distribution
     this.freePoints += 5;
+
+    // Restore all resources to 100% on level up
+    if (player) {
+      player.health = player.maxHealth;
+      player.mana = player.maxMana;
+      player.energy = player.maxEnergy;
+      console.log(`${this.getDisplayName()} - Ресурсите са възстановени до 100%!`);
+    }
 
     console.log(`${this.getDisplayName()} се изкачи до ниво ${this.level}!`);
     console.log(`Автоматично увеличение - Сила: ${this.strength}, Бързина: ${this.speed}, Интелект: ${this.intelligence}`);

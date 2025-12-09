@@ -136,4 +136,5 @@ function createEntity(x, y, z, w, h, color) {
 
 // Global entities
 window.players = [];
+console.log('[ENTITIES] window.players initialized:', window.players);
 let enemy, ally;

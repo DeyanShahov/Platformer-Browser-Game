@@ -470,14 +470,24 @@ function initGameWithSelections() {
     window.damageNumberManager.init(canvas);
   }
 
+  // Clear global arrays
+  window.players = [];
+
+  // Clear global arrays
+  window.players = [];
+  console.log('[MAIN] window.players cleared and set to:', window.players);
+
   // Create players based on confirmed selections (sorted by player ID for consistent ordering)
   const selectedChars = Object.keys(confirmedSelections).sort((a, b) =>
     confirmedSelections[a] - confirmedSelections[b]
   );
+  console.log('[MAIN] Creating players for selectedChars:', selectedChars);
   selectedChars.forEach((charId, index) => {
     const char = characters.find(c => c.id === charId);
     const playerId = confirmedSelections[charId];
     const playerKey = `player${playerId}`;
+
+    console.log(`[MAIN] Creating player ${playerId} with key ${playerKey}, controls exist:`, !!window.controls[playerKey]);
 
     if (window.controls[playerKey]) {
       const x = 100 + (index * 100);
@@ -486,26 +496,22 @@ function initGameWithSelections() {
       // Give some skill points for testing (remove in production)
       player.skillPoints = 5;
 
+      console.log(`[MAIN] Player ${playerId} created:`, player);
       players.push(player);
+      console.log(`[MAIN] players array after push:`, players);
+    } else {
+      console.warn(`No controls found for player ${playerId} (${playerKey})`);
     }
   });
+  console.log('[MAIN] Final players array:', players);
 
-  // Create NPCs
-  enemy = createEntity(450, CANVAS_HEIGHT - 100, 50, 60, 60, "#FF3020");
-  enemy.maxHealth = 200;
-  enemy.health = enemy.maxHealth;
-  enemy.currentAction = null;
-  enemy.executionTimer = 0;
-  enemy.hit = false;
+  // Create NPCs using the new enemy data system
+  window.enemy = createEnemyWithData('basic', 1); // Basic enemy, level 1
+  console.log('Enemy created for testing:', window.enemy);
 
-  // Add character info for combat system
-  enemy.characterInfo = new CharacterInfo('enemy');
-  enemy.characterInfo.baseAttack = 3; // Enemy has lower base attack
-  enemy.characterInfo.baseDefense = 1; // Enemy has lower base defense
-  enemy.characterInfo.strength = 5; // Enemy has some strength
-  enemy.characterInfo.criticalChance = 0.05; // 5% crit chance for enemy
+  window.ally = createEntity(520, CANVAS_HEIGHT - 100, 90, 50, 50, "#00FF00");
 
-  ally = createEntity(520, CANVAS_HEIGHT - 100, 90, 50, 50, "#00FF00");
+  // NPCs are now available as window.enemy and window.ally
 
   // Initialize menu
   initMenu();

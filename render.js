@@ -1,6 +1,33 @@
 // Rendering functions
+// Rendering functions
 function drawEntity(e) {
   const zOffset = e.z * 1.0;
+
+  // Debug logging for enemy rendering
+  if (e === window.enemy) {
+    console.log('[DRAW] Drawing enemy:', {
+      isDying: e.isDying,
+      visible: e.visible,
+      x: e.x,
+      y: e.y,
+      color: e.color,
+      zOffset: zOffset,
+      drawX: e.x,
+      drawY: e.y - e.h - zOffset,
+      drawW: e.w,
+      drawH: e.h,
+      willDraw: !(e.isDying && !e.visible)
+    });
+  }
+
+  // Handle death animation visibility
+  if (e.isDying && !e.visible) {
+    return; // Don't draw entity if it's dying and invisible
+  }
+
+  // Debug drawing removed - was causing duplicate red objects
+
+  // Draw the normal entity rectangle for all entities
   ctx.fillStyle = e.color;
   ctx.fillRect(e.x, e.y - e.h - zOffset, e.w, e.h);
 
@@ -67,11 +94,63 @@ function render() {
   ctx.stroke();
 
   // Draw entities in Z order based on bottom position (lower effective Y = background, higher effective Y = foreground)
-  const entities = [...players, enemy, ally];
+  const rawEntities = [...players, window.enemy, window.ally];
+  const entities = rawEntities.filter(e => e !== null && e !== undefined); // Filter out null/undefined entities
+
+  // Debug logging for enemy status
+  if (window.enemy && window.enemy.isDying) {
+    console.log('[RENDER] Enemy dying status:', {
+      enemyExists: window.enemy !== null,
+      isDying: window.enemy.isDying,
+      deathTimer: window.enemy.deathTimer,
+      defeatHandled: window.enemy.defeatHandled,
+      visible: window.enemy.visible,
+      entitiesCount: entities.length,
+      enemyInEntities: entities.includes(window.enemy)
+    });
+  }
+
+  // Debug logging for enemy removal (only once per enemy defeat)
+  if (rawEntities.length !== entities.length && !window.enemyDefeatLogged) {
+    console.log('[RENDER] Enemy defeated and filtered from entities:', {
+      raw: rawEntities.map(e => e ? (e === window.enemy ? 'ENEMY' : e.characterInfo?.getDisplayName() || 'ALLY') : 'NULL'),
+      filtered: entities.map(e => e === window.enemy ? 'ENEMY' : e.characterInfo?.getDisplayName() || 'ALLY'),
+      enemyNull: window.enemy === null
+    });
+    window.enemyDefeatLogged = true;
+
+    // Reset flag after a short delay to allow for next enemy
+    setTimeout(() => {
+      window.enemyDefeatLogged = false;
+    }, 100);
+  }
+
   entities.sort((a, b) => (a.y - a.z) - (b.y - b.z)); // Sort by effective bottom Y ascending
   entities.forEach((entity, index) => {
     drawEntity(entity);
-    // Debug text
+
+    // Enemy info display (only for enemy entities that exist and have data)
+    if (entity === window.enemy && entity && entity.enemyData) {
+      const enemyInfo = entity.enemyData.getEnemyInfo();
+      const healthPercent = entity.maxHealth > 0 ? (entity.health / entity.maxHealth) * 100 : 0;
+      const healthStatus = entity.health <= 0 ? '[Мъртъв]' :
+                          healthPercent > 60 ? '[Жив]' :
+                          healthPercent > 30 ? '[Ранен]' : '[Критично]';
+
+      // Color based on health
+      const healthColor = entity.health <= 0 ? '#FF0000' :  // Dead - red
+                         healthPercent > 60 ? '#00FF00' :   // Healthy - green
+                         healthPercent > 30 ? '#FFFF00' :   // Wounded - yellow
+                         '#FF8800'; // Critical - orange
+
+      // Enemy info line
+      ctx.fillStyle = healthColor;
+      ctx.font = "14px Arial";
+      ctx.fillText(`${enemyInfo.displayName} (Lv.${enemyInfo.level}) - ${entity.health}/${entity.maxHealth} HP ${healthStatus}`,
+                   entity.x, entity.y - entity.h - entity.z - 40);
+    }
+
+    // Debug text (technical info - keep unchanged)
     ctx.fillStyle = "#FFFFFF";
     ctx.font = "12px Arial";
     const effectiveY = entity.y - entity.z;
