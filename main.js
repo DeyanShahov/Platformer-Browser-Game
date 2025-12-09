@@ -465,6 +465,11 @@ function initGameWithSelections() {
   const canvas = document.getElementById("game");
   ctx = canvas.getContext("2d");
 
+  // Initialize damage number manager
+  if (window.damageNumberManager) {
+    window.damageNumberManager.init(canvas);
+  }
+
   // Create players based on confirmed selections (sorted by player ID for consistent ordering)
   const selectedChars = Object.keys(confirmedSelections).sort((a, b) =>
     confirmedSelections[a] - confirmedSelections[b]
@@ -492,6 +497,13 @@ function initGameWithSelections() {
   enemy.currentAction = null;
   enemy.executionTimer = 0;
   enemy.hit = false;
+
+  // Add character info for combat system
+  enemy.characterInfo = new CharacterInfo('enemy');
+  enemy.characterInfo.baseAttack = 3; // Enemy has lower base attack
+  enemy.characterInfo.baseDefense = 1; // Enemy has lower base defense
+  enemy.characterInfo.strength = 5; // Enemy has some strength
+  enemy.characterInfo.criticalChance = 0.05; // 5% crit chance for enemy
 
   ally = createEntity(520, CANVAS_HEIGHT - 100, 90, 50, 50, "#00FF00");
 

@@ -26,7 +26,19 @@ function updatePlayer(player, playerIndex, dt) {
         zThickness: 40
       });
 
-      if (hit) enemy.hit = true;
+      if (hit) {
+        // Use combat system to calculate and apply damage
+        const combatEvent = window.combatResolver.resolveAttack(player, enemy, player.currentAction);
+
+        // Add damage number for visual feedback
+        if (combatEvent && combatEvent.actualDamage > 0) {
+          const damageX = enemy.x + enemy.w / 2;
+          const damageY = enemy.y - 10;
+          window.damageNumberManager.addDamageNumber(damageX, damageY, combatEvent.actualDamage, combatEvent.damageResult.isCritical);
+        }
+
+        enemy.hit = true;
+      }
     }
   }
 
@@ -38,10 +50,17 @@ function updatePlayer(player, playerIndex, dt) {
     });
 
     if (hit) {
+      // Use combat system to calculate and apply damage
+      const combatEvent = window.combatResolver.resolveAttack(enemy, player, enemy.currentAction);
+
+      // Add damage number for visual feedback
+      if (combatEvent && combatEvent.actualDamage > 0) {
+        const damageX = player.x + player.w / 2;
+        const damageY = player.y - 10;
+        window.damageNumberManager.addDamageNumber(damageX, damageY, combatEvent.actualDamage, combatEvent.damageResult.isCritical);
+      }
+
       player.hit = true;
-      // Нанасяне на щети
-      player.health = Math.max(0, player.health - 15);
-      console.log(`Player ${players.indexOf(player) + 1} took damage! HP: ${player.health}`);
 
       // Give experience for taking damage (for testing stats system)
       if (player.characterInfo) {
@@ -521,6 +540,11 @@ function loop(ts) {
 
   update(dt);
   render();
+
+  // Update damage numbers
+  if (window.damageNumberManager) {
+    window.damageNumberManager.update(dt);
+  }
 
   requestAnimationFrame(loop);
 }
