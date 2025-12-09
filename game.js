@@ -42,6 +42,12 @@ function updatePlayer(player, playerIndex, dt) {
       // Нанасяне на щети
       player.health = Math.max(0, player.health - 15);
       console.log(`Player ${players.indexOf(player) + 1} took damage! HP: ${player.health}`);
+
+      // Give experience for taking damage (for testing stats system)
+      if (player.characterInfo) {
+        player.characterInfo.addExperience(5);
+        console.log(`Player ${players.indexOf(player) + 1} gained 5 experience!`);
+      }
     }
   }
 }
@@ -96,7 +102,7 @@ function handleKeyboardInput(player) {
 // Skill Tree Key Handling (separate function to avoid cluttering player input)
 let lastSkillTreeToggleTime = 0; // Timestamp to prevent rapid toggling
 
-// Key press tracking variables
+// Key press tracking variables for skill trees
 let key5Pressed = false;
 let key5WasPressed = false;
 let key6Pressed = false;
@@ -105,6 +111,16 @@ let key7Pressed = false;
 let key7WasPressed = false;
 let key8Pressed = false;
 let key8WasPressed = false;
+
+// Key press tracking variables for character stats
+let key9Pressed = false;
+let key9WasPressed = false;
+let key0Pressed = false;
+let key0WasPressed = false;
+let keyMinusPressed = false;
+let keyMinusWasPressed = false;
+let keyEqualsPressed = false;
+let keyEqualsWasPressed = false;
 
 function handleSkillTreeKeys() {
   const now = performance.now();
@@ -377,9 +393,75 @@ function getButtonName(buttonIndex) {
   return buttonNames[buttonIndex] || `Button ${buttonIndex}`;
 }
 
+function handleCharacterStatsKeys() {
+  const now = performance.now();
+  if (now - lastSkillTreeToggleTime < 300) return; // 300ms debounce (reuse same timer)
+
+  // Player 1 character stats (key 9) - toggle player's own stats
+  key9Pressed = keys['9'];
+  if (key9Pressed && !key9WasPressed && players.length >= 1) { // Key just pressed
+    if (currentMenu === 'characterStats' && currentCharacterStatsPlayer === 0) {
+      // Close if player's own stats are open
+      hideCharacterStats();
+    } else if (!menuActive) {
+      // Open only if no menu is active
+      showCharacterStatsForPlayer(0);
+    }
+    // If another player's stats are open, do nothing
+    lastSkillTreeToggleTime = now;
+  }
+  key9WasPressed = key9Pressed;
+
+  // Player 2 character stats (key 0) - toggle player's own stats
+  key0Pressed = keys['0'];
+  if (key0Pressed && !key0WasPressed && players.length >= 2) {
+    if (currentMenu === 'characterStats' && currentCharacterStatsPlayer === 1) {
+      // Close if player's own stats are open
+      hideCharacterStats();
+    } else if (!menuActive) {
+      // Open only if no menu is active
+      showCharacterStatsForPlayer(1);
+    }
+    // If another player's stats are open, do nothing
+    lastSkillTreeToggleTime = now;
+  }
+  key0WasPressed = key0Pressed;
+
+  // Player 3 character stats (key -) - toggle player's own stats
+  keyMinusPressed = keys['-'];
+  if (keyMinusPressed && !keyMinusWasPressed && players.length >= 3) {
+    if (currentMenu === 'characterStats' && currentCharacterStatsPlayer === 2) {
+      // Close if player's own stats are open
+      hideCharacterStats();
+    } else if (!menuActive) {
+      // Open only if no menu is active
+      showCharacterStatsForPlayer(2);
+    }
+    // If another player's stats are open, do nothing
+    lastSkillTreeToggleTime = now;
+  }
+  keyMinusWasPressed = keyMinusPressed;
+
+  // Player 4 character stats (key =) - toggle player's own stats
+  keyEqualsPressed = keys['='];
+  if (keyEqualsPressed && !keyEqualsWasPressed && players.length >= 4) {
+    if (currentMenu === 'characterStats' && currentCharacterStatsPlayer === 3) {
+      // Close if player's own stats are open
+      hideCharacterStats();
+    } else if (!menuActive) {
+      // Open only if no menu is active
+      showCharacterStatsForPlayer(3);
+    }
+    // If another player's stats are open, do nothing
+    lastSkillTreeToggleTime = now;
+  }
+  keyEqualsWasPressed = keyEqualsPressed;
+}
+
 function update(dt) {
-  // Handle skill tree key inputs
+  // Handle skill tree and character stats key inputs
   handleSkillTreeKeys();
+  handleCharacterStatsKeys();
 
   // Ако имаме активно меню, не ъпдейтвай играчите и враговете.
   // Това ефективно "паузира" играта.

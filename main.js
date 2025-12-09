@@ -4,10 +4,10 @@ let gameState = 'start'; // 'start', 'playing'
 
 // Character definitions
 const characters = [
-  { id: 'blue', name: 'Hero 1', color: '#3AA0FF', position: 0 },
-  { id: 'orange', name: 'Hero 2', color: '#FFA500', position: 30 },
-  { id: 'green', name: 'Hero 3', color: '#00FF00', position: 60 },
-  { id: 'red', name: 'Hero 4', color: '#FF0000', position: 90 }
+  { id: 'blue', name: 'Син герой', color: '#3AA0FF', position: 0 },
+  { id: 'orange', name: 'Оранжев герой', color: '#FFA500', position: 30 },
+  { id: 'green', name: 'Зелен герой', color: '#00FF00', position: 60 },
+  { id: 'red', name: 'Червен герой', color: '#FF0000', position: 90 }
 ];
 
 // Player selections and active players
@@ -476,7 +476,7 @@ function initGameWithSelections() {
 
     if (window.controls[playerKey]) {
       const x = 100 + (index * 100);
-      const player = new Player(window.controls[playerKey], x, CANVAS_HEIGHT - 100, char.position, char.color);
+      const player = new Player(window.controls[playerKey], x, CANVAS_HEIGHT - 100, char.position, char.color, char.id);
 
       // Give some skill points for testing (remove in production)
       player.skillPoints = 5;

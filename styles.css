@@ -391,4 +391,411 @@ canvas {
   pointer-events: none;
 }
 
+/* Character Stats Menu */
+#characterStatsMenu {
+  background: #1a1a1a;
+  border: 2px solid #444;
+  border-radius: 10px;
+  width: 90%;
+  max-width: 1000px;
+  height: 80%;
+  max-height: 600px;
+  padding: 20px;
+  box-sizing: border-box;
+  color: white;
+  overflow-y: auto;
+  display: none;
+}
+
+#characterStatsContainer {
+  width: 100%;
+  height: 100%;
+}
+
+#characterStatsTitle {
+  text-align: center;
+  margin-bottom: 20px;
+  font-size: 24px;
+  color: #fff;
+}
+
+#characterStatsContent {
+  display: flex;
+  gap: 30px;
+  height: calc(100% - 60px);
+}
+
+#characterPortraitSection {
+  flex: 0 0 200px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+}
+
+#characterLargePortrait {
+  width: 120px;
+  height: 120px;
+  border-radius: 10px;
+  border: 3px solid #fff;
+  margin-bottom: 20px;
+}
+
+#characterName {
+  font-size: 20px;
+  font-weight: bold;
+  color: #fff;
+  text-align: center;
+}
+
+#characterStatsSection {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+#characterBasicStats {
+  flex: 1;
+}
+
+.stat-row {
+  display: flex;
+  align-items: center;
+  margin-bottom: 15px;
+  font-size: 16px;
+}
+
+.stat-label {
+  width: 80px;
+  color: #ccc;
+  font-weight: bold;
+}
+
+.stat-bar {
+  flex: 1;
+  height: 20px;
+  background: #333;
+  border: 1px solid #666;
+  border-radius: 10px;
+  overflow: hidden;
+  position: relative;
+}
+
+.stat-bar-fill {
+  height: 100%;
+  border-radius: 10px;
+  transition: width 0.3s ease;
+}
+
+.health-fill {
+  background: linear-gradient(90deg, #ff4444, #ff8888);
+  box-shadow: 0 0 5px rgba(255, 68, 68, 0.5);
+}
+
+.mana-fill {
+  background: linear-gradient(90deg, #4444ff, #8888ff);
+  box-shadow: 0 0 5px rgba(68, 68, 255, 0.5);
+}
+
+.energy-fill {
+  background: linear-gradient(90deg, #44ff44, #88ff88);
+  box-shadow: 0 0 5px rgba(68, 255, 68, 0.5);
+}
+
+.experience-fill {
+  background: linear-gradient(90deg, #ffff44, #ffff88);
+  box-shadow: 0 0 5px rgba(255, 255, 68, 0.5);
+}
+
+.stat-bar span {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 12px;
+  font-weight: bold;
+  color: #fff;
+  text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.8);
+}
+
+#characterAttributes {
+  background: #222;
+  padding: 20px;
+  border-radius: 8px;
+  border: 1px solid #444;
+}
+
+#characterStatsFreePoints {
+  text-align: center;
+  margin: 15px 0;
+  padding: 10px;
+  background: #222;
+  border-radius: 8px;
+  border: 1px solid #444;
+}
+
+#freePointsDisplay {
+  color: #fff;
+  font-size: 16px;
+  font-weight: bold;
+}
+
+#freePointsValue {
+  color: #ffff00;
+  font-size: 18px;
+}
+
+#characterAttributes h3 {
+  margin: 0 0 15px 0;
+  color: #fff;
+  font-size: 18px;
+  text-align: center;
+}
+
+.attribute-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 10px;
+  padding: 8px 0;
+  border-bottom: 1px solid #333;
+}
+
+.attribute-row:last-child {
+  border-bottom: none;
+  margin-bottom: 0;
+}
+
+.attribute-label {
+  color: #ccc;
+  font-weight: bold;
+  font-size: 16px;
+  min-width: 80px;
+}
+
+#strengthValue,
+#speedValue,
+#intelligenceValue {
+  color: #fff;
+  font-size: 18px;
+  font-weight: bold;
+  min-width: 30px;
+  text-align: right;
+  margin-right: 10px;
+}
+
+.stat-btn {
+  width: 30px;
+  height: 30px;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 16px;
+  font-weight: bold;
+  transition: all 0.2s;
+  margin: 0 2px;
+}
+
+.stat-increase {
+  background: #4CAF50;
+  color: white;
+}
+
+.stat-increase:hover:not(:disabled) {
+  background: #45a049;
+  transform: scale(1.1);
+}
+
+.stat-decrease {
+  background: #f44336;
+  color: white;
+}
+
+.stat-decrease:hover:not(:disabled) {
+  background: #da190b;
+  transform: scale(1.1);
+}
+
+.stat-btn:disabled {
+  background: #666;
+  cursor: not-allowed;
+  opacity: 0.5;
+}
+
+#characterCombatStats {
+  background: #222;
+  padding: 20px;
+  border-radius: 8px;
+  border: 1px solid #444;
+  margin-bottom: 15px;
+}
+
+#characterCombatStats h3 {
+  margin: 0 0 15px 0;
+  color: #fff;
+  font-size: 18px;
+  text-align: center;
+}
+
+#characterCombatStats .attribute-row {
+  border-bottom: 1px solid #333;
+}
+
+#characterCombatStats .attribute-row:last-child {
+  border-bottom: none;
+}
+
+#characterMagicResistances {
+  background: #222;
+  padding: 20px;
+  border-radius: 8px;
+  border: 1px solid #444;
+}
+
+#characterMagicResistances h3 {
+  margin: 0 0 15px 0;
+  color: #fff;
+  font-size: 18px;
+  text-align: center;
+}
+
+.resistance-row {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 10px;
+}
+
+.resistance-row:last-child {
+  margin-bottom: 0;
+}
+
+.resistance-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  width: 48%;
+  padding: 8px 12px;
+  background: #333;
+  border-radius: 6px;
+  border: 1px solid #555;
+}
+
+.resistance-label {
+  color: #ccc;
+  font-weight: bold;
+  font-size: 14px;
+}
+
+#waterResistanceValue,
+#fireResistanceValue,
+#airResistanceValue,
+#earthResistanceValue {
+  color: #fff;
+  font-size: 16px;
+  font-weight: bold;
+}
+
+#characterSkills {
+  background: #222;
+  padding: 20px;
+  border-radius: 8px;
+  border: 1px solid #444;
+}
+
+#characterSkills h3 {
+  margin: 0 0 15px 0;
+  color: #fff;
+  font-size: 18px;
+  text-align: center;
+}
+
+#skillsList {
+  display: flex;
+  gap: 30px;
+}
+
+.skill-category {
+  flex: 1;
+}
+
+.skill-category h4 {
+  margin: 0 0 10px 0;
+  color: #ccc;
+  font-size: 16px;
+  font-weight: bold;
+  border-bottom: 1px solid #444;
+  padding-bottom: 5px;
+}
+
+.skill-item {
+  display: flex;
+  align-items: center;
+  margin-bottom: 8px;
+  padding: 6px 8px;
+  border-radius: 4px;
+  transition: background-color 0.2s;
+}
+
+.skill-item:last-child {
+  margin-bottom: 0;
+}
+
+.skill-item.skill-unlocked {
+  background: rgba(0, 255, 0, 0.1);
+  border-left: 3px solid #00ff00;
+}
+
+.skill-item.skill-available {
+  background: rgba(0, 136, 255, 0.1);
+  border-left: 3px solid #0088ff;
+}
+
+.skill-item.skill-locked {
+  background: rgba(102, 102, 102, 0.1);
+  border-left: 3px solid #666666;
+}
+
+.skill-status {
+  font-size: 14px;
+  margin-right: 10px;
+  min-width: 20px;
+  text-align: center;
+}
+
+.skill-name {
+  color: #fff;
+  font-size: 14px;
+  flex: 1;
+}
+
+/* Responsive adjustments for skills */
+@media (max-width: 1000px) {
+  #skillsList {
+    flex-direction: column;
+    gap: 15px;
+  }
+}
+
+/* Responsive adjustments */
+@media (max-width: 1000px) {
+  #characterStatsContent {
+    flex-direction: column;
+    gap: 20px;
+  }
+
+  #characterPortraitSection {
+    flex: none;
+    margin-bottom: 20px;
+  }
+
+  #characterStatsSection {
+    gap: 15px;
+  }
+}
+
 /* Future styles can be added here */

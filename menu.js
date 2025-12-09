@@ -1,7 +1,8 @@
 // Menu system for Platformer Game
 let menuActive = false;
-let currentMenu = 'main'; // 'main', 'controls', 'skills'
+let currentMenu = 'main'; // 'main', 'controls', 'skills', 'characterStats'
 let currentSkillTreePlayer = null; // Index of player whose skills are being viewed
+let currentCharacterStatsPlayer = null; // Index of player whose stats are being viewed
 
 const buttonNames = {
   0: 'X',      // Cross бутон (долен)
@@ -246,6 +247,7 @@ function initMenu() {
         </div>
       </div>
     </div>
+    ${window.characterStatsUI.getMenuHTML()}
   `;
   document.body.appendChild(menuDiv);
 
@@ -304,16 +306,25 @@ function hideMenu() {
     return; // hideSkillTree() ще се погрижи за останалото.
   }
 
+  // Ако сме били в менюто със статистики на героя
+  if (currentMenu === 'characterStats') {
+    hideCharacterStats();
+    return; // hideCharacterStats() ще се погрижи за останалото.
+  }
+
   menuActive = false;
   document.getElementById('gameMenu').style.display = 'none';
   document.getElementById('mainMenu').style.display = 'none';
   document.getElementById('controlsMenu').style.display = 'none';
   document.getElementById('skillTreeMenu').style.display = 'none';
+  document.getElementById('characterStatsMenu').style.display = 'none';
 
   // Нулираме състоянието
   currentMenu = 'main';
   currentSkillTreePlayer = null;
+  currentCharacterStatsPlayer = null;
   cleanupSkillTreeInput(); // Почистваме за всеки случай
+  cleanupCharacterStatsInput(); // Почистваме за всеки случай
 }
 
 function showMainMenu() {
@@ -893,7 +904,57 @@ function toggleMenu() {
   }
 }
 
-// Make skill tree functions global
+// Character Stats Functions
+function showCharacterStatsForPlayer(playerIndex) {
+  console.log(`[CHARACTER STATS] Attempting to show for player ${playerIndex + 1} (index: ${playerIndex})`);
+  if (playerIndex < 0 || playerIndex >= window.players.length) {
+    console.log(`[CHARACTER STATS] Invalid player index: ${playerIndex}`);
+    return;
+  }
+
+  currentCharacterStatsPlayer = playerIndex;
+  console.log(`[CHARACTER STATS] Setting currentCharacterStatsPlayer to index ${playerIndex}`);
+
+  // Show character stats
+  window.characterStatsUI.showForPlayer(playerIndex);
+
+  console.log(`[CHARACTER STATS] Show completed successfully`);
+}
+
+function hideCharacterStats() {
+  console.log(`[CHARACTER STATS] Hiding character stats (was for player index: ${currentCharacterStatsPlayer})`);
+  currentCharacterStatsPlayer = null;
+  menuActive = false;
+  currentMenu = 'main';
+  window.characterStatsUI.hide();
+  cleanupCharacterStatsInput();
+  console.log(`[CHARACTER STATS] Hide completed`);
+}
+
+function setupCharacterStatsInput() {
+  // Character stats menu uses simple toggle - no complex navigation needed
+  // Just listen for the toggle key again to close
+  document.addEventListener('keydown', handleCharacterStatsKeyDown);
+}
+
+function cleanupCharacterStatsInput() {
+  document.removeEventListener('keydown', handleCharacterStatsKeyDown);
+}
+
+function handleCharacterStatsKeyDown(e) {
+  if (currentMenu !== 'characterStats') return;
+
+  // For now, character stats menu only closes with Escape or the player's toggle key
+  // In the future, we can add navigation if needed
+  if (e.key === 'Escape') {
+    e.preventDefault();
+    hideCharacterStats();
+  }
+}
+
+// Make skill tree and character stats functions global
 window.showSkillTreeForPlayer = showSkillTreeForPlayer;
 window.hideSkillTree = hideSkillTree;
+window.showCharacterStatsForPlayer = showCharacterStatsForPlayer;
+window.hideCharacterStats = hideCharacterStats;
 window.toggleMenu = toggleMenu;

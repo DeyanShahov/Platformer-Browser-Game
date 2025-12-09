@@ -1,5 +1,5 @@
 class Player {
-  constructor(controls, x, y, z, color) {
+  constructor(controls, x, y, z, color, characterId = null) {
     this.controls = controls;
     this.x = x;
     this.y = y;
@@ -11,6 +11,9 @@ class Player {
     this.vz = 0;
     this.color = color;
     this.onGround = false;
+
+    // Character info system
+    this.characterInfo = new CharacterInfo(characterId || this.getCharacterIdFromColor(color));
 
     // Нова система за действия
     this.currentAction = null;      // Текущо изпълнявано действие
@@ -38,6 +41,17 @@ class Player {
     ]); // Skills that are unlocked and can be used
 
     this.hit = false;
+  }
+
+  // Helper method to determine character ID from color
+  getCharacterIdFromColor(color) {
+    const colorMap = {
+      '#3AA0FF': 'blue',
+      '#FFA500': 'orange',
+      '#00FF00': 'green',
+      '#FF0000': 'red'
+    };
+    return colorMap[color] || 'blue'; // Default to blue if color not found
   }
 
   // Проверка дали може да се изпълни дадено действие
