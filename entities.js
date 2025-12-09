@@ -40,7 +40,9 @@ class Player {
       SKILL_TYPES.SECONDARY_ATTACK_LIGHT
     ]); // Skills that are unlocked and can be used
 
+    // Combat flags
     this.hit = false;
+    this.damageDealt = false; // Prevent multiple damage calculations per attack
   }
 
   // Helper method to determine character ID from color
@@ -97,13 +99,16 @@ class Player {
       if (this.executionTimer > 0) {
         this.executionTimer -= dt;
         if (this.executionTimer <= 0) {
+          // Action completed - reset flags
           this.currentAction = null;
           this.executionTimer = 0;
+          this.damageDealt = false; // Reset damage flag for next attack
         }
       } else {
         // Действия с 0 време за изпълнение (като скок) се изчистват веднага
         this.currentAction = null;
         this.executionTimer = 0;
+        this.damageDealt = false; // Reset damage flag for next attack
       }
     }
   }

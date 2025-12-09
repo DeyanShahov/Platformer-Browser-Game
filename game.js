@@ -20,7 +20,8 @@ function updatePlayer(player, playerIndex, dt) {
 
   // Проверка за удар с врага
   if (player.currentAction && isAttackAction(player.currentAction)) {
-    if (!enemy.hit) {
+    // Only check for damage if we haven't dealt damage for this attack yet
+    if (!player.damageDealt) {
       const hit = checkHitboxCollision(player, enemy, {
         zTolerance: 20,
         zThickness: 40
@@ -37,6 +38,8 @@ function updatePlayer(player, playerIndex, dt) {
           window.damageNumberManager.addDamageNumber(damageX, damageY, combatEvent.actualDamage, combatEvent.damageResult.isCritical);
         }
 
+        // Mark damage as dealt for this attack and set visual hit flag
+        player.damageDealt = true;
         enemy.hit = true;
       }
     }
