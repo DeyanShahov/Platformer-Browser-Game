@@ -588,11 +588,20 @@ let skillCursorRow = 0;
 let skillCursorCol = 0;
 let skillIcons = {}; // Cache for loaded icons
 
-// Skill grid layout: 2 columns x 3 rows
+// Skill grid layout: 6 rows x 5 columns (30 total positions)
 const SKILL_GRID_LAYOUT = [
-  [SKILL_TYPES.BASIC_ATTACK_LIGHT, SKILL_TYPES.SECONDARY_ATTACK_LIGHT],
-  [SKILL_TYPES.BASIC_ATTACK_MEDIUM, SKILL_TYPES.SECONDARY_ATTACK_MEDIUM],
-  [SKILL_TYPES.BASIC_ATTACK_HEAVY, SKILL_TYPES.SECONDARY_ATTACK_HEAVY]
+  // Row 1 - Real skills
+  [SKILL_TYPES.BASIC_ATTACK_LIGHT, SKILL_TYPES.SECONDARY_ATTACK_LIGHT, SKILL_TYPES.ENHANCED_ATTACK, SKILL_TYPES.SKILL_01_04, SKILL_TYPES.SKILL_01_05],
+  // Row 2 - Real skills
+  [SKILL_TYPES.BASIC_ATTACK_MEDIUM, SKILL_TYPES.SECONDARY_ATTACK_MEDIUM, SKILL_TYPES.SKILL_02_03, SKILL_TYPES.SKILL_02_04, SKILL_TYPES.SKILL_02_05],
+  // Row 3 - Real skills
+  [SKILL_TYPES.BASIC_ATTACK_HEAVY, SKILL_TYPES.SECONDARY_ATTACK_HEAVY, SKILL_TYPES.SKILL_03_03, SKILL_TYPES.SKILL_03_04, SKILL_TYPES.SKILL_03_05],
+  // Row 4 - Test skills
+  [SKILL_TYPES.SKILL_04_01, SKILL_TYPES.SKILL_04_02, SKILL_TYPES.SKILL_04_03, SKILL_TYPES.SKILL_04_04, SKILL_TYPES.SKILL_04_05],
+  // Row 5 - Test skills
+  [SKILL_TYPES.SKILL_05_01, SKILL_TYPES.SKILL_05_02, SKILL_TYPES.SKILL_05_03, SKILL_TYPES.SKILL_05_04, SKILL_TYPES.SKILL_05_05],
+  // Row 6 - Test skills
+  [SKILL_TYPES.SKILL_06_01, SKILL_TYPES.SKILL_06_02, SKILL_TYPES.SKILL_06_03, SKILL_TYPES.SKILL_06_04, SKILL_TYPES.SKILL_06_05]
 ];
 
 // Skill Tree Functions
@@ -670,6 +679,10 @@ function renderSkillTree(player) {
     for (let row = 0; row < SKILL_GRID_LAYOUT.length; row++) {
       for (let col = 0; col < SKILL_GRID_LAYOUT[row].length; col++) {
         const skillType = SKILL_GRID_LAYOUT[row][col];
+
+        // Пропускаме празните позиции (null)
+        if (!skillType) continue;
+
         const skillInfo = SKILL_TREE[skillType];
 
         const skillIcon = document.createElement('div');
@@ -764,6 +777,27 @@ function updateSelectedSkillInfo() {
 
   const player = window.players[currentSkillTreePlayer];
   const skillType = SKILL_GRID_LAYOUT[skillCursorRow][skillCursorCol];
+
+  // Проверка дали има валидно умение на тази позиция
+  if (!skillType) {
+    // Празна позиция - показваме placeholder информация
+    document.getElementById('skillInfoName').textContent = 'Няма умение';
+    document.getElementById('skillInfoDescription').textContent = 'Тази позиция е празна';
+
+    const skillDetails = document.getElementById('skillRequirements');
+    skillDetails.innerHTML = `
+      <div>Prerequisites: N/A</div>
+      <div>Resource Cost: N/A</div>
+      <div>Skill Points: N/A</div>
+      <div>Status: Empty slot</div>
+    `;
+
+    // Скриваме unlock бутона за празни позиции
+    const unlockBtn = document.getElementById('unlockSkillBtn');
+    unlockBtn.style.display = 'none';
+    return;
+  }
+
   const skillInfo = SKILL_TREE[skillType];
 
   // Update skill info
@@ -787,22 +821,63 @@ function updateSelectedSkillInfo() {
 
   // ПРЕЗАПИСВА цялата информация вместо да ДОБАВЯ
   const skillDetails = document.getElementById('skillRequirements');
+
+  // Показва различна информация за активни и пасивни умения
+  let skillTypeInfo = '';
+  if (skillInfo.passiveEffect) {
+    // Пасивно умение
+    const effect = skillInfo.passiveEffect;
+    skillTypeInfo = `
+      <div>Effect: +${effect.value} ${effect.stat}</div>
+      <div>Type: Passive (Permanent)</div>
+    `;
+  } else {
+    // Активно умение
+    skillTypeInfo = `
+      <div>Damage: +${skillInfo.damageModifier} (${skillInfo.damageType})</div>
+      <div>Range: ${skillInfo.rangeType}</div>
+      <div>Target: ${skillInfo.targetType}</div>
+    `;
+  }
+
   const fullInfo = `
     <div>Prerequisites: ${prereqText}</div>
     <div>Resource Cost: ${getResourceDisplay(skillInfo)}</div>
     <div>Skill Points: ${skillInfo.skillPointsCost}</div>
-    <div>Damage: +${skillInfo.damageModifier} (${skillInfo.damageType})</div>
-    <div>Range: ${skillInfo.rangeType}</div>
-    <div>Target: ${skillInfo.targetType}</div>
+    ${skillTypeInfo}
     <div>${statusText}</div>
   `;
   skillDetails.innerHTML = fullInfo; // ПРЕЗАПИСВА вместо ДОБАВЯ
 
-  // Update unlock button
+  // Update unlock/upgrade button
   const unlockBtn = document.getElementById('unlockSkillBtn');
-  const canUnlock = window.skillTreeManager.canUnlockSkill(player, skillType);
-  unlockBtn.style.display = canUnlock ? 'block' : 'none';
-  unlockBtn.disabled = !canUnlock;
+  const upgradeInfo = window.skillTreeManager.getSkillUpgradeInfo(player, skillType);
+
+  if (upgradeInfo) {
+    const { currentLevel, maxLevel, canUpgrade, nextLevelCost, nextLevelEffect } = upgradeInfo;
+
+    if (currentLevel === 0) {
+      // Not unlocked yet
+      unlockBtn.textContent = 'Отключи умение';
+      unlockBtn.style.display = canUpgrade ? 'block' : 'none';
+    } else if (currentLevel < maxLevel) {
+      // Can upgrade
+      unlockBtn.textContent = `Upgrade (Lv.${currentLevel} → ${currentLevel + 1})`;
+      unlockBtn.style.display = canUpgrade ? 'block' : 'none';
+    } else {
+      // Max level reached
+      unlockBtn.textContent = `Max Level (${maxLevel})`;
+      unlockBtn.style.display = 'block';
+      unlockBtn.disabled = true;
+    }
+  } else {
+    // Legacy skill without leveling
+    const canUnlock = window.skillTreeManager.canUnlockSkill(player, skillType);
+    unlockBtn.textContent = 'Отключи умение';
+    unlockBtn.style.display = canUnlock ? 'block' : 'none';
+  }
+
+  unlockBtn.disabled = !window.skillTreeManager.canUnlockSkill(player, skillType);
 }
 
 function getResourceDisplay(skillInfo) {

@@ -35,10 +35,18 @@ class Player {
 
     // Skill Tree System
     this.skillPoints = 0;  // Available skill points for unlocking skills
+
+    // Нова система за нива на уменията (замества старата unlockedSkills)
+    this.skillLevels = new Map([
+      [SKILL_TYPES.BASIC_ATTACK_LIGHT, 1],  // Започват отключени на ниво 1
+      [SKILL_TYPES.SECONDARY_ATTACK_LIGHT, 1]
+    ]);
+
+    // Обратна съвместимост - старото unlockedSkills Set
     this.unlockedSkills = new Set([
       SKILL_TYPES.BASIC_ATTACK_LIGHT,
       SKILL_TYPES.SECONDARY_ATTACK_LIGHT
-    ]); // Skills that are unlocked and can be used
+    ]);
 
     // Combat flags
     this.hit = false;

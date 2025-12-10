@@ -218,8 +218,8 @@ canvas {
 
 #skillGrid {
   display: grid;
-  grid-template-columns: repeat(2, 64px);
-  grid-template-rows: repeat(3, 64px);
+  grid-template-columns: repeat(5, 64px);
+  grid-template-rows: repeat(6, 64px);
   gap: 15px;
   justify-content: center;
   width: fit-content;
