@@ -71,8 +71,14 @@ class CharacterInfo {
     this.speed += 1;
     this.intelligence += 1;
 
-    // Give 5 free points for manual distribution
+    // Give 5 free points for manual distribution (stats)
     this.freePoints += 5;
+
+    // Give 2 skill points for unlocking abilities
+    if (player) {
+      player.skillPoints += 2;
+      console.log(`${this.getDisplayName()} получи 2 точки за умения! Общо: ${player.skillPoints}`);
+    }
 
     // Restore all resources to 100% on level up
     if (player) {
