@@ -583,6 +583,26 @@ function startRebinding(player, action) {
 // Make functions global for onclick
 window.startRebinding = startRebinding;
 
+// Helper function to calculate total passive effect from all skill levels
+function calculateTotalPassiveEffect(skillInfo, player, skillType) {
+  const currentLevel = window.skillTreeManager.getSkillLevel(player, skillType);
+
+  if (!skillInfo.levelEffects || currentLevel === 0) {
+    // No leveling or level 0 - return base passive effect
+    return skillInfo.passiveEffect;
+  }
+
+  // Sum all level effects up to current level
+  const totalValue = skillInfo.levelEffects
+    .slice(0, currentLevel)
+    .reduce((sum, effect) => sum + effect.value, 0);
+
+  return {
+    stat: skillInfo.passiveEffect.stat,
+    value: totalValue
+  };
+}
+
 // Skill Tree Navigation Variables
 let skillCursorRow = 0;
 let skillCursorCol = 0;
@@ -825,10 +845,10 @@ function updateSelectedSkillInfo() {
   // Показва различна информация за активни и пасивни умения
   let skillTypeInfo = '';
   if (skillInfo.passiveEffect) {
-    // Пасивно умение
-    const effect = skillInfo.passiveEffect;
+    // Пасивно умение - изчисляваме общия ефект от всички нива
+    const totalEffect = calculateTotalPassiveEffect(skillInfo, player, skillType);
     skillTypeInfo = `
-      <div>Effect: +${effect.value} ${effect.stat}</div>
+      <div>Effect: +${totalEffect.value} ${totalEffect.stat}</div>
       <div>Type: Passive (Permanent)</div>
     `;
   } else {
