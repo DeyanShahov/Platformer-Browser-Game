@@ -33,6 +33,12 @@ class Player {
     this.maxMana = 30;
     this.mana = this.maxMana;
 
+    // Combat stats (synchronized with characterInfo, can be modified by passive skills)
+    this.baseAttack = this.characterInfo.baseAttack;
+    this.hitChance = this.characterInfo.hitChance;
+    this.dodgeChance = this.characterInfo.dodgeChance;
+    this.blockChance = this.characterInfo.blockChance;
+
     // Skill Tree System
     this.skillPoints = 0;  // Available skill points for unlocking skills
 

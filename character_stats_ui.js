@@ -99,6 +99,18 @@ class CharacterStatsUI {
                 <span class="attribute-label">Критичен удар:</span>
                 <span id="criticalChanceValue">10%</span>
               </div>
+              <div class="attribute-row">
+                <span class="attribute-label">Шанс за удар:</span>
+                <span id="hitChanceValue">95%</span>
+              </div>
+              <div class="attribute-row">
+                <span class="attribute-label">Шанс за отбягване:</span>
+                <span id="dodgeChanceValue">5%</span>
+              </div>
+              <div class="attribute-row">
+                <span class="attribute-label">Шанс за блок:</span>
+                <span id="blockChanceValue">5%</span>
+              </div>
             </div>
 
             <div id="characterMagicResistances">
@@ -259,10 +271,15 @@ class CharacterStatsUI {
     document.getElementById('speedValue').textContent = info.speed;
     document.getElementById('intelligenceValue').textContent = info.intelligence;
 
-    // Update combat attributes
-    document.getElementById('baseAttackValue').textContent = info.baseAttack;
+    // Update combat attributes (чита от player обекта за динамични стойности)
+    document.getElementById('baseAttackValue').textContent = player.baseAttack; // Динамично от пасивни умения
     document.getElementById('baseDefenseValue').textContent = info.baseDefense;
     document.getElementById('criticalChanceValue').textContent = info.getCriticalChanceDisplay();
+
+    // Update new combat chances
+    document.getElementById('hitChanceValue').textContent = `${Math.round(player.hitChance * 100)}%`;
+    document.getElementById('dodgeChanceValue').textContent = `${Math.round(player.dodgeChance * 100)}%`;
+    document.getElementById('blockChanceValue').textContent = `${Math.round(player.blockChance * 100)}%`;
 
     // Update magic resistances
     const resistances = info.getMagicResistanceDisplay();

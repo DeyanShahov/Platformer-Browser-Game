@@ -14,7 +14,7 @@ class CombatCalculator {
       return 0;
     }
 
-    const baseAttack = attacker.characterInfo.baseAttack;
+    const baseAttack = attacker.baseAttack; // Use dynamic value from player (can be modified by passive skills)
     const strength = attacker.characterInfo.strength;
 
     // Future: equipment bonuses, buffs, debuffs

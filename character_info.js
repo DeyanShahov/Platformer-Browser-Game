@@ -23,6 +23,11 @@ class CharacterInfo {
     this.baseDefense = 0;
     this.criticalChance = 0.10; // 10%
 
+    // Combat chances (as percentages 0-1)
+    this.hitChance = 0.95;     // 95% chance to hit
+    this.dodgeChance = 0.05;   // 5% chance to dodge
+    this.blockChance = 0.05;   // 5% chance to block
+
     // Magic resistances (0-100%)
     this.magicResistance = {
       water: 0,
