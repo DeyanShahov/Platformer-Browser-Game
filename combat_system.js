@@ -139,9 +139,9 @@ class CombatResolver {
     // Apply damage to defender
     const actualDamage = this.applyDamage(defender, damageResult.damage);
 
-    // Check for enemy defeat
+    // Check for enemy defeat - работи за всички противници, не само за window.enemy
     const defenderDied = defender.health <= 0;
-    if (defenderDied && defender === enemy && !defender.isDying) {
+    if (defenderDied && defender.entityType === 'enemy' && !defender.isDying) {
       // Enemy was defeated - start death sequence instead of immediate removal
       this.startEnemyDeathSequence(attacker, defender);
     }

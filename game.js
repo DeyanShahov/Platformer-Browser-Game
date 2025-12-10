@@ -515,6 +515,9 @@ function update(dt) {
   // Ако имаме активно меню, не ъпдейтвай играчите и враговете.
   // Това ефективно "паузира" играта.
   if (!menuActive) {
+    // Централизирана обработка на смърт за всички умиращи елементи
+    updateDeathSequences(dt);
+
     // Обновяване на всички играчи
     if (window.gameState) {
       console.log('[UPDATE] Processing players via game state:', window.gameState.players.length, 'players');
@@ -523,11 +526,13 @@ function update(dt) {
         updatePlayer(player, index, dt);
       });
 
-      // Обновяване на всички противници
+      // Обновяване на всички противници (само живи и не умиращи)
       const enemies = window.gameState.getEntitiesByType('enemy');
       console.log('[UPDATE] Processing enemies:', enemies.length);
       enemies.forEach(enemy => {
-        updateEnemyAI(enemy, dt);
+        if (!enemy.isDying) { // Не обновяваме AI за умиращи противници
+          updateEnemyAI(enemy, dt);
+        }
       });
 
       console.log('[UPDATE] Game state debug:', window.gameState.getDebugInfo());
@@ -546,14 +551,8 @@ function update(dt) {
 function updateEnemyAI(enemy, dt) {
   if (!enemy) return;
 
-  // If enemy is dying, update death sequence instead of normal AI
-  if (enemy.isDying) {
-    const isDead = window.combatResolver.updateEnemyDeath(enemy, dt);
-    return; // Don't run normal AI while dying
-  }
-
   // Normal AI only runs if enemy is alive and not dying
-  if (enemy.health > 0) {
+  if (enemy.health > 0 && !enemy.isDying) {
     // Simple AI: randomly attack every few seconds
     if (Math.random() < 0.01) { // 1% chance per frame to attack
       if (!enemy.currentAction) {
@@ -590,6 +589,22 @@ function updateEnemyAI(enemy, dt) {
   // Reset hit flag after a short time
   if (enemy.hit) {
     enemy.hit = false;
+  }
+}
+
+// Централизирана обработка на смърт за всички умиращи елементи
+function updateDeathSequences(dt) {
+  if (window.gameState) {
+    const allEntities = window.gameState.getAllEntities();
+
+    for (const entity of allEntities) {
+      if (entity.isDying && entity.entityType === 'enemy') {
+        const isDead = window.combatResolver.updateEnemyDeath(entity, dt);
+        if (isDead) {
+          console.log(`[GAME] Enemy ${entity.id} death sequence completed and removed`);
+        }
+      }
+    }
   }
 }
 
