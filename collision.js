@@ -69,13 +69,19 @@ function checkHitboxCollision(attacker, target, params) {
 }
 
 function canMoveTo(entity, proposedX, proposedY, proposedZ) {
-  const others = [...players, window.enemy, window.ally].filter(e => e !== entity && e !== null && e !== undefined);
+  // Използвай game state система или fallback към старата за backwards compatibility
+  const allEntities = window.gameState ? window.gameState.getAllEntities() :
+                     [...players, window.enemy, window.ally].filter(e => e !== null && e !== undefined);
+
+  // Филтрирай само други елементи (не текущия)
+  const others = allEntities.filter(e => e !== entity && e !== null && e !== undefined);
+
   for (const other of others) {
     if (checkCollision(proposedX, proposedY, proposedZ, entity.w, entity.h,
                       other.x, other.y, other.z, other.w, other.h,
                       { zTolerance: 10, zThickness: 0 })) {
-      return false;
+      return false; // Има колизия - не може да се движи
     }
   }
-  return true;
+  return true; // Няма колизия - може да се движи
 }

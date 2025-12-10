@@ -470,10 +470,11 @@ function initGameWithSelections() {
     window.damageNumberManager.init(canvas);
   }
 
-  // Clear global arrays
-  window.players = [];
+  // Инициализация на game state система
+  window.gameState = new GameState();
+  console.log('[MAIN] Game state initialized');
 
-  // Clear global arrays
+  // Clear global arrays for backwards compatibility
   window.players = [];
   console.log('[MAIN] window.players cleared and set to:', window.players);
 
@@ -497,21 +498,35 @@ function initGameWithSelections() {
       player.skillPoints = 5;
 
       console.log(`[MAIN] Player ${playerId} created:`, player);
-      players.push(player);
-      console.log(`[MAIN] players array after push:`, players);
+
+      // Добавяне в game state вместо директно в players
+      window.gameState.addEntity(player, 'player');
+      console.log(`[MAIN] Player ${playerId} added to game state`);
     } else {
       console.warn(`No controls found for player ${playerId} (${playerKey})`);
     }
   });
-  console.log('[MAIN] Final players array:', players);
+  console.log('[MAIN] Final game state debug:', window.gameState.getDebugInfo());
 
   // Create NPCs using the new enemy data system
-  window.enemy = createEnemyWithData('basic', 1); // Basic enemy, level 1
-  console.log('Enemy created for testing:', window.enemy);
+  const enemy = createEnemyWithData('basic', 1); // Basic enemy, level 1
+  window.gameState.addEntity(enemy, 'enemy');
+  console.log('Enemy 1 added to game state:', enemy.id);
 
-  window.ally = createEntity(520, CANVAS_HEIGHT - 100, 90, 50, 50, "#00FF00");
+  // Добавяне на втори противник за тест на множество противници
+  const enemy2 = createEnemyWithData('elite', 2); // Elite enemy, level 2
+  enemy2.x = 550; // Позициониране вдясно
+  enemy2.z = 30; // Различна Z позиция
+  window.gameState.addEntity(enemy2, 'enemy');
+  console.log('Enemy 2 added to game state:', enemy2.id);
 
-  // NPCs are now available as window.enemy and window.ally
+  // Добавяне на съюзник
+  const ally = createEntity(520, CANVAS_HEIGHT - 100, 90, 50, 50, "#00FF00");
+  window.gameState.addEntity(ally, 'ally');
+  console.log('Ally added to game state:', ally.id);
+
+  // За backwards compatibility - players array се поддържа автоматично от game state
+  window.players = window.gameState.players;
 
   // Initialize menu
   initMenu();

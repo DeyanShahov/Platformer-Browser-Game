@@ -93,13 +93,13 @@ function render() {
   ctx.lineTo(CANVAS_WIDTH, 400 - Z_MAX*1.0);
   ctx.stroke();
 
-  // Draw entities in Z order based on bottom position (lower effective Y = background, higher effective Y = foreground)
-  const rawEntities = [...players, window.enemy, window.ally];
-  const entities = rawEntities.filter(e => e !== null && e !== undefined); // Filter out null/undefined entities
+  // Взимане на всички елементи от game state или fallback към старата система
+  const entities = window.gameState ? window.gameState.getAllEntities() :
+                   [...players, window.enemy, window.ally].filter(e => e !== null && e !== undefined);
 
-  // Debug logging for enemy status
-  if (window.enemy && window.enemy.isDying) {
-    console.log('[RENDER] Enemy dying status:', {
+  // Debug logging for backwards compatibility
+  if (!window.gameState && window.enemy && window.enemy.isDying) {
+    console.log('[RENDER] Enemy dying status (legacy):', {
       enemyExists: window.enemy !== null,
       isDying: window.enemy.isDying,
       deathTimer: window.enemy.deathTimer,
@@ -110,51 +110,12 @@ function render() {
     });
   }
 
-  // Debug logging for enemy removal (only once per enemy defeat)
-  if (rawEntities.length !== entities.length && !window.enemyDefeatLogged) {
-    console.log('[RENDER] Enemy defeated and filtered from entities:', {
-      raw: rawEntities.map(e => e ? (e === window.enemy ? 'ENEMY' : e.characterInfo?.getDisplayName() || 'ALLY') : 'NULL'),
-      filtered: entities.map(e => e === window.enemy ? 'ENEMY' : e.characterInfo?.getDisplayName() || 'ALLY'),
-      enemyNull: window.enemy === null
-    });
-    window.enemyDefeatLogged = true;
-
-    // Reset flag after a short delay to allow for next enemy
-    setTimeout(() => {
-      window.enemyDefeatLogged = false;
-    }, 100);
-  }
-
   entities.sort((a, b) => (a.y - a.z) - (b.y - b.z)); // Sort by effective bottom Y ascending
   entities.forEach((entity, index) => {
     drawEntity(entity);
 
-    // Enemy info display (only for enemy entities that exist and have data)
-    if (entity === window.enemy && entity && entity.enemyData) {
-      const enemyInfo = entity.enemyData.getEnemyInfo();
-      const healthPercent = entity.maxHealth > 0 ? (entity.health / entity.maxHealth) * 100 : 0;
-      const healthStatus = entity.health <= 0 ? '[Мъртъв]' :
-                          healthPercent > 60 ? '[Жив]' :
-                          healthPercent > 30 ? '[Ранен]' : '[Критично]';
-
-      // Color based on health
-      const healthColor = entity.health <= 0 ? '#FF0000' :  // Dead - red
-                         healthPercent > 60 ? '#00FF00' :   // Healthy - green
-                         healthPercent > 30 ? '#FFFF00' :   // Wounded - yellow
-                         '#FF8800'; // Critical - orange
-
-      // Enemy info line
-      ctx.fillStyle = healthColor;
-      ctx.font = "14px Arial";
-      ctx.fillText(`${enemyInfo.displayName} (Lv.${enemyInfo.level}) - ${entity.health}/${entity.maxHealth} HP ${healthStatus}`,
-                   entity.x, entity.y - entity.h - entity.z - 40);
-    }
-
-    // Debug text (technical info - keep unchanged)
-    ctx.fillStyle = "#FFFFFF";
-    ctx.font = "12px Arial";
-    const effectiveY = entity.y - entity.z;
-    ctx.fillText(`Z:${entity.z.toFixed(1)} EffY:${effectiveY.toFixed(1)} Order:${index+1}`, entity.x, entity.y - entity.h - entity.z - 20);
+    // Универсална система за надписи базирана на entity тип
+    renderEntityLabels(entity, index);
   });
 
   // Render damage numbers
@@ -166,4 +127,48 @@ function render() {
   if (window.UISystem) {
     window.UISystem.renderPlayerPortraits(ctx);
   }
+}
+
+// Универсална система за надписи
+function renderEntityLabels(entity, index) {
+  // За противници - показва информация
+  if (entity.entityType === 'enemy' && entity.enemyData) {
+    renderEnemyLabels(entity);
+  }
+
+  // За играчи - може да се добави по-късно
+  if (entity.entityType === 'player') {
+    // renderPlayerLabels(entity);
+  }
+
+  // Debug информация за всички елементи
+  renderDebugLabels(entity, index);
+}
+
+function renderEnemyLabels(entity) {
+  const enemyInfo = entity.enemyData.getEnemyInfo();
+  const healthPercent = entity.maxHealth > 0 ? (entity.health / entity.maxHealth) * 100 : 0;
+  const healthStatus = entity.health <= 0 ? '[Мъртъв]' :
+                      healthPercent > 60 ? '[Жив]' :
+                      healthPercent > 30 ? '[Ранен]' : '[Критично]';
+
+  // Color based on health
+  const healthColor = entity.health <= 0 ? '#FF0000' :  // Dead - red
+                     healthPercent > 60 ? '#00FF00' :   // Healthy - green
+                     healthPercent > 30 ? '#FFFF00' :   // Wounded - yellow
+                     '#FF8800'; // Critical - orange
+
+  // Enemy info line
+  ctx.fillStyle = healthColor;
+  ctx.font = "14px Arial";
+  ctx.fillText(`${enemyInfo.displayName} (Lv.${enemyInfo.level}) - ${entity.health}/${entity.maxHealth} HP ${healthStatus}`,
+               entity.x, entity.y - entity.h - entity.z - 40);
+}
+
+function renderDebugLabels(entity, index) {
+  ctx.fillStyle = "#FFFFFF";
+  ctx.font = "12px Arial";
+  const effectiveY = entity.y - entity.z;
+  ctx.fillText(`Z:${entity.z.toFixed(1)} EffY:${effectiveY.toFixed(1)} Order:${index+1}`,
+               entity.x, entity.y - entity.h - entity.z - 20);
 }

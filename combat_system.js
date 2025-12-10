@@ -208,8 +208,6 @@ class CombatResolver {
   // Handle enemy defeat
   handleEnemyDefeat(attacker, defeatedEnemy) {
     console.log(`[COMBAT] handleEnemyDefeat called with attacker:`, attacker, `defeatedEnemy:`, defeatedEnemy);
-    console.log(`[COMBAT] window.enemy before removal:`, window.enemy);
-    console.log(`[COMBAT] window.enemy === defeatedEnemy:`, window.enemy === defeatedEnemy);
 
     console.log(`[COMBAT] Enemy defeated! ${attacker ? `Awarding experience to ${attacker.characterInfo?.getDisplayName() || 'Player'}` : 'Experience already awarded'}`);
 
@@ -220,7 +218,7 @@ class CombatResolver {
       console.log(`[COMBAT] ${attacker.characterInfo.getDisplayName()} gained ${experienceReward} experience!`);
     }
 
-    // Remove enemy from the game world
+    // Remove enemy from the game world via game state
     this.removeEnemyFromGame(defeatedEnemy);
 
     // Trigger any post-defeat effects
@@ -231,13 +229,22 @@ class CombatResolver {
   removeEnemyFromGame(defeatedEnemy) {
     console.log(`[COMBAT] Removing enemy from game world...`);
 
-    // Set global enemy reference to null for respawn
-    if (window.enemy === defeatedEnemy) {
-      console.log(`[COMBAT] Setting window.enemy to null`);
-      window.enemy = null;
+    // Remove from game state if available
+    if (window.gameState) {
+      const entityId = window.gameState.getEntityId(defeatedEnemy);
+      if (entityId) {
+        window.gameState.removeEntity(entityId);
+        console.log(`[COMBAT] Enemy removed from game state (ID: ${entityId})`);
+      }
+    } else {
+      // Fallback for backwards compatibility
+      if (window.enemy === defeatedEnemy) {
+        console.log(`[COMBAT] Setting window.enemy to null (legacy mode)`);
+        window.enemy = null;
+      }
     }
 
-    console.log(`[COMBAT] Enemy removal complete. Current enemy:`, window.enemy);
+    console.log(`[COMBAT] Enemy removal complete`);
   }
 
   // Post-defeat effects and events
@@ -253,11 +260,30 @@ class CombatResolver {
 
   // Respawn enemy (for testing purposes)
   respawnEnemy() {
-    if (window.enemy === null) {
+    console.log(`[COMBAT] Checking respawn conditions...`);
+
+    // Check if we need to respawn (no enemies in game state or window.enemy is null)
+    const shouldRespawn = window.gameState ?
+      window.gameState.getEntitiesByType('enemy').length === 0 :
+      window.enemy === null;
+
+    if (shouldRespawn) {
       console.log(`[COMBAT] Respawning enemy...`);
-      // Use the new enemy creation system
-      window.enemy = window.createEnemyWithData('basic', 1);
-      console.log(`[COMBAT] Enemy respawned with ${window.enemy.health}/${window.enemy.maxHealth} HP`);
+
+      // Create new enemy
+      const newEnemy = window.createEnemyWithData('basic', 1);
+
+      // Add to game state if available
+      if (window.gameState) {
+        window.gameState.addEntity(newEnemy, 'enemy');
+        console.log(`[COMBAT] Enemy respawned and added to game state with ${newEnemy.health}/${newEnemy.maxHealth} HP (ID: ${newEnemy.id})`);
+      } else {
+        // Fallback for backwards compatibility
+        window.enemy = newEnemy;
+        console.log(`[COMBAT] Enemy respawned with ${window.enemy.health}/${window.enemy.maxHealth} HP (legacy mode)`);
+      }
+    } else {
+      console.log(`[COMBAT] Respawn not needed - enemies still present`);
     }
   }
 
