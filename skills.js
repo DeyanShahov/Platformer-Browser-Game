@@ -17,7 +17,7 @@ class SkillTreeManager {
     const skill = this.skillTree[skillType];
     if (!skill) return false;
 
-    // For leveling skills, check if can upgrade to next level
+    // Unified logic for all skills (both single-level and multi-level)
     if (skill.maxLevel && skill.levelCosts) {
       const currentLevel = player.skillLevels.get(skillType) || 0;
       if (currentLevel >= skill.maxLevel) return false; // Max level reached
@@ -25,7 +25,7 @@ class SkillTreeManager {
       const nextLevelCost = skill.levelCosts[currentLevel];
       if (player.skillPoints < nextLevelCost) return false;
 
-      // Check prerequisites (only for level 1)
+      // Check prerequisites (only for level 1 - unlocking)
       if (currentLevel === 0) {
         if (!this.checkPrerequisites(player, skillType)) return false;
       }
@@ -33,29 +33,41 @@ class SkillTreeManager {
       return true;
     }
 
-    // Legacy unlock logic for non-leveling skills
-    if (player.unlockedSkills.has(skillType)) return false;
-    const unlockCost = skill.levelCosts ? skill.levelCosts[0] : 0;
-    if (player.skillPoints < unlockCost) return false;
-
-    if (!this.checkPrerequisites(player, skillType)) return false;
-
-    return true;
+    console.error(`Skill ${skillType} is missing maxLevel or levelCosts!`);
+    return false;
   }
 
-  // Check prerequisites including special level requirements
+  // Check prerequisites using data-driven approach
   checkPrerequisites(player, skillType) {
     const skill = this.skillTree[skillType];
 
     for (const prereq of skill.prerequisites) {
-      // Check if prerequisite skill is unlocked
-      if (!player.unlockedSkills.has(prereq)) return false;
+      switch (prereq.type) {
+        case "skill_level":
+          // Check if prerequisite skill is unlocked and at required level
+          if (!player.unlockedSkills.has(prereq.skill)) return false;
+          const currentLevel = player.skillLevels.get(prereq.skill) || 0;
+          if (currentLevel < prereq.level) return false;
+          break;
 
-      // Special level requirements
-      if (prereq === SKILL_TYPES.ENHANCED_ATTACK) {
-        const enhancedLevel = player.skillLevels.get(SKILL_TYPES.ENHANCED_ATTACK) || 0;
-        // STRONG_ATTACK requires ENHANCED_ATTACK level 2+
-        if (skillType === SKILL_TYPES.STRONG_ATTACK && enhancedLevel < 2) return false;
+        // Future prerequisite types can be added here
+        case "player_level":
+          if (player.level < prereq.level) return false;
+          break;
+
+        case "quest_completed":
+          // Check if quest is completed (placeholder for future implementation)
+          if (!player.completedQuests?.has(prereq.questId)) return false;
+          break;
+
+        case "achievement_unlocked":
+          // Check if achievement is unlocked (placeholder for future implementation)
+          if (!player.unlockedAchievements?.has(prereq.achievementId)) return false;
+          break;
+
+        default:
+          console.warn(`Unknown prerequisite type: ${prereq.type}`);
+          return false;
       }
     }
 
@@ -68,7 +80,7 @@ class SkillTreeManager {
 
     const skill = this.skillTree[skillType];
 
-    // Handle leveling skills
+    // Unified logic for all skills (both single-level and multi-level)
     if (skill.maxLevel && skill.levelCosts) {
       const currentLevel = player.skillLevels.get(skillType) || 0;
       const nextLevelCost = skill.levelCosts[currentLevel];
@@ -84,21 +96,12 @@ class SkillTreeManager {
         this.applyPassiveEffect(player, skill.levelEffects[currentLevel]);
       }
 
-      console.log(`Player upgraded ${skill.name} to level ${currentLevel + 1}`);
+      console.log(`Player ${currentLevel === 0 ? 'unlocked' : 'upgraded'} ${skill.name} to level ${currentLevel + 1}`);
       return true;
     }
 
-    // Legacy unlock logic for non-leveling skills
-    const unlockCost = skill.levelCosts ? skill.levelCosts[0] : 0;
-    player.skillPoints -= unlockCost;
-    player.unlockedSkills.add(skillType);
-
-    if (skill.passiveEffect) {
-      this.applyPassiveEffect(player, skill.passiveEffect);
-    }
-
-    console.log(`Player unlocked skill: ${skill.name}`);
-    return true;
+    console.error(`Skill ${skillType} is missing maxLevel or levelCosts!`);
+    return false;
   }
 
   // Get current level of a skill

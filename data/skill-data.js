@@ -16,6 +16,7 @@ const SKILL_TYPES = {
   // Passive skills
   ENHANCED_ATTACK: 'enhanced_attack',
   STRONG_ATTACK: 'strong_attack',
+  ULTIMATE_ATTACK: 'ultimate_attack',
 
   // Test skills for large grid (6x5 = 30 total)
   // Row 1
@@ -83,8 +84,19 @@ const SKILL_TREE = {
     rangeType: RANGE_TYPES.MELEE,          // melee/range
     targetType: TARGET_TYPES.SINGLE_TARGET, // singletarget/aoe
     unlocked: false,
-    prerequisites: [SKILL_TYPES.BASIC_ATTACK_LIGHT],
-    levelCosts: [1],  // Cost to unlock (1 level skill)
+    prerequisites: [
+      {
+        type: "skill_level",
+        skill: SKILL_TYPES.BASIC_ATTACK_LIGHT,
+        level: 1,
+        displayText: "Лека основна атака"
+      }
+    ],
+    maxLevel: 1,       // Single level skill
+    levelCosts: [1],   // Cost to unlock (level 0 → 1)
+    levelEffects: [
+      { description: 'Отключва средна основна атака' } // Effect when unlocked
+    ],
     resourceType: RESOURCE_TYPES.MANA,
     resourceCost: 10,
     iconRow: 5,
@@ -98,8 +110,19 @@ const SKILL_TREE = {
     rangeType: RANGE_TYPES.MELEE,          // melee/range
     targetType: TARGET_TYPES.SINGLE_TARGET, // singletarget/aoe
     unlocked: false,
-    prerequisites: [SKILL_TYPES.BASIC_ATTACK_MEDIUM],
-    levelCosts: [1],  // Cost to unlock (1 level skill)
+    prerequisites: [
+      {
+        type: "skill_level",
+        skill: SKILL_TYPES.BASIC_ATTACK_MEDIUM,
+        level: 1,
+        displayText: "Средна основна атака"
+      }
+    ],
+    maxLevel: 1,       // Single level skill
+    levelCosts: [1],   // Cost to unlock (level 0 → 1)
+    levelEffects: [
+      { description: 'Отключва тежка основна атака' } // Effect when unlocked
+    ],
     resourceType: RESOURCE_TYPES.ENERGY,
     resourceCost: 20,
     iconRow: 5,
@@ -128,8 +151,19 @@ const SKILL_TREE = {
     rangeType: RANGE_TYPES.MELEE,          // melee/range
     targetType: TARGET_TYPES.SINGLE_TARGET, // singletarget/aoe
     unlocked: false,
-    prerequisites: [SKILL_TYPES.SECONDARY_ATTACK_LIGHT],
-    levelCosts: [1],  // Cost to unlock (1 level skill)
+    prerequisites: [
+      {
+        type: "skill_level",
+        skill: SKILL_TYPES.SECONDARY_ATTACK_LIGHT,
+        level: 1,
+        displayText: "Лека допълнителна атака"
+      }
+    ],
+    maxLevel: 1,       // Single level skill
+    levelCosts: [1],   // Cost to unlock (level 0 → 1)
+    levelEffects: [
+      { description: 'Отключва средна допълнителна атака' } // Effect when unlocked
+    ],
     resourceType: RESOURCE_TYPES.MANA,
     resourceCost: 10,
     iconRow: 3,
@@ -143,8 +177,19 @@ const SKILL_TREE = {
     rangeType: RANGE_TYPES.MELEE,          // melee/range
     targetType: TARGET_TYPES.SINGLE_TARGET, // singletarget/aoe
     unlocked: false,
-    prerequisites: [SKILL_TYPES.SECONDARY_ATTACK_MEDIUM],
-    levelCosts: [1],  // Cost to unlock (1 level skill)
+    prerequisites: [
+      {
+        type: "skill_level",
+        skill: SKILL_TYPES.SECONDARY_ATTACK_MEDIUM,
+        level: 1,
+        displayText: "Средна допълнителна атака"
+      }
+    ],
+    maxLevel: 1,       // Single level skill
+    levelCosts: [1],   // Cost to unlock (level 0 → 1)
+    levelEffects: [
+      { description: 'Отключва тежка допълнителна атака' } // Effect when unlocked
+    ],
     resourceType: RESOURCE_TYPES.ENERGY,
     resourceCost: 20,
     iconRow: 3,
@@ -177,7 +222,14 @@ const SKILL_TREE = {
     description: 'Мощна атака която увеличава базовата атака',
     passiveEffect: { stat: 'baseAttack', value: 2 }, // Пасивен ефект
     unlocked: false,
-    prerequisites: [SKILL_TYPES.ENHANCED_ATTACK], // Изисква ENHANCED_ATTACK
+    prerequisites: [
+      {
+        type: "skill_level",
+        skill: SKILL_TYPES.ENHANCED_ATTACK,
+        level: 2,
+        displayText: "Засилена атака (ниво 2+)"
+      }
+    ],
     resourceType: RESOURCE_TYPES.NONE,
     resourceCost: 0,
     iconRow: 3,  // Спрайт шит позиция 3-10
@@ -192,6 +244,42 @@ const SKILL_TREE = {
       { stat: 'baseAttack', value: 2, description: '+2 атака' },    // Level 3
       { stat: 'baseAttack', value: 2, description: '+2 атака' },    // Level 4
       { stat: 'baseAttack', value: 2, description: '+2 атака' }     // Level 5
+    ]
+  },
+  [SKILL_TYPES.ULTIMATE_ATTACK]: {
+    name: 'Ултимативна атака',
+    description: 'Мощна ултимативна атака с огромна сила',
+    passiveEffect: { stat: 'baseAttack', value: 50 }, // Пасивен ефект
+    unlocked: false,
+    prerequisites: [
+      {
+        type: "player_level",
+        level: 5,
+        displayText: "Ниво на героя 5+"
+      },
+      {
+        type: "skill_level",
+        skill: SKILL_TYPES.ENHANCED_ATTACK,
+        level: 3,
+        displayText: "Засилена атака (максимално ниво)"
+      },
+      {
+        type: "skill_level",
+        skill: SKILL_TYPES.STRONG_ATTACK,
+        level: 5,
+        displayText: "Силна атака (максимално ниво)"
+      }
+    ],
+    resourceType: RESOURCE_TYPES.NONE,
+    resourceCost: 0,
+    iconRow: 4,  // Спрайт шит позиция 4-2
+    iconCol: 2,
+
+    // Single level skill - 1 точка за отключване
+    maxLevel: 1,
+    levelCosts: [1],  // 1 skill point to unlock
+    levelEffects: [
+      { stat: 'baseAttack', value: 50, description: '+50 атака' }    // Level 1
     ]
   },
 

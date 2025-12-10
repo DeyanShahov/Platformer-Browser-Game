@@ -691,16 +691,29 @@ function getPrerequisitesDisplay(skillInfo) {
   if (skillInfo.prerequisites.length === 0) return 'Няма';
 
   return skillInfo.prerequisites.map(prereq => {
-    const prereqName = SKILL_TREE[prereq].name;
-
-    // Special level requirements
-    if (prereq === SKILL_TYPES.ENHANCED_ATTACK) {
-      // STRONG_ATTACK requires ENHANCED_ATTACK level 2+
-      return `${prereqName} (ниво 2+)`;
+    // Use custom display text if provided, otherwise generate automatically
+    if (prereq.displayText) {
+      return prereq.displayText;
     }
 
-    // Default: just the name
-    return prereqName;
+    // Generate display text based on prerequisite type
+    switch (prereq.type) {
+      case "skill_level":
+        const skillName = SKILL_TREE[prereq.skill].name;
+        return `${skillName} (ниво ${prereq.level}+)`;
+
+      case "player_level":
+        return `Ниво на героя ${prereq.level}+`;
+
+      case "quest_completed":
+        return `Завършена мисия: ${prereq.questId}`;
+
+      case "achievement_unlocked":
+        return `Отключено постижение: ${prereq.achievementId}`;
+
+      default:
+        return `Неизвестно изискване: ${prereq.type}`;
+    }
   }).join(', ');
 }
 
@@ -716,7 +729,7 @@ const SKILL_GRID_LAYOUT = [
   // Row 2 - Real skills
   [SKILL_TYPES.BASIC_ATTACK_MEDIUM, SKILL_TYPES.SECONDARY_ATTACK_MEDIUM, SKILL_TYPES.STRONG_ATTACK, SKILL_TYPES.SKILL_02_04, SKILL_TYPES.SKILL_02_05],
   // Row 3 - Real skills
-  [SKILL_TYPES.BASIC_ATTACK_HEAVY, SKILL_TYPES.SECONDARY_ATTACK_HEAVY, SKILL_TYPES.SKILL_03_03, SKILL_TYPES.SKILL_03_04, SKILL_TYPES.SKILL_03_05],
+  [SKILL_TYPES.BASIC_ATTACK_HEAVY, SKILL_TYPES.SECONDARY_ATTACK_HEAVY, SKILL_TYPES.ULTIMATE_ATTACK, SKILL_TYPES.SKILL_03_04, SKILL_TYPES.SKILL_03_05],
   // Row 4 - Test skills
   [SKILL_TYPES.SKILL_04_01, SKILL_TYPES.SKILL_04_02, SKILL_TYPES.SKILL_04_03, SKILL_TYPES.SKILL_04_04, SKILL_TYPES.SKILL_04_05],
   // Row 5 - Test skills
