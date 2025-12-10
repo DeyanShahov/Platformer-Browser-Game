@@ -774,19 +774,6 @@ function updateSelectedSkillInfo() {
   const prereqText = skillInfo.prerequisites.length > 0
     ? skillInfo.prerequisites.map(p => SKILL_TREE[p].name).join(', ')
     : 'Няма';
-  document.getElementById('skillPrerequisites').textContent = `Prerequisites: ${prereqText}`;
-
-  document.getElementById('skillResourceCost').textContent = `Resource Cost: ${getResourceDisplay(skillInfo)}`;
-  document.getElementById('skillPointCost').textContent = `Skill Points: ${skillInfo.skillPointsCost}`;
-
-  // Add new skill properties to the display
-  const skillDetails = document.getElementById('skillRequirements');
-  const additionalInfo = `
-    <div>Damage: +${skillInfo.damageModifier} (${skillInfo.damageType})</div>
-    <div>Range: ${skillInfo.rangeType}</div>
-    <div>Target: ${skillInfo.targetType}</div>
-  `;
-  skillDetails.innerHTML += additionalInfo;
 
   // Update status
   let statusText = 'Status: ';
@@ -797,7 +784,19 @@ function updateSelectedSkillInfo() {
   } else {
     statusText += 'Locked';
   }
-  document.getElementById('skillStatus').textContent = statusText;
+
+  // ПРЕЗАПИСВА цялата информация вместо да ДОБАВЯ
+  const skillDetails = document.getElementById('skillRequirements');
+  const fullInfo = `
+    <div>Prerequisites: ${prereqText}</div>
+    <div>Resource Cost: ${getResourceDisplay(skillInfo)}</div>
+    <div>Skill Points: ${skillInfo.skillPointsCost}</div>
+    <div>Damage: +${skillInfo.damageModifier} (${skillInfo.damageType})</div>
+    <div>Range: ${skillInfo.rangeType}</div>
+    <div>Target: ${skillInfo.targetType}</div>
+    <div>${statusText}</div>
+  `;
+  skillDetails.innerHTML = fullInfo; // ПРЕЗАПИСВА вместо ДОБАВЯ
 
   // Update unlock button
   const unlockBtn = document.getElementById('unlockSkillBtn');
