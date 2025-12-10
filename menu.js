@@ -603,6 +603,107 @@ function calculateTotalPassiveEffect(skillInfo, player, skillType) {
   };
 }
 
+// Helper function to get skill level display text (current/max)
+function getSkillLevelDisplay(player, skillType) {
+  const skill = SKILL_TREE[skillType];
+  if (!skill) return '0/0';
+
+  const currentLevel = window.skillTreeManager.getSkillLevel(player, skillType);
+  const maxLevel = skill.maxLevel || 1; // Default to 1 for non-leveling skills
+
+  return `${currentLevel}/${maxLevel}`;
+}
+
+// Helper function to get current effect display text
+function getCurrentEffectDisplay(player, skillType, skillInfo) {
+  const currentLevel = window.skillTreeManager.getSkillLevel(player, skillType);
+
+  if (currentLevel === 0) {
+    return "Ненаучен скил";
+  }
+
+  // Calculate total effect from all levels up to current
+  if (skillInfo.passiveEffect && skillInfo.levelEffects) {
+    const totalValue = skillInfo.levelEffects
+      .slice(0, currentLevel)
+      .reduce((sum, effect) => sum + effect.value, 0);
+    return `+${totalValue} ${skillInfo.passiveEffect.stat}`;
+  }
+
+  // For non-leveling skills or active skills
+  return skillInfo.description;
+}
+
+// Helper function to get next effect display text
+function getNextEffectDisplay(player, skillType, skillInfo) {
+  const currentLevel = window.skillTreeManager.getSkillLevel(player, skillType);
+  const maxLevel = skillInfo.maxLevel || 1;
+
+  if (currentLevel >= maxLevel) {
+    return "Максимално развитие";
+  }
+
+  if (currentLevel === 0) {
+    // First time unlocking
+    if (skillInfo.levelEffects && skillInfo.levelEffects[0]) {
+      return skillInfo.levelEffects[0].description;
+    }
+    return skillInfo.description;
+  }
+
+  // Upgrading to next level
+  if (skillInfo.levelEffects && skillInfo.levelEffects[currentLevel]) {
+    const nextEffect = skillInfo.levelEffects[currentLevel];
+    const totalAfterUpgrade = skillInfo.levelEffects
+      .slice(0, currentLevel + 1)
+      .reduce((sum, effect) => sum + effect.value, 0);
+
+    return `${nextEffect.description} (общо +${totalAfterUpgrade} ${skillInfo.passiveEffect.stat})`;
+  }
+
+  return "Няма допълнителен ефект";
+}
+
+// Helper function to get skill point cost for next level
+function getSkillPointCost(player, skillType) {
+  const skill = SKILL_TREE[skillType];
+  if (!skill) return 0;
+
+  const currentLevel = window.skillTreeManager.getSkillLevel(player, skillType);
+  const maxLevel = skill.maxLevel || 1;
+
+  // If already at max level, return 0 (can't upgrade)
+  if (currentLevel >= maxLevel) {
+    return 0;
+  }
+
+  // For leveling skills, get cost from levelCosts array
+  if (skill.levelCosts && skill.levelCosts[currentLevel] !== undefined) {
+    return skill.levelCosts[currentLevel];
+  }
+
+  // Fallback for non-leveling skills
+  return skill.levelCosts ? skill.levelCosts[0] : 0;
+}
+
+// Helper function to get formatted prerequisites display with level requirements
+function getPrerequisitesDisplay(skillInfo) {
+  if (skillInfo.prerequisites.length === 0) return 'Няма';
+
+  return skillInfo.prerequisites.map(prereq => {
+    const prereqName = SKILL_TREE[prereq].name;
+
+    // Special level requirements
+    if (prereq === SKILL_TYPES.ENHANCED_ATTACK) {
+      // STRONG_ATTACK requires ENHANCED_ATTACK level 2+
+      return `${prereqName} (ниво 2+)`;
+    }
+
+    // Default: just the name
+    return prereqName;
+  }).join(', ');
+}
+
 // Skill Tree Navigation Variables
 let skillCursorRow = 0;
 let skillCursorCol = 0;
@@ -613,7 +714,7 @@ const SKILL_GRID_LAYOUT = [
   // Row 1 - Real skills
   [SKILL_TYPES.BASIC_ATTACK_LIGHT, SKILL_TYPES.SECONDARY_ATTACK_LIGHT, SKILL_TYPES.ENHANCED_ATTACK, SKILL_TYPES.SKILL_01_04, SKILL_TYPES.SKILL_01_05],
   // Row 2 - Real skills
-  [SKILL_TYPES.BASIC_ATTACK_MEDIUM, SKILL_TYPES.SECONDARY_ATTACK_MEDIUM, SKILL_TYPES.SKILL_02_03, SKILL_TYPES.SKILL_02_04, SKILL_TYPES.SKILL_02_05],
+  [SKILL_TYPES.BASIC_ATTACK_MEDIUM, SKILL_TYPES.SECONDARY_ATTACK_MEDIUM, SKILL_TYPES.STRONG_ATTACK, SKILL_TYPES.SKILL_02_04, SKILL_TYPES.SKILL_02_05],
   // Row 3 - Real skills
   [SKILL_TYPES.BASIC_ATTACK_HEAVY, SKILL_TYPES.SECONDARY_ATTACK_HEAVY, SKILL_TYPES.SKILL_03_03, SKILL_TYPES.SKILL_03_04, SKILL_TYPES.SKILL_03_05],
   // Row 4 - Test skills
@@ -744,6 +845,9 @@ function loadSkillIconForElement(element, row, col) {
   // Use CSS clipping to show the correct icon from sprite sheet
   const { x, y } = getIconPosition(skillInfo.iconRow, skillInfo.iconCol);
 
+  // Get the current player for level display
+  const player = currentSkillTreePlayer !== null ? window.players[currentSkillTreePlayer] : null;
+
   element.innerHTML = `<img src="Assets/Swordsman-Skill-Icons.webp"
     style="
       width: 100%;
@@ -754,6 +858,14 @@ function loadSkillIconForElement(element, row, col) {
     "
     onerror="this.style.display='none'; this.nextSibling.style.display='block';"
   ><div style="display:none; font-size:10px; text-align:center; color:yellow; line-height:64px;">${skillInfo.iconRow}-${skillInfo.iconCol}</div>`;
+
+  // Add level indicator
+  if (player) {
+    const levelIndicator = document.createElement('div');
+    levelIndicator.className = 'skill-level-indicator';
+    levelIndicator.textContent = getSkillLevelDisplay(player, skillType);
+    element.appendChild(levelIndicator);
+  }
 }
 
 function updateCursorPosition() {
@@ -822,12 +934,9 @@ function updateSelectedSkillInfo() {
 
   // Update skill info
   document.getElementById('skillInfoName').textContent = skillInfo.name;
-  document.getElementById('skillInfoDescription').textContent = skillInfo.description;
 
   // Update requirements
-  const prereqText = skillInfo.prerequisites.length > 0
-    ? skillInfo.prerequisites.map(p => SKILL_TREE[p].name).join(', ')
-    : 'Няма';
+  const prereqText = getPrerequisitesDisplay(skillInfo);
 
   // Update status
   let statusText = 'Status: ';
@@ -839,33 +948,30 @@ function updateSelectedSkillInfo() {
     statusText += 'Locked';
   }
 
-  // ПРЕЗАПИСВА цялата информация вместо да ДОБАВЯ
-  const skillDetails = document.getElementById('skillRequirements');
+  // NEW: Current Effect vs Next Effect display
+  const currentEffect = getCurrentEffectDisplay(player, skillType, skillInfo);
+  const nextEffect = getNextEffectDisplay(player, skillType, skillInfo);
 
-  // Показва различна информация за активни и пасивни умения
-  let skillTypeInfo = '';
-  if (skillInfo.passiveEffect) {
-    // Пасивно умение - изчисляваме общия ефект от всички нива
-    const totalEffect = calculateTotalPassiveEffect(skillInfo, player, skillType);
-    skillTypeInfo = `
-      <div>Effect: +${totalEffect.value} ${totalEffect.stat}</div>
-      <div>Type: Passive (Permanent)</div>
-    `;
-  } else {
-    // Активно умение
-    skillTypeInfo = `
-      <div>Damage: +${skillInfo.damageModifier} (${skillInfo.damageType})</div>
-      <div>Range: ${skillInfo.rangeType}</div>
-      <div>Target: ${skillInfo.targetType}</div>
-    `;
-  }
+  const skillDetails = document.getElementById('skillRequirements');
+  const effectsHTML = `
+    <div class="skill-effects">
+      <div class="current-effect">
+        <h4>Текущ ефект:</h4>
+        <p>${currentEffect}</p>
+      </div>
+      <div class="next-effect">
+        <h4>Следващ ефект:</h4>
+        <p>${nextEffect}</p>
+      </div>
+    </div>
+  `;
 
   const fullInfo = `
     <div>Prerequisites: ${prereqText}</div>
     <div>Resource Cost: ${getResourceDisplay(skillInfo)}</div>
-    <div>Skill Points: ${skillInfo.skillPointsCost}</div>
-    ${skillTypeInfo}
+    <div>Нужни точки за развитие: ${getSkillPointCost(player, skillType)}</div>
     <div>${statusText}</div>
+    ${effectsHTML}
   `;
   skillDetails.innerHTML = fullInfo; // ПРЕЗАПИСВА вместо ДОБАВЯ
 
