@@ -4,15 +4,7 @@
 
 class CombatCalculator {
   constructor() {
-    // Skill damage modifiers (separate from skill activation mechanics)
-    this.skillModifiers = {
-      [ACTION_TYPES.BASIC_ATTACK_LIGHT]: 1,
-      [ACTION_TYPES.BASIC_ATTACK_MEDIUM]: 3,
-      [ACTION_TYPES.BASIC_ATTACK_HEAVY]: 5,
-      [ACTION_TYPES.SECONDARY_ATTACK_LIGHT]: 3,
-      [ACTION_TYPES.SECONDARY_ATTACK_MEDIUM]: 6,
-      [ACTION_TYPES.SECONDARY_ATTACK_HEAVY]: 9
-    };
+    // Damage modifiers are now read from SKILL_TREE in skills.js
   }
 
   // Calculate total attack power for an attacker
@@ -30,7 +22,9 @@ class CombatCalculator {
     const buffBonus = this.getBuffAttackBonus(attacker);
     const debuffPenalty = this.getDebuffAttackPenalty(attacker);
 
-    const skillModifier = this.skillModifiers[skillType] || 0;
+    // Read damage modifier from skill tree instead of local skillModifiers
+    const skillInfo = window.skillTreeManager ? window.skillTreeManager.getSkillInfo(skillType) : null;
+    const skillModifier = skillInfo ? skillInfo.damageModifier || 0 : 0;
 
     const totalAttack = baseAttack + strength + equipmentBonus + buffBonus - debuffPenalty + skillModifier;
 
@@ -75,7 +69,7 @@ class CombatCalculator {
       isCritical: isCritical,
       attackPower: attackPower,
       defense: defense,
-      skillModifier: this.skillModifiers[skillType] || 0
+      skillModifier: skillInfo ? skillInfo.damageModifier || 0 : 0
     };
   }
 

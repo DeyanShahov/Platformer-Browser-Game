@@ -779,6 +779,15 @@ function updateSelectedSkillInfo() {
   document.getElementById('skillResourceCost').textContent = `Resource Cost: ${getResourceDisplay(skillInfo)}`;
   document.getElementById('skillPointCost').textContent = `Skill Points: ${skillInfo.skillPointsCost}`;
 
+  // Add new skill properties to the display
+  const skillDetails = document.getElementById('skillRequirements');
+  const additionalInfo = `
+    <div>Damage: +${skillInfo.damageModifier} (${skillInfo.damageType})</div>
+    <div>Range: ${skillInfo.rangeType}</div>
+    <div>Target: ${skillInfo.targetType}</div>
+  `;
+  skillDetails.innerHTML += additionalInfo;
+
   // Update status
   let statusText = 'Status: ';
   if (player.unlockedSkills.has(skillType)) {

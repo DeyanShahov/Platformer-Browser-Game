@@ -19,11 +19,34 @@ const RESOURCE_TYPES = {
   ENERGY: 'energy'
 };
 
+// Damage types for skills
+const DAMAGE_TYPES = {
+  PHYSICAL: 'physical',
+  MAGICAL: 'magical',
+  SPECIAL: 'special'
+};
+
+// Range types for skills
+const RANGE_TYPES = {
+  MELEE: 'melee',
+  RANGE: 'range'
+};
+
+// Target types for skills
+const TARGET_TYPES = {
+  SINGLE_TARGET: 'singletarget',
+  AOE: 'aoe'
+};
+
 // Skill tree definition with prerequisites, resource costs, and icon coordinates
 const SKILL_TREE = {
   [SKILL_TYPES.BASIC_ATTACK_LIGHT]: {
     name: 'Лека основна атака',
     description: 'Бърза лека атака без ресурсни изисквания',
+    damageModifier: 1,           // Сила на атаката
+    damageType: DAMAGE_TYPES.PHYSICAL,      // physical/magical/special
+    rangeType: RANGE_TYPES.MELEE,          // melee/range
+    targetType: TARGET_TYPES.SINGLE_TARGET, // singletarget/aoe
     unlocked: true, // Always available
     prerequisites: [],
     skillPointsCost: 0,
@@ -35,6 +58,10 @@ const SKILL_TREE = {
   [SKILL_TYPES.BASIC_ATTACK_MEDIUM]: {
     name: 'Средна основна атака',
     description: 'Средна атака, изисква 10 мана',
+    damageModifier: 3,           // Сила на атаката
+    damageType: DAMAGE_TYPES.PHYSICAL,      // physical/magical/special
+    rangeType: RANGE_TYPES.MELEE,          // melee/range
+    targetType: TARGET_TYPES.SINGLE_TARGET, // singletarget/aoe
     unlocked: false,
     prerequisites: [SKILL_TYPES.BASIC_ATTACK_LIGHT],
     skillPointsCost: 1,
@@ -46,6 +73,10 @@ const SKILL_TREE = {
   [SKILL_TYPES.BASIC_ATTACK_HEAVY]: {
     name: 'Тежка основна атака',
     description: 'Мощна тежка атака, изисква 20 енергия',
+    damageModifier: 5,           // Сила на атаката
+    damageType: DAMAGE_TYPES.PHYSICAL,      // physical/magical/special
+    rangeType: RANGE_TYPES.MELEE,          // melee/range
+    targetType: TARGET_TYPES.SINGLE_TARGET, // singletarget/aoe
     unlocked: false,
     prerequisites: [SKILL_TYPES.BASIC_ATTACK_MEDIUM],
     skillPointsCost: 1,
@@ -57,6 +88,10 @@ const SKILL_TREE = {
   [SKILL_TYPES.SECONDARY_ATTACK_LIGHT]: {
     name: 'Лека допълнителна атака',
     description: 'Бърза допълнителна атака без ресурсни изисквания',
+    damageModifier: 3,           // Сила на атаката
+    damageType: DAMAGE_TYPES.PHYSICAL,      // physical/magical/special
+    rangeType: RANGE_TYPES.MELEE,          // melee/range
+    targetType: TARGET_TYPES.SINGLE_TARGET, // singletarget/aoe
     unlocked: true, // Always available
     prerequisites: [],
     skillPointsCost: 0,
@@ -68,6 +103,10 @@ const SKILL_TREE = {
   [SKILL_TYPES.SECONDARY_ATTACK_MEDIUM]: {
     name: 'Средна допълнителна атака',
     description: 'Средна допълнителна атака, изисква 10 мана',
+    damageModifier: 6,           // Сила на атаката
+    damageType: DAMAGE_TYPES.PHYSICAL,      // physical/magical/special
+    rangeType: RANGE_TYPES.MELEE,          // melee/range
+    targetType: TARGET_TYPES.SINGLE_TARGET, // singletarget/aoe
     unlocked: false,
     prerequisites: [SKILL_TYPES.SECONDARY_ATTACK_LIGHT],
     skillPointsCost: 1,
@@ -79,6 +118,10 @@ const SKILL_TREE = {
   [SKILL_TYPES.SECONDARY_ATTACK_HEAVY]: {
     name: 'Тежка допълнителна атака',
     description: 'Мощна тежка допълнителна атака, изисква 20 енергия',
+    damageModifier: 9,           // Сила на атаката
+    damageType: DAMAGE_TYPES.PHYSICAL,      // physical/magical/special
+    rangeType: RANGE_TYPES.MELEE,          // melee/range
+    targetType: TARGET_TYPES.SINGLE_TARGET, // singletarget/aoe
     unlocked: false,
     prerequisites: [SKILL_TYPES.SECONDARY_ATTACK_MEDIUM],
     skillPointsCost: 1,
@@ -198,4 +241,7 @@ window.skillTreeManager = new SkillTreeManager();
 // Export for use in other files
 window.SKILL_TYPES = SKILL_TYPES;
 window.RESOURCE_TYPES = RESOURCE_TYPES;
+window.DAMAGE_TYPES = DAMAGE_TYPES;
+window.RANGE_TYPES = RANGE_TYPES;
+window.TARGET_TYPES = TARGET_TYPES;
 window.SKILL_TREE = SKILL_TREE;
