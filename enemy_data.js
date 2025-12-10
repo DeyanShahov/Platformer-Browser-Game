@@ -31,7 +31,7 @@ class EnemyData {
         experienceReward: 500
       },
       boss: {
-        maxHealth: 200,
+        maxHealth: 2100,
         baseAttack: 12,
         baseDefense: 8,
         strength: 15,
@@ -111,7 +111,9 @@ function createEnemyWithData(enemyType = 'basic', level = 1) {
     const stats = enemyData.getScaledStats();
 
     // Create the enemy entity (using existing createEntity function)
-    const enemy = window.createEntity(450, CANVAS_HEIGHT - 100, 50, 60, 60, "#FF3020");
+    // Use default Y position if CANVAS_HEIGHT is not available
+    const enemyY = (typeof CANVAS_HEIGHT !== 'undefined') ? CANVAS_HEIGHT - 100 : 300;
+    const enemy = window.createEntity(450, enemyY, 50, 60, 60, "#FF3020");
 
     // Apply stats from enemy data
     enemy.maxHealth = stats.maxHealth;
@@ -119,6 +121,9 @@ function createEnemyWithData(enemyType = 'basic', level = 1) {
     enemy.currentAction = null;
     enemy.executionTimer = 0;
     enemy.hit = false;
+
+    // Entity type for combat system
+    enemy.entityType = 'enemy';
 
     // Add character info for combat system
     enemy.characterInfo = new window.CharacterInfo('enemy');
@@ -135,6 +140,11 @@ function createEnemyWithData(enemyType = 'basic', level = 1) {
 
     // Store enemy data for reference
     enemy.enemyData = enemyData;
+
+    // Register enemy with combat system
+    if (window.enemyCombatManager) {
+      window.enemyCombatManager.registerEnemy(enemy);
+    }
 
     console.log(`[ENEMY] Created ${enemyData.getDisplayName()} (Level ${level}) with ${stats.maxHealth} HP`);
 

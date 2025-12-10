@@ -9,26 +9,34 @@ class CombatCalculator {
 
   // Calculate total attack power for an attacker
   calculateAttackPower(attacker, skillType) {
-    if (!attacker.characterInfo) {
-      console.warn('Attacker has no characterInfo:', attacker);
-      return 0;
+    // Handle player attackers (have characterInfo and dynamic stats)
+    if (attacker.characterInfo) {
+      const baseAttack = attacker.baseAttack || attacker.characterInfo.baseAttack || 0;
+      const strength = attacker.characterInfo.strength || 0;
+
+      // Future: equipment bonuses, buffs, debuffs
+      const equipmentBonus = this.getEquipmentAttackBonus(attacker);
+      const buffBonus = this.getBuffAttackBonus(attacker);
+      const debuffPenalty = this.getDebuffAttackPenalty(attacker);
+
+      // Read damage modifier from skill tree instead of local skillModifiers
+      const skillInfo = window.skillTreeManager ? window.skillTreeManager.getSkillInfo(skillType) : null;
+      const skillModifier = skillInfo ? skillInfo.damageModifier || 0 : 0;
+
+      const totalAttack = baseAttack + strength + equipmentBonus + buffBonus - debuffPenalty + skillModifier;
+
+      return Math.max(0, totalAttack);
     }
 
-    const baseAttack = attacker.baseAttack; // Use dynamic value from player (can be modified by passive skills)
-    const strength = attacker.characterInfo.strength;
+    // Handle enemy attackers (simple fixed attack power)
+    if (attacker.entityType === 'enemy') {
+      const baseAttack = attacker.attackPower || attacker.enemyData?.attackPower || 5; // Default enemy attack
+      return Math.max(0, baseAttack);
+    }
 
-    // Future: equipment bonuses, buffs, debuffs
-    const equipmentBonus = this.getEquipmentAttackBonus(attacker);
-    const buffBonus = this.getBuffAttackBonus(attacker);
-    const debuffPenalty = this.getDebuffAttackPenalty(attacker);
-
-    // Read damage modifier from skill tree instead of local skillModifiers
-    const skillInfo = window.skillTreeManager ? window.skillTreeManager.getSkillInfo(skillType) : null;
-    const skillModifier = skillInfo ? skillInfo.damageModifier || 0 : 0;
-
-    const totalAttack = baseAttack + strength + equipmentBonus + buffBonus - debuffPenalty + skillModifier;
-
-    return Math.max(0, totalAttack);
+    // Fallback for unknown attacker types
+    console.warn('Unknown attacker type:', attacker);
+    return 0;
   }
 
   // Calculate total defense for a defender
@@ -75,10 +83,18 @@ class CombatCalculator {
 
   // Check if attack is a critical hit
   checkCriticalHit(attacker) {
-    if (!attacker.characterInfo) return false;
+    // Players have critical chance from characterInfo
+    if (attacker.characterInfo && attacker.characterInfo.criticalChance !== undefined) {
+      const critChance = attacker.characterInfo.criticalChance / 100; // Convert percentage to decimal
+      return Math.random() < critChance;
+    }
 
-    const critChance = attacker.characterInfo.criticalChance / 100; // Convert percentage to decimal
-    return Math.random() < critChance;
+    // Enemies have a small chance for critical hits
+    if (attacker.entityType === 'enemy') {
+      return Math.random() < 0.05; // 5% chance for enemy crits
+    }
+
+    return false;
   }
 
   // Placeholder methods for future systems
@@ -333,6 +349,91 @@ class CombatResolver {
   }
 }
 
+// Enemy Combat Manager for arcade-style RPG combat
+// Manages enemy attack cooldowns and multi-enemy simultaneous attacks
+class EnemyCombatManager {
+  constructor() {
+    this.enemyAttackCooldowns = new Map(); // enemy -> current cooldown time
+    this.defaultAttackCooldown = 1.0; // 1 second between attacks per enemy
+  }
+
+  // Register an enemy for combat management
+  registerEnemy(enemy) {
+    this.enemyAttackCooldowns.set(enemy, 0);
+    console.log(`[ENEMY COMBAT] Registered enemy for combat:`, enemy);
+  }
+
+  // Unregister enemy (when defeated or removed)
+  unregisterEnemy(enemy) {
+    this.enemyAttackCooldowns.delete(enemy);
+    console.log(`[ENEMY COMBAT] Unregistered enemy from combat:`, enemy);
+  }
+
+  // Check if enemy can attack (cooldown expired)
+  canEnemyAttack(enemy) {
+    const cooldown = this.enemyAttackCooldowns.get(enemy);
+    return cooldown !== undefined && cooldown <= 0;
+  }
+
+  // Perform enemy attack on player
+  performEnemyAttack(enemy, player) {
+    if (!this.canEnemyAttack(enemy)) {
+      return false;
+    }
+
+    // Execute the attack
+    const attackResult = window.combatResolver.resolveAttack(enemy, player, 'enemy_attack');
+
+    // Set attack cooldown for this enemy
+    this.enemyAttackCooldowns.set(enemy, this.defaultAttackCooldown);
+
+    console.log(`[ENEMY COMBAT] Enemy attacked player. Cooldown set to ${this.defaultAttackCooldown}s`);
+    return attackResult !== null;
+  }
+
+  // Update all enemy attack cooldowns
+  updateCooldowns(dt) {
+    let updatedCount = 0;
+    for (let [enemy, cooldown] of this.enemyAttackCooldowns) {
+      if (cooldown > 0) {
+        this.enemyAttackCooldowns.set(enemy, cooldown - dt);
+        updatedCount++;
+      }
+    }
+
+    if (updatedCount > 0) {
+      console.log(`[ENEMY COMBAT] Updated ${updatedCount} enemy cooldowns`);
+    }
+  }
+
+  // Get current cooldown for an enemy
+  getEnemyCooldown(enemy) {
+    return this.enemyAttackCooldowns.get(enemy) || 0;
+  }
+
+  // Force reset cooldown for an enemy (for testing or special cases)
+  resetEnemyCooldown(enemy) {
+    this.enemyAttackCooldowns.set(enemy, 0);
+    console.log(`[ENEMY COMBAT] Reset cooldown for enemy:`, enemy);
+  }
+
+  // Get all registered enemies
+  getRegisteredEnemies() {
+    return Array.from(this.enemyAttackCooldowns.keys());
+  }
+
+  // Get combat-ready enemies (cooldown <= 0)
+  getReadyEnemies() {
+    const ready = [];
+    for (let [enemy, cooldown] of this.enemyAttackCooldowns) {
+      if (cooldown <= 0) {
+        ready.push(enemy);
+      }
+    }
+    return ready;
+  }
+}
+
 class DamageNumberManager {
   constructor() {
     this.activeNumbers = [];
@@ -413,9 +514,11 @@ class DamageNumberManager {
 // Global combat system instances
 window.combatCalculator = new CombatCalculator();
 window.combatResolver = new CombatResolver();
+window.enemyCombatManager = new EnemyCombatManager();
 window.damageNumberManager = new DamageNumberManager();
 
 // Export for use in other files
 window.CombatCalculator = CombatCalculator;
 window.CombatResolver = CombatResolver;
+window.EnemyCombatManager = EnemyCombatManager;
 window.DamageNumberManager = DamageNumberManager;

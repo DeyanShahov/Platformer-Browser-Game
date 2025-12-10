@@ -63,37 +63,33 @@ function updatePlayer(player, playerIndex, dt) {
     }
   }
 
-  // Проверка дали играчът е ударен от врагове
-  if (!player.hit) {
+  // Enemy attacks using the new EnemyCombatManager system
+  // Check if any enemy can attack this player
+  if (window.enemyCombatManager) {
     const enemies = window.gameState ? window.gameState.getEntitiesByType('enemy') : [window.enemy].filter(e => e);
 
     for (const enemy of enemies) {
       if (!enemy || !enemy.currentAction || !isAttackAction(enemy.currentAction)) continue;
 
+      // Check collision for enemy attack
       const hit = checkHitboxCollision(enemy, player, {
         zTolerance: 20,
         zThickness: 40
       });
 
-      if (hit) {
-        // Use combat system to calculate and apply damage
-        const combatEvent = window.combatResolver.resolveAttack(enemy, player, enemy.currentAction);
+      if (hit && window.enemyCombatManager.canEnemyAttack(enemy)) {
+        // Use EnemyCombatManager to perform the attack
+        const attackSuccess = window.enemyCombatManager.performEnemyAttack(enemy, player);
 
-        // Add damage number for visual feedback
-        if (combatEvent && combatEvent.actualDamage > 0) {
-          const damageX = player.x + player.w / 2;
-          const damageY = player.y - 10;
-          window.damageNumberManager.addDamageNumber(damageX, damageY, combatEvent.actualDamage, combatEvent.damageResult.isCritical);
+        if (attackSuccess) {
+          // Add damage number for visual feedback (damage numbers are handled inside resolveAttack)
+          // Give experience for taking damage (for testing stats system)
+          if (player.characterInfo) {
+            player.characterInfo.addExperience(5);
+            console.log(`Player ${window.gameState ? window.gameState.players.indexOf(player) + 1 : players.indexOf(player) + 1} gained 5 experience!`);
+          }
         }
-
-        player.hit = true;
-
-        // Give experience for taking damage (for testing stats system)
-        if (player.characterInfo) {
-          player.characterInfo.addExperience(5);
-          console.log(`Player ${window.gameState ? window.gameState.players.indexOf(player) + 1 : players.indexOf(player) + 1} gained 5 experience!`);
-        }
-        break; // Само един удар на атака
+        break; // Only one enemy attack per player per frame
       }
     }
   }
@@ -620,6 +616,11 @@ function loop(ts) {
   // Update damage numbers
   if (window.damageNumberManager) {
     window.damageNumberManager.update(dt);
+  }
+
+  // Update enemy combat manager (attack cooldowns)
+  if (window.enemyCombatManager) {
+    window.enemyCombatManager.updateCooldowns(dt);
   }
 
   requestAnimationFrame(loop);
