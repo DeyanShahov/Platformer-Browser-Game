@@ -1042,6 +1042,13 @@ function loadSkillIconForElement(element, row, col) {
   const skillType = currentLayout[row][col];
   const skillInfo = SKILL_TREE[skillType];
 
+  // Add CSS class based on skill usage type
+  if (skillInfo.usageType === SKILL_USAGE_TYPES.ACTIVE) {
+    element.classList.add('skill-active');
+  } else if (skillInfo.usageType === SKILL_USAGE_TYPES.ACTIVE_PASSIVE) {
+    element.classList.add('skill-active-passive');
+  }
+
   // Use CSS clipping to show the correct icon from sprite sheet
   const { x, y } = getIconPosition(skillInfo.iconRow, skillInfo.iconCol);
 
@@ -1058,6 +1065,21 @@ function loadSkillIconForElement(element, row, col) {
     "
     onerror="this.style.display='none'; this.nextSibling.style.display='block';"
   ><div style="display:none; font-size:10px; text-align:center; color:yellow; line-height:64px;">${skillInfo.iconRow}-${skillInfo.iconCol}</div>`;
+
+  // Add type indicator for active skills
+  if (skillInfo.usageType === SKILL_USAGE_TYPES.ACTIVE) {
+    const indicator = document.createElement('div');
+    indicator.className = 'skill-type-indicator';
+    indicator.textContent = '⚡';
+    indicator.title = 'Активно умение - изисква ръчно активиране';
+    element.appendChild(indicator);
+  } else if (skillInfo.usageType === SKILL_USAGE_TYPES.ACTIVE_PASSIVE) {
+    const indicator = document.createElement('div');
+    indicator.className = 'skill-type-indicator';
+    indicator.textContent = '🔄';
+    indicator.title = 'Активно-пасивно умение - toggle с ресурсна цена';
+    element.appendChild(indicator);
+  }
 
   // Add level indicator
   if (player) {
@@ -1410,6 +1432,20 @@ function switchSkillTreePage(page) {
   }
 
   console.log(`Switched to skill tree page: ${page}`);
+}
+
+// Helper function to get skill type display text
+function getSkillTypeDisplayText(usageType) {
+  switch (usageType) {
+    case SKILL_USAGE_TYPES.ACTIVE:
+      return 'Активно';
+    case SKILL_USAGE_TYPES.PASSIVE:
+      return 'Пасивно';
+    case SKILL_USAGE_TYPES.ACTIVE_PASSIVE:
+      return 'Активно-пасивно';
+    default:
+      return 'Неизвестен тип';
+  }
 }
 
 // Make skill tree and character stats functions global
