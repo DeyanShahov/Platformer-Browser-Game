@@ -91,9 +91,20 @@ class SkillTreeManager {
       // Mark as unlocked for backwards compatibility
       player.unlockedSkills.add(skillType);
 
-      // Apply level effect if exists
+      // Apply level effects (support both single effect and array of effects)
       if (skill.levelEffects && skill.levelEffects[currentLevel]) {
-        this.applyPassiveEffect(player, skill.levelEffects[currentLevel]);
+        const levelEffects = skill.levelEffects[currentLevel];
+
+        // Check if level has multiple effects (array) or single effect
+        if (Array.isArray(levelEffects)) {
+          // Multiple effects per level
+          levelEffects.forEach(effect => {
+            this.applyPassiveEffect(player, effect);
+          });
+        } else {
+          // Single effect (backwards compatibility)
+          this.applyPassiveEffect(player, levelEffects);
+        }
       }
 
       console.log(`Player ${currentLevel === 0 ? 'unlocked' : 'upgraded'} ${skill.name} to level ${currentLevel + 1}`);
@@ -131,7 +142,14 @@ class SkillTreeManager {
     if (canUpgrade) {
       nextLevelCost = this.getNextLevelCost(skillType, currentLevel);
       if (skill.levelEffects && skill.levelEffects[currentLevel]) {
-        nextLevelEffect = skill.levelEffects[currentLevel].description;
+        const levelEffects = skill.levelEffects[currentLevel];
+        if (Array.isArray(levelEffects)) {
+          // Multiple effects - show count and first effect description
+          nextLevelEffect = `${levelEffects.length} effects (${levelEffects[0].description})`;
+        } else {
+          // Single effect - show description directly
+          nextLevelEffect = levelEffects.description;
+        }
       }
     }
 
@@ -147,9 +165,26 @@ class SkillTreeManager {
   // Apply passive effect to player
   applyPassiveEffect(player, effect) {
     if (effect.stat && typeof effect.value === 'number') {
-      const oldValue = player[effect.stat] || 0;
-      player[effect.stat] += effect.value;
-      console.log(`Applied passive effect: ${effect.stat} ${oldValue} -> ${player[effect.stat]} (+${effect.value})`);
+      // Support nested properties with dot notation (e.g., 'characterInfo.baseDefense')
+      const statPath = effect.stat.split('.');
+      let target = player;
+      let currentPath = '';
+
+      // Navigate to the nested property
+      for (let i = 0; i < statPath.length - 1; i++) {
+        currentPath += (currentPath ? '.' : '') + statPath[i];
+        if (!target[statPath[i]]) {
+          console.error(`Cannot access nested property ${currentPath} on player`);
+          return;
+        }
+        target = target[statPath[i]];
+      }
+
+      const finalProp = statPath[statPath.length - 1];
+      const oldValue = target[finalProp] || 0;
+      target[finalProp] += effect.value;
+
+      console.log(`Applied passive effect: ${effect.stat} ${oldValue} -> ${target[finalProp]} (+${effect.value})`);
     }
   }
 

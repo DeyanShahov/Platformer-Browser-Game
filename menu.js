@@ -624,10 +624,25 @@ function getCurrentEffectDisplay(player, skillType, skillInfo) {
 
   // Calculate total effect from all levels up to current
   if (skillInfo.passiveEffect && skillInfo.levelEffects) {
+    // For single-level skills with multiple effects, show all effects
+    if (currentLevel === 1 && skillInfo.maxLevel === 1 && Array.isArray(skillInfo.levelEffects[0])) {
+      const effects = skillInfo.levelEffects[0];
+      return effects.map(effect => effect.description).join(', ');
+    }
+
+    // For multi-level skills with single effects per level, accumulate values
     const totalValue = skillInfo.levelEffects
       .slice(0, currentLevel)
-      .reduce((sum, effect) => sum + effect.value, 0);
-    return `+${totalValue} ${skillInfo.passiveEffect.stat}`;
+      .reduce((sum, effect) => {
+        // Handle both single effects and arrays of effects
+        if (Array.isArray(effect)) {
+          return sum + effect.reduce((subSum, subEffect) => subSum + subEffect.value, 0);
+        }
+        return sum + (effect.value || 0);
+      }, 0);
+
+    const displayName = skillInfo.passiveEffect.statDisplay || skillInfo.passiveEffect.stat;
+    return `+${totalValue} ${displayName}`;
   }
 
   // For non-leveling skills or active skills
@@ -646,19 +661,34 @@ function getNextEffectDisplay(player, skillType, skillInfo) {
   if (currentLevel === 0) {
     // First time unlocking
     if (skillInfo.levelEffects && skillInfo.levelEffects[0]) {
-      return skillInfo.levelEffects[0].description;
+      const levelEffects = skillInfo.levelEffects[0];
+      if (Array.isArray(levelEffects)) {
+        // Multiple effects - show all descriptions
+        return levelEffects.map(effect => effect.description).join(', ');
+      } else {
+        // Single effect
+        return levelEffects.description;
+      }
     }
     return skillInfo.description;
   }
 
   // Upgrading to next level
   if (skillInfo.levelEffects && skillInfo.levelEffects[currentLevel]) {
-    const nextEffect = skillInfo.levelEffects[currentLevel];
-    const totalAfterUpgrade = skillInfo.levelEffects
-      .slice(0, currentLevel + 1)
-      .reduce((sum, effect) => sum + effect.value, 0);
+    const nextLevelEffects = skillInfo.levelEffects[currentLevel];
 
-    return `${nextEffect.description} (общо +${totalAfterUpgrade} ${skillInfo.passiveEffect.stat})`;
+    if (Array.isArray(nextLevelEffects)) {
+      // Multiple effects - show all descriptions
+      const descriptions = nextLevelEffects.map(effect => effect.description);
+      return `${descriptions.join(', ')}`;
+    } else {
+      // Single effect - calculate total
+      const totalAfterUpgrade = skillInfo.levelEffects
+        .slice(0, currentLevel + 1)
+        .reduce((sum, effect) => sum + effect.value, 0);
+
+      return `${nextLevelEffects.description} (общо +${totalAfterUpgrade} ${skillInfo.passiveEffect.statDisplay || skillInfo.passiveEffect.stat})`;
+    }
   }
 
   return "Няма допълнителен ефект";
@@ -725,18 +755,124 @@ let skillIcons = {}; // Cache for loaded icons
 // Skill grid layout: 6 rows x 5 columns (30 total positions)
 const SKILL_GRID_LAYOUT = [
   // Row 1 - Real skills
-  [SKILL_TYPES.BASIC_ATTACK_LIGHT, SKILL_TYPES.SECONDARY_ATTACK_LIGHT, SKILL_TYPES.ENHANCED_ATTACK, SKILL_TYPES.SKILL_01_04, SKILL_TYPES.SKILL_01_05],
+  [SKILL_TYPES.BASIC_ATTACK_LIGHT, SKILL_TYPES.SECONDARY_ATTACK_LIGHT, SKILL_TYPES.ENHANCED_ATTACK, SKILL_TYPES.BASIC_DEFENSE, SKILL_TYPES.COMBAT_STANCE],
   // Row 2 - Real skills
-  [SKILL_TYPES.BASIC_ATTACK_MEDIUM, SKILL_TYPES.SECONDARY_ATTACK_MEDIUM, SKILL_TYPES.STRONG_ATTACK, SKILL_TYPES.SKILL_02_04, SKILL_TYPES.SKILL_02_05],
+  [SKILL_TYPES.BASIC_ATTACK_MEDIUM, SKILL_TYPES.SECONDARY_ATTACK_MEDIUM, SKILL_TYPES.STRONG_ATTACK, SKILL_TYPES.STRONG_BODY, SKILL_TYPES.COMBAT_SENSE],
   // Row 3 - Real skills
   [SKILL_TYPES.BASIC_ATTACK_HEAVY, SKILL_TYPES.SECONDARY_ATTACK_HEAVY, SKILL_TYPES.ULTIMATE_ATTACK, SKILL_TYPES.SKILL_03_04, SKILL_TYPES.SKILL_03_05],
-  // Row 4 - Test skills
-  [SKILL_TYPES.SKILL_04_01, SKILL_TYPES.SKILL_04_02, SKILL_TYPES.SKILL_04_03, SKILL_TYPES.SKILL_04_04, SKILL_TYPES.SKILL_04_05],
+  // Row 4 - Elemental protection skills
+  [SKILL_TYPES.WATER_PROTECTION, SKILL_TYPES.FIRE_PROTECTION, SKILL_TYPES.AIR_PROTECTION, SKILL_TYPES.EARTH_PROTECTION, SKILL_TYPES.MASS_RESISTANCE],
   // Row 5 - Test skills
   [SKILL_TYPES.SKILL_05_01, SKILL_TYPES.SKILL_05_02, SKILL_TYPES.SKILL_05_03, SKILL_TYPES.SKILL_05_04, SKILL_TYPES.SKILL_05_05],
   // Row 6 - Test skills
   [SKILL_TYPES.SKILL_06_01, SKILL_TYPES.SKILL_06_02, SKILL_TYPES.SKILL_06_03, SKILL_TYPES.SKILL_06_04, SKILL_TYPES.SKILL_06_05]
 ];
+
+// Helper function to find grid position of a skill
+function findSkillGridPosition(skillType) {
+  for (let row = 0; row < SKILL_GRID_LAYOUT.length; row++) {
+    for (let col = 0; col < SKILL_GRID_LAYOUT[row].length; col++) {
+      if (SKILL_GRID_LAYOUT[row][col] === skillType) {
+        return { row, col };
+      }
+    }
+  }
+  return null;
+}
+
+// Draw connection lines between prerequisite skills
+function drawConnectionLines(svgContainer, player) {
+  // Clear existing lines
+  svgContainer.innerHTML = '';
+
+  // Icon dimensions (including margins)
+  const iconSize = 64;
+  const iconMargin = 10;
+  const totalIconSize = iconSize + iconMargin;
+
+  // Define skill chains and their gap positions (shifted one column inward)
+  const skillChains = [
+    // Basic attack chain - gap at column 1.5 (between col 1 and 2)
+    { skills: [SKILL_TYPES.BASIC_ATTACK_LIGHT, SKILL_TYPES.BASIC_ATTACK_MEDIUM, SKILL_TYPES.BASIC_ATTACK_HEAVY], gapColumn: 1.25 },
+    // Secondary attack chain - gap at column 2.5 (between col 2 and 3)
+    { skills: [SKILL_TYPES.SECONDARY_ATTACK_LIGHT, SKILL_TYPES.SECONDARY_ATTACK_MEDIUM, SKILL_TYPES.SECONDARY_ATTACK_HEAVY], gapColumn: 2.3 },
+    // Enhanced attack chain - gap at column 3.5 (between col 3 and 4)
+    { skills: [SKILL_TYPES.ENHANCED_ATTACK, SKILL_TYPES.STRONG_ATTACK, SKILL_TYPES.ULTIMATE_ATTACK], gapColumn: 3.4 }
+  ];
+
+  // Draw vertical lines for each skill chain
+  skillChains.forEach(chain => {
+    for (let i = 0; i < chain.skills.length - 1; i++) {
+      const fromSkill = chain.skills[i];
+      const toSkill = chain.skills[i + 1];
+
+      // Find grid positions
+      const fromPos = findSkillGridPosition(fromSkill);
+      const toPos = findSkillGridPosition(toSkill);
+
+      if (fromPos && toPos) {
+        // Draw vertical line in the gap between columns with dynamic color
+        drawVerticalLineInGap(svgContainer, fromPos.row, toPos.row, chain.gapColumn, totalIconSize, player, toSkill);
+      }
+    }
+  });
+}
+
+// Draw a vertical line in the gap between columns with dynamic color
+function drawVerticalLineInGap(svgContainer, fromRow, toRow, gapColumn, totalIconSize, player, toSkill) {
+  // Calculate pixel positions for the vertical line in the gap
+  const lineX = gapColumn * totalIconSize; // Position in the gap (e.g., 0.5 * totalIconSize)
+  const fromY = (fromRow + 0.5) * totalIconSize; // Center of from icon
+  const toY = (toRow + 0.5) * totalIconSize;   // Center of to icon
+
+  // Determine line color based on target skill status
+  let lineColor = '#666666'; // Default gray for locked skills
+
+  if (player.unlockedSkills.has(toSkill)) {
+    lineColor = '#00ff00'; // Green - target skill is unlocked
+  } else if (window.skillTreeManager.canUnlockSkill(player, toSkill)) {
+    lineColor = '#ff8800'; // Orange - target skill can be unlocked
+  } else {
+    lineColor = '#666666'; // Gray - target skill is locked
+  }
+
+  // Create vertical line
+  const line = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+  line.setAttribute('x1', lineX);
+  line.setAttribute('y1', fromY);
+  line.setAttribute('x2', lineX);
+  line.setAttribute('y2', toY);
+  line.setAttribute('stroke', lineColor);
+  line.setAttribute('stroke-width', '5'); // Even thicker for better visibility
+  line.setAttribute('opacity', '0.95'); // Very opaque
+  line.setAttribute('stroke-linecap', 'round');
+
+  svgContainer.appendChild(line);
+}
+
+// Draw a single curved connection line between two grid positions
+function drawConnectionLine(svgContainer, fromPos, toPos, totalIconSize) {
+  // Calculate pixel positions (center of icons)
+  const fromX = fromPos.col * totalIconSize + totalIconSize / 2;
+  const fromY = fromPos.row * totalIconSize + totalIconSize / 2;
+  const toX = toPos.col * totalIconSize + totalIconSize / 2;
+  const toY = toPos.row * totalIconSize + totalIconSize / 2;
+
+  // Create curved path using quadratic Bézier curve
+  // Control point is at the midpoint horizontally, and at the 'from' Y vertically
+  const controlX = (fromX + toX) / 2;
+  const controlY = fromY;
+
+  const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+  path.setAttribute('d', `M ${fromX} ${fromY} Q ${controlX} ${controlY} ${toX} ${toY}`);
+  path.setAttribute('stroke', '#ffffff'); // White color for better visibility
+  path.setAttribute('stroke-width', '4'); // Thicker lines
+  path.setAttribute('fill', 'none');
+  path.setAttribute('opacity', '0.9'); // More opaque
+  path.setAttribute('stroke-linecap', 'round');
+
+  svgContainer.appendChild(path);
+}
 
 // Skill Tree Functions
 function showSkillTreeForPlayer(playerIndex) {
@@ -809,6 +945,18 @@ function renderSkillTree(player) {
 
     gridEl.innerHTML = '';
 
+    // Add SVG container for connection lines (behind skill icons)
+    const svgContainer = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+    svgContainer.id = 'skillConnections';
+    svgContainer.style.position = 'absolute';
+    svgContainer.style.top = '0';
+    svgContainer.style.left = '0';
+    svgContainer.style.width = '100%';
+    svgContainer.style.height = '100%';
+    svgContainer.style.pointerEvents = 'none';
+    svgContainer.style.zIndex = '1'; // Between background and skill icons
+    gridEl.appendChild(svgContainer);
+
     // Create skill icons in grid
     for (let row = 0; row < SKILL_GRID_LAYOUT.length; row++) {
       for (let col = 0; col < SKILL_GRID_LAYOUT[row].length; col++) {
@@ -840,6 +988,9 @@ function renderSkillTree(player) {
         gridEl.appendChild(skillIcon);
       }
     }
+
+    // Draw connection lines between skills
+    drawConnectionLines(svgContainer, player);
 
     // Update selected skill info
     updateSelectedSkillInfo();

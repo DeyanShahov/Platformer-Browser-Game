@@ -271,15 +271,15 @@ class CharacterStatsUI {
     document.getElementById('speedValue').textContent = info.speed;
     document.getElementById('intelligenceValue').textContent = info.intelligence;
 
-    // Update combat attributes (чита от player обекта за динамични стойности)
+    // Update combat attributes (attack reads from player for dynamic skill updates, others from characterInfo)
     document.getElementById('baseAttackValue').textContent = player.baseAttack; // Динамично от пасивни умения
     document.getElementById('baseDefenseValue').textContent = info.baseDefense;
     document.getElementById('criticalChanceValue').textContent = info.getCriticalChanceDisplay();
 
-    // Update new combat chances
-    document.getElementById('hitChanceValue').textContent = `${Math.round(player.hitChance * 100)}%`;
-    document.getElementById('dodgeChanceValue').textContent = `${Math.round(player.dodgeChance * 100)}%`;
-    document.getElementById('blockChanceValue').textContent = `${Math.round(player.blockChance * 100)}%`;
+    // Update new combat chances (read from characterInfo for dynamic skill updates)
+    document.getElementById('hitChanceValue').textContent = `${Math.round(info.hitChance * 100)}%`;
+    document.getElementById('dodgeChanceValue').textContent = `${Math.round(info.dodgeChance * 100)}%`;
+    document.getElementById('blockChanceValue').textContent = `${Math.round(info.blockChance * 100)}%`;
 
     // Update magic resistances
     const resistances = info.getMagicResistanceDisplay();

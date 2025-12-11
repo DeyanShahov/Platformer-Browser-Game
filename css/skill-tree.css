@@ -70,6 +70,7 @@
   transition: all 0.2s;
   position: relative;
   overflow: hidden;
+  z-index: 3; /* Above SVG connection lines */
 }
 
 .skill-icon.unlocked {
@@ -89,9 +90,10 @@
 }
 
 .skill-icon.locked {
-  background: linear-gradient(135deg, #444444, #222222);
-  border: 2px solid #666666;
-  opacity: 0.5;
+  background: linear-gradient(135deg, #555555, #333333); /* Darker gray background */
+  border: 2px solid #555555;
+  filter: brightness(0.7) saturate(0.4); /* Muted appearance - darker and less colorful */
+  /* Removed opacity: 0.5; to prevent lines showing through */
 }
 
 .skill-icon.selected {

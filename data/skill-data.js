@@ -18,6 +18,23 @@ const SKILL_TYPES = {
   STRONG_ATTACK: 'strong_attack',
   ULTIMATE_ATTACK: 'ultimate_attack',
 
+  // Defense skills
+  BASIC_DEFENSE: 'basic_defense',
+  COMBAT_STANCE: 'combat_stance',
+  COMBAT_SENSE: 'combat_sense',
+
+  // Elemental protection skills
+  WATER_PROTECTION: 'water_protection',
+  FIRE_PROTECTION: 'fire_protection',
+  AIR_PROTECTION: 'air_protection',
+  EARTH_PROTECTION: 'earth_protection',
+  MASS_RESISTANCE: 'mass_resistance',
+
+  // Body enhancement skills
+  STRONG_BODY: 'strong_body',
+
+  // Test placeholder skills for large grid
+
   // Test skills for large grid (6x5 = 30 total)
   // Row 1
   SKILL_01_01: 'skill_01_01', SKILL_01_02: 'skill_01_02', SKILL_01_03: 'skill_01_03', SKILL_01_04: 'skill_01_04', SKILL_01_05: 'skill_01_05',
@@ -196,11 +213,329 @@ const SKILL_TREE = {
     iconCol: 3
   },
 
+  // Defense skills
+  [SKILL_TYPES.BASIC_DEFENSE]: {
+    name: 'Базова защита',
+    description: 'Увеличава базовата защита с 10 точки',
+    passiveEffect: { stat: 'characterInfo.baseDefense', statDisplay: 'защита', value: 10 }, // Пасивен ефект
+    unlocked: false,
+    prerequisites: [
+      {
+        type: "player_level",
+        level: 3,
+        displayText: "Ниво на героя 3+"
+      }
+    ],
+    resourceType: RESOURCE_TYPES.NONE,
+    resourceCost: 0,
+    iconRow: 3,  // Спрайт шит позиция 3-5
+    iconCol: 5,
+
+    // Single level skill - 1 точка за отключване
+    maxLevel: 1,
+    levelCosts: [1],  // 1 skill point to unlock
+    levelEffects: [
+      [ { stat: 'characterInfo.baseDefense', value: 10, description: '+10 защита' } ]    // Level 1
+    ]
+  },
+
+  // Combat stance skill - multiple stat bonuses
+  [SKILL_TYPES.COMBAT_STANCE]: {
+    name: 'Бойна стойка',
+    description: 'Мощна бойна стойка която подобрява всички бойни умения',
+    passiveEffect: {
+      stat: 'maxHealth',  // Primary stat for display
+      statDisplay: 'бойни умения',
+      value: 50
+    },
+    unlocked: false,
+    prerequisites: [],  // No prerequisites - available from start
+    resourceType: RESOURCE_TYPES.NONE,
+    resourceCost: 0,
+    iconRow: 2,  // Sprite sheet position 2-5
+    iconCol: 5,
+
+    // Single level skill - 1 точка за отключване
+    maxLevel: 1,
+    levelCosts: [1],  // Cost to unlock
+    levelEffects: [
+      // Level 1: Array of multiple effects applied simultaneously
+      [
+        { stat: 'maxHealth', value: 50, description: '+50 живот' },
+        { stat: 'baseAttack', value: 10, description: '+10 атака' },
+        { stat: 'characterInfo.baseDefense', value: 10, description: '+10 защита' },
+        { stat: 'characterInfo.blockChance', value: 0.05, description: '+5% блок' }
+      ]
+    ]
+  },
+
+  // Combat sense skill - improves combat perception
+  [SKILL_TYPES.COMBAT_SENSE]: {
+    name: 'Боен усет',
+    description: 'Подобрява бойните сетива и увеличава шансовете за успех в битка',
+    passiveEffect: {
+      stat: 'characterInfo.hitChance',  // Primary stat for display
+      statDisplay: 'бойни сетива',
+      value: 0.05
+    },
+    unlocked: false,
+    prerequisites: [],  // No prerequisites - available from start
+    resourceType: RESOURCE_TYPES.NONE,
+    resourceCost: 0,
+    iconRow: 2,  // Sprite sheet position 2-4
+    iconCol: 4,
+
+    // Single level skill - 1 точка за отключване
+    maxLevel: 1,
+    levelCosts: [1],  // Cost to unlock
+    levelEffects: [
+      // Level 1: Array of multiple effects applied simultaneously
+      [
+        { stat: 'characterInfo.hitChance', value: 0.05, description: '+5% шанс за удар' },
+        { stat: 'characterInfo.dodgeChance', value: 0.05, description: '+5% шанс за отбягване' },
+        { stat: 'characterInfo.criticalChance', value: 0.05, description: '+5% критичен удар' }
+      ]
+    ]
+  },
+
+  // Elemental protection skills
+  [SKILL_TYPES.WATER_PROTECTION]: {
+    name: 'Водна защита',
+    description: 'Увеличава резистанса към водни магии',
+    passiveEffect: {
+      stat: 'characterInfo.magicResistance.water',
+      statDisplay: 'водна резистанс',
+      value: 2
+    },
+    unlocked: false,
+    prerequisites: [],  // No prerequisites - available from start
+    resourceType: RESOURCE_TYPES.NONE,
+    resourceCost: 0,
+    iconRow: 4,  // Sprite sheet position 4-6
+    iconCol: 6,
+
+    // 5 levels - each level gives +2 water resistance
+    maxLevel: 5,
+    levelCosts: [1, 1, 1, 1, 1],  // 1 point per level
+    levelEffects: [
+      [ { stat: 'characterInfo.magicResistance.water', value: 2, description: '+2% водна резистанс' } ],
+      [ { stat: 'characterInfo.magicResistance.water', value: 2, description: '+2% водна резистанс' } ],
+      [ { stat: 'characterInfo.magicResistance.water', value: 2, description: '+2% водна резистанс' } ],
+      [ { stat: 'characterInfo.magicResistance.water', value: 2, description: '+2% водна резистанс' } ],
+      [ { stat: 'characterInfo.magicResistance.water', value: 2, description: '+2% водна резистанс' } ]
+    ]
+  },
+
+  [SKILL_TYPES.FIRE_PROTECTION]: {
+    name: 'Огнена защита',
+    description: 'Увеличава резистанса към огнени магии',
+    passiveEffect: {
+      stat: 'characterInfo.magicResistance.fire',
+      statDisplay: 'огнена резистанс',
+      value: 2
+    },
+    unlocked: false,
+    prerequisites: [],  // No prerequisites - available from start
+    resourceType: RESOURCE_TYPES.NONE,
+    resourceCost: 0,
+    iconRow: 4,  // Sprite sheet position 4-7
+    iconCol: 7,
+
+    // 5 levels - each level gives +2 fire resistance
+    maxLevel: 5,
+    levelCosts: [1, 1, 1, 1, 1],  // 1 point per level
+    levelEffects: [
+      [ { stat: 'characterInfo.magicResistance.fire', value: 2, description: '+2% огнена резистанс' } ],
+      [ { stat: 'characterInfo.magicResistance.fire', value: 2, description: '+2% огнена резистанс' } ],
+      [ { stat: 'characterInfo.magicResistance.fire', value: 2, description: '+2% огнена резистанс' } ],
+      [ { stat: 'characterInfo.magicResistance.fire', value: 2, description: '+2% огнена резистанс' } ],
+      [ { stat: 'characterInfo.magicResistance.fire', value: 2, description: '+2% огнена резистанс' } ]
+    ]
+  },
+
+  [SKILL_TYPES.AIR_PROTECTION]: {
+    name: 'Въздушна защита',
+    description: 'Увеличава резистанса към въздушни магии',
+    passiveEffect: {
+      stat: 'characterInfo.magicResistance.air',
+      statDisplay: 'въздушна резистанс',
+      value: 2
+    },
+    unlocked: false,
+    prerequisites: [],  // No prerequisites - available from start
+    resourceType: RESOURCE_TYPES.NONE,
+    resourceCost: 0,
+    iconRow: 4,  // Sprite sheet position 4-9
+    iconCol: 9,
+
+    // 5 levels - each level gives +2 air resistance
+    maxLevel: 5,
+    levelCosts: [1, 1, 1, 1, 1],  // 1 point per level
+    levelEffects: [
+      [ { stat: 'characterInfo.magicResistance.air', value: 2, description: '+2% въздушна резистанс' } ],
+      [ { stat: 'characterInfo.magicResistance.air', value: 2, description: '+2% въздушна резистанс' } ],
+      [ { stat: 'characterInfo.magicResistance.air', value: 2, description: '+2% въздушна резистанс' } ],
+      [ { stat: 'characterInfo.magicResistance.air', value: 2, description: '+2% въздушна резистанс' } ],
+      [ { stat: 'characterInfo.magicResistance.air', value: 2, description: '+2% въздушна резистанс' } ]
+    ]
+  },
+
+  [SKILL_TYPES.EARTH_PROTECTION]: {
+    name: 'Земна защита',
+    description: 'Увеличава резистанса към земни магии',
+    passiveEffect: {
+      stat: 'characterInfo.magicResistance.earth',
+      statDisplay: 'земна резистанс',
+      value: 2
+    },
+    unlocked: false,
+    prerequisites: [],  // No prerequisites - available from start
+    resourceType: RESOURCE_TYPES.NONE,
+    resourceCost: 0,
+    iconRow: 4,  // Sprite sheet position 4-10
+    iconCol: 10,
+
+    // 5 levels - each level gives +2 earth resistance
+    maxLevel: 5,
+    levelCosts: [1, 1, 1, 1, 1],  // 1 point per level
+    levelEffects: [
+      [ { stat: 'characterInfo.magicResistance.earth', value: 2, description: '+2% земна резистанс' } ],
+      [ { stat: 'characterInfo.magicResistance.earth', value: 2, description: '+2% земна резистанс' } ],
+      [ { stat: 'characterInfo.magicResistance.earth', value: 2, description: '+2% земна резистанс' } ],
+      [ { stat: 'characterInfo.magicResistance.earth', value: 2, description: '+2% земна резистанс' } ],
+      [ { stat: 'characterInfo.magicResistance.earth', value: 2, description: '+2% земна резистанс' } ]
+    ]
+  },
+
+  // Mass resistance skill - boosts all elemental resistances
+  [SKILL_TYPES.MASS_RESISTANCE]: {
+    name: 'Масов резистанс',
+    description: 'Увеличава всички магически резистанси едновременно',
+    passiveEffect: {
+      stat: 'characterInfo.magicResistance.water',  // Primary stat for display
+      statDisplay: 'всички резистанси',
+      value: 1
+    },
+    unlocked: false,
+    prerequisites: [
+      {
+        type: "skill_level",
+        skill: SKILL_TYPES.WATER_PROTECTION,
+        level: 2,
+        displayText: "Водна защита (ниво 2+)"
+      },
+      {
+        type: "skill_level",
+        skill: SKILL_TYPES.FIRE_PROTECTION,
+        level: 2,
+        displayText: "Огнена защита (ниво 2+)"
+      },
+      {
+        type: "skill_level",
+        skill: SKILL_TYPES.AIR_PROTECTION,
+        level: 2,
+        displayText: "Въздушна защита (ниво 2+)"
+      },
+      {
+        type: "skill_level",
+        skill: SKILL_TYPES.EARTH_PROTECTION,
+        level: 2,
+        displayText: "Земна защита (ниво 2+)"
+      }
+    ],
+    resourceType: RESOURCE_TYPES.NONE,
+    resourceCost: 0,
+    iconRow: 4,  // Sprite sheet position 4-4
+    iconCol: 4,
+
+    // 5 levels - each level gives +1 to all four resistances
+    maxLevel: 5,
+    levelCosts: [1, 1, 1, 1, 1],  // 1 point per level
+    levelEffects: [
+      // Level 1: +1 to all resistances
+      [
+        { stat: 'characterInfo.magicResistance.water', value: 1, description: '+1% водна резистанс' },
+        { stat: 'characterInfo.magicResistance.fire', value: 1, description: '+1% огнена резистанс' },
+        { stat: 'characterInfo.magicResistance.air', value: 1, description: '+1% въздушна резистанс' },
+        { stat: 'characterInfo.magicResistance.earth', value: 1, description: '+1% земна резистанс' }
+      ],
+      // Level 2: +1 to all resistances
+      [
+        { stat: 'characterInfo.magicResistance.water', value: 1, description: '+1% водна резистанс' },
+        { stat: 'characterInfo.magicResistance.fire', value: 1, description: '+1% огнена резистанс' },
+        { stat: 'characterInfo.magicResistance.air', value: 1, description: '+1% въздушна резистанс' },
+        { stat: 'characterInfo.magicResistance.earth', value: 1, description: '+1% земна резистанс' }
+      ],
+      // Level 3: +1 to all resistances
+      [
+        { stat: 'characterInfo.magicResistance.water', value: 1, description: '+1% водна резистанс' },
+        { stat: 'characterInfo.magicResistance.fire', value: 1, description: '+1% огнена резистанс' },
+        { stat: 'characterInfo.magicResistance.air', value: 1, description: '+1% въздушна резистанс' },
+        { stat: 'characterInfo.magicResistance.earth', value: 1, description: '+1% земна резистанс' }
+      ],
+      // Level 4: +1 to all resistances
+      [
+        { stat: 'characterInfo.magicResistance.water', value: 1, description: '+1% водна резистанс' },
+        { stat: 'characterInfo.magicResistance.fire', value: 1, description: '+1% огнена резистанс' },
+        { stat: 'characterInfo.magicResistance.air', value: 1, description: '+1% въздушна резистанс' },
+        { stat: 'characterInfo.magicResistance.earth', value: 1, description: '+1% земна резистанс' }
+      ],
+      // Level 5: +1 to all resistances
+      [
+        { stat: 'characterInfo.magicResistance.water', value: 1, description: '+1% водна резистанс' },
+        { stat: 'characterInfo.magicResistance.fire', value: 1, description: '+1% огнена резистанс' },
+        { stat: 'characterInfo.magicResistance.air', value: 1, description: '+1% въздушна резистанс' },
+        { stat: 'characterInfo.magicResistance.earth', value: 1, description: '+1% земна резистанс' }
+      ]
+    ]
+  },
+
+  // Strong body skill - enhances core attributes
+  [SKILL_TYPES.STRONG_BODY]: {
+    name: 'Здраво тяло',
+    description: 'Подобрява физическото тяло и увеличава основните характеристики',
+    passiveEffect: {
+      stat: 'characterInfo.strength',  // Primary stat for display
+      statDisplay: 'основни характеристики',
+      value: 5
+    },
+    unlocked: false,
+    prerequisites: [],  // No prerequisites - available from start
+    resourceType: RESOURCE_TYPES.NONE,
+    resourceCost: 0,
+    iconRow: 5,  // Sprite sheet position 5-8
+    iconCol: 8,
+
+    // 3 levels - each level gives +5 to strength, speed, and intelligence
+    maxLevel: 3,
+    levelCosts: [1, 1, 1],  // 1 point per level
+    levelEffects: [
+      // Level 1: +5 to all three core attributes
+      [
+        { stat: 'characterInfo.strength', value: 5, description: '+5 сила' },
+        { stat: 'characterInfo.speed', value: 5, description: '+5 бързина' },
+        { stat: 'characterInfo.intelligence', value: 5, description: '+5 интелект' }
+      ],
+      // Level 2: +5 to all three core attributes
+      [
+        { stat: 'characterInfo.strength', value: 5, description: '+5 сила' },
+        { stat: 'characterInfo.speed', value: 5, description: '+5 бързина' },
+        { stat: 'characterInfo.intelligence', value: 5, description: '+5 интелект' }
+      ],
+      // Level 3: +5 to all three core attributes
+      [
+        { stat: 'characterInfo.strength', value: 5, description: '+5 сила' },
+        { stat: 'characterInfo.speed', value: 5, description: '+5 бързина' },
+        { stat: 'characterInfo.intelligence', value: 5, description: '+5 интелект' }
+      ]
+    ]
+  },
+
   // Passive skills
   [SKILL_TYPES.ENHANCED_ATTACK]: {
     name: 'Засилена атака',
     description: 'Перманентно увеличава основната атака',
-    passiveEffect: { stat: 'baseAttack', value: 2 }, // Пасивен ефект (старият формат за обратна съвместимост)
+    passiveEffect: { stat: 'baseAttack', statDisplay: 'атака', value: 2 }, // Пасивен ефект
     unlocked: false,
     prerequisites: [],
     resourceType: RESOURCE_TYPES.NONE,
@@ -212,15 +547,15 @@ const SKILL_TREE = {
     maxLevel: 3,  // Максимум 3 нива
     levelCosts: [1, 1, 2],  // Level 1: 1pt, Level 2: 1pt, Level 3: 2pt
     levelEffects: [
-      { stat: 'baseAttack', value: 2, description: '+2 атака' },    // Level 1
-      { stat: 'baseAttack', value: 3, description: '+3 атака' },    // Level 2 (допълнително)
-      { stat: 'baseAttack', value: 10, description: '+10 атака' }   // Level 3 (допълнително)
+      [ { stat: 'baseAttack', value: 2, description: '+2 атака' } ],    // Level 1
+      [ { stat: 'baseAttack', value: 3, description: '+3 атака' } ],    // Level 2 (допълнително)
+      [ { stat: 'baseAttack', value: 10, description: '+10 атака' } ]   // Level 3 (допълнително)
     ]
   },
   [SKILL_TYPES.STRONG_ATTACK]: {
     name: 'Силна атака',
     description: 'Мощна атака която увеличава базовата атака',
-    passiveEffect: { stat: 'baseAttack', value: 2 }, // Пасивен ефект
+    passiveEffect: { stat: 'baseAttack', statDisplay: 'атака', value: 2 }, // Пасивен ефект
     unlocked: false,
     prerequisites: [
       {
@@ -239,17 +574,17 @@ const SKILL_TREE = {
     maxLevel: 5,
     levelCosts: [1, 1, 1, 1, 1],  // 1 point per level
     levelEffects: [
-      { stat: 'baseAttack', value: 2, description: '+2 атака' },    // Level 1
-      { stat: 'baseAttack', value: 2, description: '+2 атака' },    // Level 2
-      { stat: 'baseAttack', value: 2, description: '+2 атака' },    // Level 3
-      { stat: 'baseAttack', value: 2, description: '+2 атака' },    // Level 4
-      { stat: 'baseAttack', value: 2, description: '+2 атака' }     // Level 5
+      [ { stat: 'baseAttack', value: 2, description: '+2 атака' } ],    // Level 1
+      [ { stat: 'baseAttack', value: 2, description: '+2 атака' } ],    // Level 2
+      [ { stat: 'baseAttack', value: 2, description: '+2 атака' } ],    // Level 3
+      [ { stat: 'baseAttack', value: 2, description: '+2 атака' } ],    // Level 4
+      [ { stat: 'baseAttack', value: 2, description: '+2 атака' } ]     // Level 5
     ]
   },
   [SKILL_TYPES.ULTIMATE_ATTACK]: {
     name: 'Ултимативна атака',
     description: 'Мощна ултимативна атака с огромна сила',
-    passiveEffect: { stat: 'baseAttack', value: 50 }, // Пасивен ефект
+    passiveEffect: { stat: 'baseAttack', statDisplay: 'атака', value: 50 }, // Пасивен ефект
     unlocked: false,
     prerequisites: [
       {
@@ -279,7 +614,7 @@ const SKILL_TREE = {
     maxLevel: 1,
     levelCosts: [1],  // 1 skill point to unlock
     levelEffects: [
-      { stat: 'baseAttack', value: 50, description: '+50 атака' }    // Level 1
+      [ { stat: 'baseAttack', value: 50, description: '+50 атака' } ]    // Level 1
     ]
   },
 
