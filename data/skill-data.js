@@ -39,6 +39,9 @@ const SKILL_TYPES = {
   // Body enhancement skills
   STRONG_BODY: 'strong_body',
 
+  // Synergy skill
+  SYNERGY: 'synergy',
+
   // Test placeholder skills for main page grid (6x5 = 30 total)
   // Row 1
   SKILL_01_01: 'skill_01_01', SKILL_01_02: 'skill_01_02', SKILL_01_03: 'skill_01_03', SKILL_01_04: 'skill_01_04', SKILL_01_05: 'skill_01_05',
@@ -545,6 +548,54 @@ const SKILL_TREE = {
         { stat: 'characterInfo.strength', value: 5, description: '+5 сила' },
         { stat: 'characterInfo.speed', value: 5, description: '+5 бързина' },
         { stat: 'characterInfo.intelligence', value: 5, description: '+5 интелект' }
+      ]
+    ]
+  },
+
+  // Synergy skill - increases max mana and energy
+  [SKILL_TYPES.SYNERGY]: {
+    name: 'Синергия',
+    description: 'Увеличава максималната мана и енергия, подобрявайки общата ефективност',
+    passiveEffect: {
+      stat: 'maxMana',  // Primary stat for display
+      statDisplay: 'мана и енергия',
+      value: 10
+    },
+    unlocked: false,
+    prerequisites: [],  // No prerequisites - available from start
+    resourceType: RESOURCE_TYPES.NONE,
+    resourceCost: 0,
+    iconRow: 5,  // Sprite sheet position 5-10
+    iconCol: 10,
+
+    // 5 levels - each level gives +10 max mana and +10 max energy
+    maxLevel: 5,
+    levelCosts: [1, 1, 1, 1, 1],  // 1 point per level
+    levelEffects: [
+      // Level 1: +10 max mana and +10 max energy
+      [
+        { stat: 'maxMana', value: 10, description: '+10 максимална мана' },
+        { stat: 'maxEnergy', value: 10, description: '+10 максимална енергия' }
+      ],
+      // Level 2: +10 max mana and +10 max energy
+      [
+        { stat: 'maxMana', value: 10, description: '+10 максимална мана' },
+        { stat: 'maxEnergy', value: 10, description: '+10 максимална енергия' }
+      ],
+      // Level 3: +10 max mana and +10 max energy
+      [
+        { stat: 'maxMana', value: 10, description: '+10 максимална мана' },
+        { stat: 'maxEnergy', value: 10, description: '+10 максимална енергия' }
+      ],
+      // Level 4: +10 max mana and +10 max energy
+      [
+        { stat: 'maxMana', value: 10, description: '+10 максимална мана' },
+        { stat: 'maxEnergy', value: 10, description: '+10 максимална енергия' }
+      ],
+      // Level 5: +10 max mana and +10 max energy
+      [
+        { stat: 'maxMana', value: 10, description: '+10 максимална мана' },
+        { stat: 'maxEnergy', value: 10, description: '+10 максимална енергия' }
       ]
     ]
   },

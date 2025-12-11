@@ -10,6 +10,7 @@ Before creating a skill, gather the following information:
 ### Basic Information
 - **Skill Name** (string): Display name in Bulgarian (e.g., "Базова защита")
 - **Description** (string): Brief description of what the skill does
+- **Skill Page**: Which skill tree page to add to ("main" or "secondary")
 - **Grid Position**: Visual position in skill tree (row-column format, e.g., "1-4")
 
 ### Effect Details
