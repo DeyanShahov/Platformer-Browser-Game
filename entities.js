@@ -42,17 +42,82 @@ class Player {
     // Skill Tree System
     this.skillPoints = 0;  // Available skill points for unlocking skills
 
-    // Нова система за нива на уменията (замества старата unlockedSkills)
-    this.skillLevels = new Map([
-      [SKILL_TYPES.BASIC_ATTACK_LIGHT, 1],  // Започват отключени на ниво 1
-      [SKILL_TYPES.SECONDARY_ATTACK_LIGHT, 1]
-    ]);
+    // Нова система за нива на уменията по страници (замества старата unlockedSkills)
+    this.skillLevelsByPage = {
+      [SKILL_PAGES.MAIN]: new Map([
+        [SKILL_TYPES.BASIC_ATTACK_LIGHT, 1],  // Започват отключени на ниво 1
+        [SKILL_TYPES.SECONDARY_ATTACK_LIGHT, 1]
+      ]),
+      [SKILL_PAGES.SECONDARY]: new Map() // Втората страница започва празна
+    };
 
-    // Обратна съвместимост - старото unlockedSkills Set
+    // Обратна съвместимост - комбинирано unlockedSkills Set от всички страници
     this.unlockedSkills = new Set([
       SKILL_TYPES.BASIC_ATTACK_LIGHT,
       SKILL_TYPES.SECONDARY_ATTACK_LIGHT
     ]);
+
+    // Helper method to get skill levels for a specific page
+    this.getSkillLevelsForPage = (page) => {
+      return this.skillLevelsByPage[page] || new Map();
+    };
+
+    // Helper method to get combined skill levels from all pages
+    this.skillLevels = new Proxy({}, {
+      get: (target, prop) => {
+        // If accessing Map methods, delegate to combined logic
+        if (prop === 'get') {
+          return (skillType) => {
+            // Check all pages for this skill
+            for (const page of Object.values(SKILL_PAGES)) {
+              const pageLevels = this.skillLevelsByPage[page];
+              if (pageLevels && pageLevels.has(skillType)) {
+                return pageLevels.get(skillType);
+              }
+            }
+            return 0; // Not found in any page
+          };
+        }
+
+        if (prop === 'set') {
+          return (skillType, value) => {
+            // Determine which page this skill belongs to and update there
+            let targetPage = null;
+            if (Object.values(SKILL_GRID_LAYOUTS[SKILL_PAGES.MAIN]).flat().includes(skillType)) {
+              targetPage = SKILL_PAGES.MAIN;
+            } else if (Object.values(SKILL_GRID_LAYOUTS[SKILL_PAGES.SECONDARY]).flat().includes(skillType)) {
+              targetPage = SKILL_PAGES.SECONDARY;
+            }
+
+            if (targetPage) {
+              this.skillLevelsByPage[targetPage].set(skillType, value);
+              // Update unlockedSkills for backwards compatibility
+              if (value > 0) {
+                this.unlockedSkills.add(skillType);
+              } else {
+                this.unlockedSkills.delete(skillType);
+              }
+            }
+            return this.skillLevels; // Return the proxy for chaining
+          };
+        }
+
+        if (prop === 'has') {
+          return (skillType) => {
+            for (const page of Object.values(SKILL_PAGES)) {
+              const pageLevels = this.skillLevelsByPage[page];
+              if (pageLevels && pageLevels.has(skillType)) {
+                return true;
+              }
+            }
+            return false;
+          };
+        }
+
+        // For other properties, return undefined
+        return undefined;
+      }
+    });
 
     // Combat flags
     this.hit = false;

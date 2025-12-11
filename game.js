@@ -154,6 +154,14 @@ let key7Pressed = false;
 let key7WasPressed = false;
 let key8Pressed = false;
 let key8WasPressed = false;
+let keyTPressed = false;
+let keyTWasPressed = false;
+let keyYPressed = false;
+let keyYWasPressed = false;
+let keyUPressed = false;
+let keyUWasPressed = false;
+let keyIPressed = false;
+let keyIWasPressed = false;
 
 // Key press tracking variables for character stats
 let key9Pressed = false;
@@ -165,9 +173,13 @@ let keyMinusWasPressed = false;
 let keyEqualsPressed = false;
 let keyEqualsWasPressed = false;
 
+
 function handleSkillTreeKeys() {
   const now = performance.now();
   if (now - lastSkillTreeToggleTime < 300) return; // 300ms debounce
+
+  // Debug logging
+  console.log('handleSkillTreeKeys called - currentMenu:', currentMenu, 'keys.t:', keys['t'], 'keys.y:', keys['y'], 'keys.u:', keys['u'], 'keys.i:', keys['i']);
 
   // Toggle main menu (Escape or 'm')
   if (keys['Escape'] || keys['m']) {
@@ -180,11 +192,14 @@ function handleSkillTreeKeys() {
   // Player 1 skill tree (key 5) - toggle player's own menu
   key5Pressed = keys['5'];
   if (key5Pressed && !key5WasPressed && players.length >= 1) { // Key just pressed
+    console.log('Key 5 pressed - currentMenu:', currentMenu, 'currentSkillTreePlayer:', currentSkillTreePlayer);
     if (currentMenu === 'skills' && currentSkillTreePlayer === 0) {
       // Close if player's own skill tree is open
+      console.log('Closing skill tree for player 1');
       hideSkillTree();
     } else if (!menuActive) {
       // Open only if no menu is active
+      console.log('Opening skill tree for player 1');
       showSkillTreeForPlayer(0);
     }
     // If another player's skill tree is open, do nothing
@@ -236,6 +251,58 @@ function handleSkillTreeKeys() {
     lastSkillTreeToggleTime = now;
   }
   key8WasPressed = key8Pressed;
+
+  // Tab navigation (only when skill tree is open) - unified logic with proper key tracking
+  if (currentMenu === 'skills') {
+    console.log('Skill tree is open, checking tab navigation for player:', currentSkillTreePlayer);
+
+    // Player 1 tab navigation (key t)
+    keyTPressed = keys['t'] || keys['T'];
+    if (keyTPressed && !keyTWasPressed) {
+      console.log('T key pressed, currentSkillTreePlayer:', currentSkillTreePlayer);
+      if (currentSkillTreePlayer === 0) {
+        console.log('Switching tab for player 1');
+        const nextPage = currentSkillPage === SKILL_PAGES.MAIN ? SKILL_PAGES.SECONDARY : SKILL_PAGES.MAIN;
+        console.log('Switching from', currentSkillPage, 'to', nextPage);
+        switchSkillTreePage(nextPage);
+        lastSkillTreeToggleTime = now;
+      }
+    }
+    keyTWasPressed = keyTPressed;
+
+    // Player 2 tab navigation (key y)
+    keyYPressed = keys['y'] || keys['Y'];
+    if (keyYPressed && !keyYWasPressed) {
+      if (currentSkillTreePlayer === 1) {
+        const nextPage = currentSkillPage === SKILL_PAGES.MAIN ? SKILL_PAGES.SECONDARY : SKILL_PAGES.MAIN;
+        switchSkillTreePage(nextPage);
+        lastSkillTreeToggleTime = now;
+      }
+    }
+    keyYWasPressed = keyYPressed;
+
+    // Player 3 tab navigation (key u)
+    keyUPressed = keys['u'] || keys['U'];
+    if (keyUPressed && !keyUWasPressed) {
+      if (currentSkillTreePlayer === 2) {
+        const nextPage = currentSkillPage === SKILL_PAGES.MAIN ? SKILL_PAGES.SECONDARY : SKILL_PAGES.MAIN;
+        switchSkillTreePage(nextPage);
+        lastSkillTreeToggleTime = now;
+      }
+    }
+    keyUWasPressed = keyUPressed;
+
+    // Player 4 tab navigation (key i)
+    keyIPressed = keys['i'] || keys['I'];
+    if (keyIPressed && !keyIWasPressed) {
+      if (currentSkillTreePlayer === 3) {
+        const nextPage = currentSkillPage === SKILL_PAGES.MAIN ? SKILL_PAGES.SECONDARY : SKILL_PAGES.MAIN;
+        switchSkillTreePage(nextPage);
+        lastSkillTreeToggleTime = now;
+      }
+    }
+    keyIWasPressed = keyIPressed;
+  }
 }
 
 // Обработка на контролерен вход

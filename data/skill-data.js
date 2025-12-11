@@ -3,6 +3,12 @@
 // All static skill definitions and constants
 // ===========================================
 
+// Skill page constants (for tab navigation)
+const SKILL_PAGES = {
+  MAIN: 'main',
+  SECONDARY: 'secondary'
+};
+
 // Skill type constants
 const SKILL_TYPES = {
   BASIC_ATTACK_LIGHT: 'basic_attack_light',
@@ -33,9 +39,7 @@ const SKILL_TYPES = {
   // Body enhancement skills
   STRONG_BODY: 'strong_body',
 
-  // Test placeholder skills for large grid
-
-  // Test skills for large grid (6x5 = 30 total)
+  // Test placeholder skills for main page grid (6x5 = 30 total)
   // Row 1
   SKILL_01_01: 'skill_01_01', SKILL_01_02: 'skill_01_02', SKILL_01_03: 'skill_01_03', SKILL_01_04: 'skill_01_04', SKILL_01_05: 'skill_01_05',
   // Row 2
@@ -47,7 +51,21 @@ const SKILL_TYPES = {
   // Row 5
   SKILL_05_01: 'skill_05_01', SKILL_05_02: 'skill_05_02', SKILL_05_03: 'skill_05_03', SKILL_05_04: 'skill_05_04', SKILL_05_05: 'skill_05_05',
   // Row 6
-  SKILL_06_01: 'skill_06_01', SKILL_06_02: 'skill_06_02', SKILL_06_03: 'skill_06_03', SKILL_06_04: 'skill_06_04', SKILL_06_05: 'skill_06_05'
+  SKILL_06_01: 'skill_06_01', SKILL_06_02: 'skill_06_02', SKILL_06_03: 'skill_06_03', SKILL_06_04: 'skill_06_04', SKILL_06_05: 'skill_06_05',
+
+  // Secondary page skills (6x5 = 30 total)
+  // Row 1
+  SEC_SKILL_01_01: 'sec_skill_01_01', SEC_SKILL_01_02: 'sec_skill_01_02', SEC_SKILL_01_03: 'sec_skill_01_03', SEC_SKILL_01_04: 'sec_skill_01_04', SEC_SKILL_01_05: 'sec_skill_01_05',
+  // Row 2
+  SEC_SKILL_02_01: 'sec_skill_02_01', SEC_SKILL_02_02: 'sec_skill_02_02', SEC_SKILL_02_03: 'sec_skill_02_03', SEC_SKILL_02_04: 'sec_skill_02_04', SEC_SKILL_02_05: 'sec_skill_02_05',
+  // Row 3
+  SEC_SKILL_03_01: 'sec_skill_03_01', SEC_SKILL_03_02: 'sec_skill_03_02', SEC_SKILL_03_03: 'sec_skill_03_03', SEC_SKILL_03_04: 'sec_skill_03_04', SEC_SKILL_03_05: 'sec_skill_03_05',
+  // Row 4
+  SEC_SKILL_04_01: 'sec_skill_04_01', SEC_SKILL_04_02: 'sec_skill_04_02', SEC_SKILL_04_03: 'sec_skill_04_03', SEC_SKILL_04_04: 'sec_skill_04_04', SEC_SKILL_04_05: 'sec_skill_04_05',
+  // Row 5
+  SEC_SKILL_05_01: 'sec_skill_05_01', SEC_SKILL_05_02: 'sec_skill_05_02', SEC_SKILL_05_03: 'sec_skill_05_03', SEC_SKILL_05_04: 'sec_skill_05_04', SEC_SKILL_05_05: 'sec_skill_05_05',
+  // Row 6
+  SEC_SKILL_06_01: 'sec_skill_06_01', SEC_SKILL_06_02: 'sec_skill_06_02', SEC_SKILL_06_03: 'sec_skill_06_03', SEC_SKILL_06_04: 'sec_skill_06_04', SEC_SKILL_06_05: 'sec_skill_06_05'
 };
 
 // Resource types for skills
@@ -654,11 +672,50 @@ const SKILL_TREE = {
   [SKILL_TYPES.SKILL_06_02]: { name: 'Test 6-2', description: 'Placeholder skill', unlocked: false, prerequisites: [], levelCosts: [0], resourceType: RESOURCE_TYPES.NONE, resourceCost: 0, iconRow: 1, iconCol: 1 },
   [SKILL_TYPES.SKILL_06_03]: { name: 'Test 6-3', description: 'Placeholder skill', unlocked: false, prerequisites: [], levelCosts: [0], resourceType: RESOURCE_TYPES.NONE, resourceCost: 0, iconRow: 1, iconCol: 1 },
   [SKILL_TYPES.SKILL_06_04]: { name: 'Test 6-4', description: 'Placeholder skill', unlocked: false, prerequisites: [], levelCosts: [0], resourceType: RESOURCE_TYPES.NONE, resourceCost: 0, iconRow: 1, iconCol: 1 },
-  [SKILL_TYPES.SKILL_06_05]: { name: 'Test 6-5', description: 'Placeholder skill', unlocked: false, prerequisites: [], levelCosts: [0], resourceType: RESOURCE_TYPES.NONE, resourceCost: 0, iconRow: 1, iconCol: 1 }
+  [SKILL_TYPES.SKILL_06_05]: { name: 'Test 6-5', description: 'Placeholder skill', unlocked: false, prerequisites: [], levelCosts: [0], resourceType: RESOURCE_TYPES.NONE, resourceCost: 0, iconRow: 1, iconCol: 1 },
+
+  // Secondary page skills (6x5 = 30 total)
+  // Row 1
+  [SKILL_TYPES.SEC_SKILL_01_01]: { name: 'Вторично умение 1-1', description: 'Placeholder skill от вторична страница', unlocked: false, prerequisites: [], levelCosts: [0], resourceType: RESOURCE_TYPES.NONE, resourceCost: 0, iconRow: 1, iconCol: 1 },
+  [SKILL_TYPES.SEC_SKILL_01_02]: { name: 'Вторично умение 1-2', description: 'Placeholder skill от вторична страница', unlocked: false, prerequisites: [], levelCosts: [0], resourceType: RESOURCE_TYPES.NONE, resourceCost: 0, iconRow: 1, iconCol: 1 },
+  [SKILL_TYPES.SEC_SKILL_01_03]: { name: 'Вторично умение 1-3', description: 'Placeholder skill от вторична страница', unlocked: false, prerequisites: [], levelCosts: [0], resourceType: RESOURCE_TYPES.NONE, resourceCost: 0, iconRow: 1, iconCol: 1 },
+  [SKILL_TYPES.SEC_SKILL_01_04]: { name: 'Вторично умение 1-4', description: 'Placeholder skill от вторична страница', unlocked: false, prerequisites: [], levelCosts: [0], resourceType: RESOURCE_TYPES.NONE, resourceCost: 0, iconRow: 1, iconCol: 1 },
+  [SKILL_TYPES.SEC_SKILL_01_05]: { name: 'Вторично умение 1-5', description: 'Placeholder skill от вторична страница', unlocked: false, prerequisites: [], levelCosts: [0], resourceType: RESOURCE_TYPES.NONE, resourceCost: 0, iconRow: 1, iconCol: 1 },
+  // Row 2
+  [SKILL_TYPES.SEC_SKILL_02_01]: { name: 'Вторично умение 2-1', description: 'Placeholder skill от вторична страница', unlocked: false, prerequisites: [], levelCosts: [0], resourceType: RESOURCE_TYPES.NONE, resourceCost: 0, iconRow: 1, iconCol: 1 },
+  [SKILL_TYPES.SEC_SKILL_02_02]: { name: 'Вторично умение 2-2', description: 'Placeholder skill от вторична страница', unlocked: false, prerequisites: [], levelCosts: [0], resourceType: RESOURCE_TYPES.NONE, resourceCost: 0, iconRow: 1, iconCol: 1 },
+  [SKILL_TYPES.SEC_SKILL_02_03]: { name: 'Вторично умение 2-3', description: 'Placeholder skill от вторична страница', unlocked: false, prerequisites: [], levelCosts: [0], resourceType: RESOURCE_TYPES.NONE, resourceCost: 0, iconRow: 1, iconCol: 1 },
+  [SKILL_TYPES.SEC_SKILL_02_04]: { name: 'Вторично умение 2-4', description: 'Placeholder skill от вторична страница', unlocked: false, prerequisites: [], levelCosts: [0], resourceType: RESOURCE_TYPES.NONE, resourceCost: 0, iconRow: 1, iconCol: 1 },
+  [SKILL_TYPES.SEC_SKILL_02_05]: { name: 'Вторично умение 2-5', description: 'Placeholder skill от вторична страница', unlocked: false, prerequisites: [], levelCosts: [0], resourceType: RESOURCE_TYPES.NONE, resourceCost: 0, iconRow: 1, iconCol: 1 },
+  // Row 3
+  [SKILL_TYPES.SEC_SKILL_03_01]: { name: 'Вторично умение 3-1', description: 'Placeholder skill от вторична страница', unlocked: false, prerequisites: [], levelCosts: [0], resourceType: RESOURCE_TYPES.NONE, resourceCost: 0, iconRow: 1, iconCol: 1 },
+  [SKILL_TYPES.SEC_SKILL_03_02]: { name: 'Вторично умение 3-2', description: 'Placeholder skill от вторична страница', unlocked: false, prerequisites: [], levelCosts: [0], resourceType: RESOURCE_TYPES.NONE, resourceCost: 0, iconRow: 1, iconCol: 1 },
+  [SKILL_TYPES.SEC_SKILL_03_03]: { name: 'Вторично умение 3-3', description: 'Placeholder skill от вторична страница', unlocked: false, prerequisites: [], levelCosts: [0], resourceType: RESOURCE_TYPES.NONE, resourceCost: 0, iconRow: 1, iconCol: 1 },
+  [SKILL_TYPES.SEC_SKILL_03_04]: { name: 'Вторично умение 3-4', description: 'Placeholder skill от вторична страница', unlocked: false, prerequisites: [], levelCosts: [0], resourceType: RESOURCE_TYPES.NONE, resourceCost: 0, iconRow: 1, iconCol: 1 },
+  [SKILL_TYPES.SEC_SKILL_03_05]: { name: 'Вторично умение 3-5', description: 'Placeholder skill от вторична страница', unlocked: false, prerequisites: [], levelCosts: [0], resourceType: RESOURCE_TYPES.NONE, resourceCost: 0, iconRow: 1, iconCol: 1 },
+  // Row 4
+  [SKILL_TYPES.SEC_SKILL_04_01]: { name: 'Вторично умение 4-1', description: 'Placeholder skill от вторична страница', unlocked: false, prerequisites: [], levelCosts: [0], resourceType: RESOURCE_TYPES.NONE, resourceCost: 0, iconRow: 1, iconCol: 1 },
+  [SKILL_TYPES.SEC_SKILL_04_02]: { name: 'Вторично умение 4-2', description: 'Placeholder skill от вторична страница', unlocked: false, prerequisites: [], levelCosts: [0], resourceType: RESOURCE_TYPES.NONE, resourceCost: 0, iconRow: 1, iconCol: 1 },
+  [SKILL_TYPES.SEC_SKILL_04_03]: { name: 'Вторично умение 4-3', description: 'Placeholder skill от вторична страница', unlocked: false, prerequisites: [], levelCosts: [0], resourceType: RESOURCE_TYPES.NONE, resourceCost: 0, iconRow: 1, iconCol: 1 },
+  [SKILL_TYPES.SEC_SKILL_04_04]: { name: 'Вторично умение 4-4', description: 'Placeholder skill от вторична страница', unlocked: false, prerequisites: [], levelCosts: [0], resourceType: RESOURCE_TYPES.NONE, resourceCost: 0, iconRow: 1, iconCol: 1 },
+  [SKILL_TYPES.SEC_SKILL_04_05]: { name: 'Вторично умение 4-5', description: 'Placeholder skill от вторична страница', unlocked: false, prerequisites: [], levelCosts: [0], resourceType: RESOURCE_TYPES.NONE, resourceCost: 0, iconRow: 1, iconCol: 1 },
+  // Row 5
+  [SKILL_TYPES.SEC_SKILL_05_01]: { name: 'Вторично умение 5-1', description: 'Placeholder skill от вторична страница', unlocked: false, prerequisites: [], levelCosts: [0], resourceType: RESOURCE_TYPES.NONE, resourceCost: 0, iconRow: 1, iconCol: 1 },
+  [SKILL_TYPES.SEC_SKILL_05_02]: { name: 'Вторично умение 5-2', description: 'Placeholder skill от вторична страница', unlocked: false, prerequisites: [], levelCosts: [0], resourceType: RESOURCE_TYPES.NONE, resourceCost: 0, iconRow: 1, iconCol: 1 },
+  [SKILL_TYPES.SEC_SKILL_05_03]: { name: 'Вторично умение 5-3', description: 'Placeholder skill от вторична страница', unlocked: false, prerequisites: [], levelCosts: [0], resourceType: RESOURCE_TYPES.NONE, resourceCost: 0, iconRow: 1, iconCol: 1 },
+  [SKILL_TYPES.SEC_SKILL_05_04]: { name: 'Вторично умение 5-4', description: 'Placeholder skill от вторична страница', unlocked: false, prerequisites: [], levelCosts: [0], resourceType: RESOURCE_TYPES.NONE, resourceCost: 0, iconRow: 1, iconCol: 1 },
+  [SKILL_TYPES.SEC_SKILL_05_05]: { name: 'Вторично умение 5-5', description: 'Placeholder skill от вторична страница', unlocked: false, prerequisites: [], levelCosts: [0], resourceType: RESOURCE_TYPES.NONE, resourceCost: 0, iconRow: 1, iconCol: 1 },
+  // Row 6
+  [SKILL_TYPES.SEC_SKILL_06_01]: { name: 'Вторично умение 6-1', description: 'Placeholder skill от вторична страница', unlocked: false, prerequisites: [], levelCosts: [0], resourceType: RESOURCE_TYPES.NONE, resourceCost: 0, iconRow: 1, iconCol: 1 },
+  [SKILL_TYPES.SEC_SKILL_06_02]: { name: 'Вторично умение 6-2', description: 'Placeholder skill от вторична страница', unlocked: false, prerequisites: [], levelCosts: [0], resourceType: RESOURCE_TYPES.NONE, resourceCost: 0, iconRow: 1, iconCol: 1 },
+  [SKILL_TYPES.SEC_SKILL_06_03]: { name: 'Вторично умение 6-3', description: 'Placeholder skill от вторична страница', unlocked: false, prerequisites: [], levelCosts: [0], resourceType: RESOURCE_TYPES.NONE, resourceCost: 0, iconRow: 1, iconCol: 1 },
+  [SKILL_TYPES.SEC_SKILL_06_04]: { name: 'Вторично умение 6-4', description: 'Placeholder skill от вторична страница', unlocked: false, prerequisites: [], levelCosts: [0], resourceType: RESOURCE_TYPES.NONE, resourceCost: 0, iconRow: 1, iconCol: 1 },
+  [SKILL_TYPES.SEC_SKILL_06_05]: { name: 'Вторично умение 6-5', description: 'Placeholder skill от вторична страница', unlocked: false, prerequisites: [], levelCosts: [0], resourceType: RESOURCE_TYPES.NONE, resourceCost: 0, iconRow: 1, iconCol: 1 }
 };
 
 // Export all constants and data for use in other files
 window.SKILL_TYPES = SKILL_TYPES;
+window.SKILL_PAGES = SKILL_PAGES;
 window.RESOURCE_TYPES = RESOURCE_TYPES;
 window.DAMAGE_TYPES = DAMAGE_TYPES;
 window.RANGE_TYPES = RANGE_TYPES;

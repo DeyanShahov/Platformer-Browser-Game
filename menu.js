@@ -223,6 +223,13 @@ function initMenu() {
     <div id="skillTreeMenu" class="menu" style="display:none;">
       <h2 id="skillTreeTitle">Дърво на уменията</h2>
       <div id="skillPointsDisplay">Налични точки: 0</div>
+
+      <!-- Tab Display -->
+      <div id="skillTreeTabDisplay">
+        <div id="mainPageTab" class="skill-page-tab active" data-page="main">Основна страница</div>
+        <div id="secondaryPageTab" class="skill-page-tab" data-page="secondary">Вторична страница</div>
+      </div>
+
       <div id="skillTreeSplitContainer">
         <div id="skillTreeLeftPanel">
           <div id="skillGrid"></div>
@@ -256,6 +263,8 @@ function initMenu() {
   document.getElementById('backToGameBtn').onclick = hideMenu;
   document.getElementById('backToMainBtn').onclick = showMainMenu;
   document.getElementById('unlockSkillBtn').onclick = handleUnlockClick; // Централизираме го тук
+
+
 
 
   updateGamepadStatus();
@@ -750,29 +759,52 @@ function getPrerequisitesDisplay(skillInfo) {
 // Skill Tree Navigation Variables
 let skillCursorRow = 0;
 let skillCursorCol = 0;
+let currentSkillPage = SKILL_PAGES.MAIN; // Current skill tree page (main/secondary)
 let skillIcons = {}; // Cache for loaded icons
 
-// Skill grid layout: 6 rows x 5 columns (30 total positions)
-const SKILL_GRID_LAYOUT = [
-  // Row 1 - Real skills
-  [SKILL_TYPES.BASIC_ATTACK_LIGHT, SKILL_TYPES.SECONDARY_ATTACK_LIGHT, SKILL_TYPES.ENHANCED_ATTACK, SKILL_TYPES.BASIC_DEFENSE, SKILL_TYPES.COMBAT_STANCE],
-  // Row 2 - Real skills
-  [SKILL_TYPES.BASIC_ATTACK_MEDIUM, SKILL_TYPES.SECONDARY_ATTACK_MEDIUM, SKILL_TYPES.STRONG_ATTACK, SKILL_TYPES.STRONG_BODY, SKILL_TYPES.COMBAT_SENSE],
-  // Row 3 - Real skills
-  [SKILL_TYPES.BASIC_ATTACK_HEAVY, SKILL_TYPES.SECONDARY_ATTACK_HEAVY, SKILL_TYPES.ULTIMATE_ATTACK, SKILL_TYPES.SKILL_03_04, SKILL_TYPES.SKILL_03_05],
-  // Row 4 - Elemental protection skills
-  [SKILL_TYPES.WATER_PROTECTION, SKILL_TYPES.FIRE_PROTECTION, SKILL_TYPES.AIR_PROTECTION, SKILL_TYPES.EARTH_PROTECTION, SKILL_TYPES.MASS_RESISTANCE],
-  // Row 5 - Test skills
-  [SKILL_TYPES.SKILL_05_01, SKILL_TYPES.SKILL_05_02, SKILL_TYPES.SKILL_05_03, SKILL_TYPES.SKILL_05_04, SKILL_TYPES.SKILL_05_05],
-  // Row 6 - Test skills
-  [SKILL_TYPES.SKILL_06_01, SKILL_TYPES.SKILL_06_02, SKILL_TYPES.SKILL_06_03, SKILL_TYPES.SKILL_06_04, SKILL_TYPES.SKILL_06_05]
-];
+// Skill grid layouts for different pages: 6 rows x 5 columns (30 total positions each)
+const SKILL_GRID_LAYOUTS = {
+  [SKILL_PAGES.MAIN]: [
+    // Row 1 - Real skills
+    [SKILL_TYPES.BASIC_ATTACK_LIGHT, SKILL_TYPES.SECONDARY_ATTACK_LIGHT, SKILL_TYPES.ENHANCED_ATTACK, SKILL_TYPES.BASIC_DEFENSE, SKILL_TYPES.COMBAT_STANCE],
+    // Row 2 - Real skills
+    [SKILL_TYPES.BASIC_ATTACK_MEDIUM, SKILL_TYPES.SECONDARY_ATTACK_MEDIUM, SKILL_TYPES.STRONG_ATTACK, SKILL_TYPES.STRONG_BODY, SKILL_TYPES.COMBAT_SENSE],
+    // Row 3 - Real skills
+    [SKILL_TYPES.BASIC_ATTACK_HEAVY, SKILL_TYPES.SECONDARY_ATTACK_HEAVY, SKILL_TYPES.ULTIMATE_ATTACK, SKILL_TYPES.SKILL_03_04, SKILL_TYPES.SKILL_03_05],
+    // Row 4 - Elemental protection skills
+    [SKILL_TYPES.WATER_PROTECTION, SKILL_TYPES.FIRE_PROTECTION, SKILL_TYPES.AIR_PROTECTION, SKILL_TYPES.EARTH_PROTECTION, SKILL_TYPES.MASS_RESISTANCE],
+    // Row 5 - Test skills
+    [SKILL_TYPES.SKILL_05_01, SKILL_TYPES.SKILL_05_02, SKILL_TYPES.SKILL_05_03, SKILL_TYPES.SKILL_05_04, SKILL_TYPES.SKILL_05_05],
+    // Row 6 - Test skills
+    [SKILL_TYPES.SKILL_06_01, SKILL_TYPES.SKILL_06_02, SKILL_TYPES.SKILL_06_03, SKILL_TYPES.SKILL_06_04, SKILL_TYPES.SKILL_06_05]
+  ],
+  [SKILL_PAGES.SECONDARY]: [
+    // Row 1 - Secondary page skills
+    [SKILL_TYPES.SEC_SKILL_01_01, SKILL_TYPES.SEC_SKILL_01_02, SKILL_TYPES.SEC_SKILL_01_03, SKILL_TYPES.SEC_SKILL_01_04, SKILL_TYPES.SEC_SKILL_01_05],
+    // Row 2 - Secondary page skills
+    [SKILL_TYPES.SEC_SKILL_02_01, SKILL_TYPES.SEC_SKILL_02_02, SKILL_TYPES.SEC_SKILL_02_03, SKILL_TYPES.SEC_SKILL_02_04, SKILL_TYPES.SEC_SKILL_02_05],
+    // Row 3 - Secondary page skills
+    [SKILL_TYPES.SEC_SKILL_03_01, SKILL_TYPES.SEC_SKILL_03_02, SKILL_TYPES.SEC_SKILL_03_03, SKILL_TYPES.SEC_SKILL_03_04, SKILL_TYPES.SEC_SKILL_03_05],
+    // Row 4 - Secondary page skills
+    [SKILL_TYPES.SEC_SKILL_04_01, SKILL_TYPES.SEC_SKILL_04_02, SKILL_TYPES.SEC_SKILL_04_03, SKILL_TYPES.SEC_SKILL_04_04, SKILL_TYPES.SEC_SKILL_04_05],
+    // Row 5 - Secondary page skills
+    [SKILL_TYPES.SEC_SKILL_05_01, SKILL_TYPES.SEC_SKILL_05_02, SKILL_TYPES.SEC_SKILL_05_03, SKILL_TYPES.SEC_SKILL_05_04, SKILL_TYPES.SEC_SKILL_05_05],
+    // Row 6 - Secondary page skills
+    [SKILL_TYPES.SEC_SKILL_06_01, SKILL_TYPES.SEC_SKILL_06_02, SKILL_TYPES.SEC_SKILL_06_03, SKILL_TYPES.SEC_SKILL_06_04, SKILL_TYPES.SEC_SKILL_06_05]
+  ]
+};
+
+// Helper function to get current skill grid layout
+function getCurrentSkillGridLayout() {
+  return SKILL_GRID_LAYOUTS[currentSkillPage] || SKILL_GRID_LAYOUTS[SKILL_PAGES.MAIN];
+}
 
 // Helper function to find grid position of a skill
 function findSkillGridPosition(skillType) {
-  for (let row = 0; row < SKILL_GRID_LAYOUT.length; row++) {
-    for (let col = 0; col < SKILL_GRID_LAYOUT[row].length; col++) {
-      if (SKILL_GRID_LAYOUT[row][col] === skillType) {
+  const currentLayout = getCurrentSkillGridLayout();
+  for (let row = 0; row < currentLayout.length; row++) {
+    for (let col = 0; col < currentLayout[row].length; col++) {
+      if (currentLayout[row][col] === skillType) {
         return { row, col };
       }
     }
@@ -957,10 +989,13 @@ function renderSkillTree(player) {
     svgContainer.style.zIndex = '1'; // Between background and skill icons
     gridEl.appendChild(svgContainer);
 
+    // Get current skill grid layout
+    const currentLayout = getCurrentSkillGridLayout();
+
     // Create skill icons in grid
-    for (let row = 0; row < SKILL_GRID_LAYOUT.length; row++) {
-      for (let col = 0; col < SKILL_GRID_LAYOUT[row].length; col++) {
-        const skillType = SKILL_GRID_LAYOUT[row][col];
+    for (let row = 0; row < currentLayout.length; row++) {
+      for (let col = 0; col < currentLayout[row].length; col++) {
+        const skillType = currentLayout[row][col];
 
         // Пропускаме празните позиции (null)
         if (!skillType) continue;
@@ -1003,7 +1038,8 @@ function renderSkillTree(player) {
 
 function loadSkillIconForElement(element, row, col) {
   // Get the skill type for this grid position
-  const skillType = SKILL_GRID_LAYOUT[row][col];
+  const currentLayout = getCurrentSkillGridLayout();
+  const skillType = currentLayout[row][col];
   const skillInfo = SKILL_TREE[skillType];
 
   // Use CSS clipping to show the correct icon from sprite sheet
@@ -1072,7 +1108,8 @@ function updateSelectedSkillInfo() {
   if (currentSkillTreePlayer === null) return;
 
   const player = window.players[currentSkillTreePlayer];
-  const skillType = SKILL_GRID_LAYOUT[skillCursorRow][skillCursorCol];
+  const currentLayout = getCurrentSkillGridLayout();
+  const skillType = currentLayout[skillCursorRow][skillCursorCol];
 
   // Проверка дали има валидно умение на тази позиция
   if (!skillType) {
@@ -1182,18 +1219,20 @@ function getResourceDisplay(skillInfo) {
 }
 
 function moveCursor(direction) {
+  const currentLayout = getCurrentSkillGridLayout();
+
   switch (direction) {
     case 'up':
       skillCursorRow = Math.max(0, skillCursorRow - 1);
       break;
     case 'down':
-      skillCursorRow = Math.min(SKILL_GRID_LAYOUT.length - 1, skillCursorRow + 1);
+      skillCursorRow = Math.min(currentLayout.length - 1, skillCursorRow + 1);
       break;
     case 'left':
       skillCursorCol = Math.max(0, skillCursorCol - 1);
       break;
     case 'right':
-      skillCursorCol = Math.min(SKILL_GRID_LAYOUT[0].length - 1, skillCursorCol + 1);
+      skillCursorCol = Math.min(currentLayout[0].length - 1, skillCursorCol + 1);
       break;
   }
 
@@ -1254,7 +1293,8 @@ function tryUnlockSelectedSkill() {
   if (currentSkillTreePlayer === null) return;
 
   const player = window.players[currentSkillTreePlayer];
-  const skillType = SKILL_GRID_LAYOUT[skillCursorRow][skillCursorCol];
+  const currentLayout = getCurrentSkillGridLayout();
+  const skillType = currentLayout[skillCursorRow][skillCursorCol];
 
   if (window.skillTreeManager.unlockSkill(player, skillType)) {
     console.log(`Player ${currentSkillTreePlayer + 1} unlocked skill: ${SKILL_TREE[skillType].name}`);
@@ -1325,9 +1365,57 @@ function handleCharacterStatsKeyDown(e) {
   }
 }
 
+// Function to switch skill tree page
+function switchSkillTreePage(page) {
+  if (page !== SKILL_PAGES.MAIN && page !== SKILL_PAGES.SECONDARY) {
+    console.error(`Invalid skill page: ${page}`);
+    return;
+  }
+
+  currentSkillPage = page;
+
+  // Update tab active states
+  const mainTabEl = document.getElementById('mainPageTab');
+  const secondaryTabEl = document.getElementById('secondaryPageTab');
+
+  if (mainTabEl) {
+    if (page === SKILL_PAGES.MAIN) {
+      mainTabEl.classList.add('active');
+    } else {
+      mainTabEl.classList.remove('active');
+    }
+  }
+
+  if (secondaryTabEl) {
+    if (page === SKILL_PAGES.SECONDARY) {
+      secondaryTabEl.classList.add('active');
+    } else {
+      secondaryTabEl.classList.remove('active');
+    }
+  }
+
+  // Reset cursor to top-left when switching pages
+  skillCursorRow = 0;
+  skillCursorCol = 0;
+
+  // Re-render skill tree for current player
+  if (currentSkillTreePlayer !== null) {
+    const player = window.players[currentSkillTreePlayer];
+    renderSkillTree(player);
+
+    // Update cursor position after re-rendering
+    setTimeout(() => {
+      updateCursorPosition();
+    }, 0);
+  }
+
+  console.log(`Switched to skill tree page: ${page}`);
+}
+
 // Make skill tree and character stats functions global
 window.showSkillTreeForPlayer = showSkillTreeForPlayer;
 window.hideSkillTree = hideSkillTree;
 window.showCharacterStatsForPlayer = showCharacterStatsForPlayer;
 window.hideCharacterStats = hideCharacterStats;
 window.toggleMenu = toggleMenu;
+window.switchSkillTreePage = switchSkillTreePage;
