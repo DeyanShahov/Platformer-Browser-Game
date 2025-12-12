@@ -303,3 +303,41 @@
   transform-origin: 0 0;
   pointer-events: none;
 }
+
+/* Skill Type Visual Indicators */
+.skill-icon.skill-active {
+  border: 2px solid #ffd700; /* Златна рамка за активни умения */
+  box-shadow: 0 0 8px rgba(255, 215, 0, 0.4);
+}
+
+.skill-icon.skill-active-passive {
+  border: 2px solid #00bfff; /* Светло синя рамка за активно-пасивни */
+  box-shadow: 0 0 8px rgba(0, 191, 255, 0.4);
+}
+
+.skill-type-indicator {
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  width: 16px;
+  height: 16px;
+  background: rgba(0, 0, 0, 0.7);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 10px;
+  font-weight: bold;
+  color: white;
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  z-index: 15; /* Над всичко останало */
+  pointer-events: none;
+}
+
+.skill-icon.skill-active .skill-type-indicator {
+  background: rgba(255, 215, 0, 0.8); /* Златен фон за активни */
+}
+
+.skill-icon.skill-active-passive .skill-type-indicator {
+  background: rgba(0, 191, 255, 0.8); /* Син фон за активно-пасивни */
+}
