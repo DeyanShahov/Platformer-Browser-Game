@@ -254,6 +254,30 @@ function initMenu() {
         </div>
       </div>
     </div>
+
+    <!-- Micro Skill Tree Modal -->
+    <div id="microTreeModal" class="menu micro-tree-modal" style="display:none;">
+      <h2 id="microTreeTitle">Специализации</h2>
+      <div id="microTreeDescription">Избери специализации за подобряване на умението</div>
+
+      <div id="microTreeSplitContainer">
+        <div id="microTreeLeftPanel">
+          <div id="microSkillGrid"></div>
+          <div id="microSkillCursor"></div>
+        </div>
+        <div id="microTreeRightPanel">
+          <div id="microSkillDetails">
+            <div id="microSkillInfo">
+              <h3 id="microSkillInfoName">Изберете специализация</h3>
+              <p id="microSkillInfoDescription">Използвайте стрелките за навигация</p>
+              <div id="microSkillEffects">Няма ефекти</div>
+            </div>
+            <button id="selectMicroSkillBtn" style="display:none;">Избери</button>
+            <button id="closeMicroTreeBtn">Затвори</button>
+          </div>
+        </div>
+      </div>
+    </div>
     ${window.characterStatsUI.getMenuHTML()}
   `;
   document.body.appendChild(menuDiv);
@@ -263,6 +287,8 @@ function initMenu() {
   document.getElementById('backToGameBtn').onclick = hideMenu;
   document.getElementById('backToMainBtn').onclick = showMainMenu;
   document.getElementById('unlockSkillBtn').onclick = handleUnlockClick; // Централизираме го тук
+  document.getElementById('selectMicroSkillBtn').onclick = handleSelectMicroSkillClick;
+  document.getElementById('closeMicroTreeBtn').onclick = hideMicroTree;
 
 
 
@@ -1318,6 +1344,21 @@ function tryUnlockSelectedSkill() {
   const currentLayout = getCurrentSkillGridLayout();
   const skillType = currentLayout[skillCursorRow][skillCursorCol];
 
+  if (!skillType) return; // Empty slot
+
+  const skillInfo = SKILL_TREE[skillType];
+  const currentLevel = window.skillTreeManager.getSkillLevel(player, skillType);
+
+  // Check if this is an ACTIVE skill that's already unlocked and has a micro tree
+  if (skillInfo.usageType === SKILL_USAGE_TYPES.ACTIVE &&
+      currentLevel >= 1 &&
+      skillInfo.microTree) {
+    // Open micro skill tree instead of upgrading
+    showMicroTreeForSkill(skillType);
+    return;
+  }
+
+  // Normal unlock/upgrade logic
   if (window.skillTreeManager.unlockSkill(player, skillType)) {
     console.log(`Player ${currentSkillTreePlayer + 1} unlocked skill: ${SKILL_TREE[skillType].name}`);
 
@@ -1455,3 +1496,252 @@ window.showCharacterStatsForPlayer = showCharacterStatsForPlayer;
 window.hideCharacterStats = hideCharacterStats;
 window.toggleMenu = toggleMenu;
 window.switchSkillTreePage = switchSkillTreePage;
+
+// ===========================================
+// MICRO SKILL TREE FUNCTIONS
+// ===========================================
+
+// Micro skill tree state variables
+let currentMicroSkillParent = null; // The parent ACTIVE skill
+let microSkillCursorRow = 0;
+let microSkillCursorCol = 0;
+
+// Show micro skill tree for a specific ACTIVE skill
+function showMicroTreeForSkill(skillType) {
+  if (currentSkillTreePlayer === null) return;
+
+  const skillInfo = SKILL_TREE[skillType];
+  if (!skillInfo.microTree) {
+    console.error(`Skill ${skillType} has no micro tree defined`);
+    return;
+  }
+
+  currentMicroSkillParent = skillType;
+
+  // Update modal title and description
+  document.getElementById('microTreeTitle').textContent = skillInfo.microTree.title;
+  document.getElementById('microTreeDescription').textContent = skillInfo.microTree.description;
+
+  // Reset micro cursor
+  microSkillCursorRow = 0;
+  microSkillCursorCol = 0;
+
+  // Render micro skills
+  renderMicroSkillTree();
+
+  // Show modal
+  document.getElementById('microTreeModal').style.display = 'flex';
+  currentMenu = 'microTree';
+
+  // Update cursor position
+  setTimeout(() => {
+    updateMicroCursorPosition();
+  }, 0);
+
+  // Setup input handling
+  setupMicroSkillTreeInput();
+
+  console.log(`Opened micro tree for skill: ${skillInfo.name}`);
+}
+
+// Hide micro skill tree modal
+function hideMicroTree() {
+  document.getElementById('microTreeModal').style.display = 'none';
+  currentMenu = 'skills';
+  currentMicroSkillParent = null;
+
+  // Cleanup input handling
+  cleanupMicroSkillTreeInput();
+
+  console.log('Closed micro tree');
+}
+
+// Render micro skill tree grid
+function renderMicroSkillTree() {
+  if (!currentMicroSkillParent) return;
+
+  const gridEl = document.getElementById('microSkillGrid');
+  if (!gridEl) return;
+
+  gridEl.innerHTML = '';
+
+  const skillInfo = SKILL_TREE[currentMicroSkillParent];
+  const microSkills = skillInfo.microTree.skills;
+
+  // Create 3x3 grid (9 positions)
+  for (let row = 0; row < 3; row++) {
+    for (let col = 0; col < 3; col++) {
+      const skillIndex = row * 3 + col;
+      const microSkill = microSkills[skillIndex];
+
+      const skillIcon = document.createElement('div');
+      skillIcon.className = 'micro-skill-icon';
+
+      if (microSkill) {
+        // Has micro skill data
+        skillIcon.dataset.skillIndex = skillIndex;
+
+        // TODO: Add selection state checking and visual feedback
+        // For now, all are available
+        skillIcon.classList.add('available');
+
+        // Placeholder icon (you can replace with actual icons later)
+        skillIcon.innerHTML = `<div style="width:100%; height:100%; background:#444; display:flex; align-items:center; justify-content:center; color:#fff; font-size:16px; border-radius:4px;">${skillIndex + 1}</div>`;
+      } else {
+        // Empty slot
+        skillIcon.classList.add('locked');
+        skillIcon.innerHTML = `<div style="width:100%; height:100%; background:#222; border-radius:4px;"></div>`;
+      }
+
+      gridEl.appendChild(skillIcon);
+    }
+  }
+
+  // Update selected micro skill info
+  updateSelectedMicroSkillInfo();
+}
+
+// Update micro skill cursor position
+function updateMicroCursorPosition() {
+  const cursorEl = document.getElementById('microSkillCursor');
+  const gridEl = document.getElementById('microSkillGrid');
+
+  if (!cursorEl || !gridEl) return;
+
+  // Calculate position based on 3x3 grid, 48px icons + 12px gap = 60px total per cell
+  const cellSize = 48 + 12; // icon + gap
+  const cursorX = microSkillCursorCol * cellSize + 4; // +4 for border
+  const cursorY = microSkillCursorRow * cellSize + 4;
+
+  cursorEl.style.left = `${cursorX}px`;
+  cursorEl.style.top = `${cursorY}px`;
+
+  // Update selected class
+  document.querySelectorAll('.micro-skill-icon').forEach((icon, index) => {
+    const row = Math.floor(index / 3);
+    const col = index % 3;
+    if (row === microSkillCursorRow && col === microSkillCursorCol) {
+      icon.classList.add('selected');
+    } else {
+      icon.classList.remove('selected');
+    }
+  });
+}
+
+// Update selected micro skill info panel
+function updateSelectedMicroSkillInfo() {
+  if (!currentMicroSkillParent) return;
+
+  const skillInfo = SKILL_TREE[currentMicroSkillParent];
+  const microSkills = skillInfo.microTree.skills;
+  const skillIndex = microSkillCursorRow * 3 + microSkillCursorCol;
+  const microSkill = microSkills[skillIndex];
+
+  const nameEl = document.getElementById('microSkillInfoName');
+  const descEl = document.getElementById('microSkillInfoDescription');
+  const effectsEl = document.getElementById('microSkillEffects');
+  const selectBtn = document.getElementById('selectMicroSkillBtn');
+
+  if (microSkill) {
+    nameEl.textContent = microSkill.name || 'Няма име';
+    descEl.textContent = microSkill.description || 'Няма описание';
+    effectsEl.textContent = microSkill.effects ?
+      microSkill.effects.map(e => e.description).join(', ') :
+      'Няма ефекти';
+
+    selectBtn.style.display = 'block';
+  } else {
+    nameEl.textContent = 'Празна позиция';
+    descEl.textContent = 'Няма умение на тази позиция';
+    effectsEl.textContent = 'Няма ефекти';
+    selectBtn.style.display = 'none';
+  }
+}
+
+// Move micro skill cursor
+function moveMicroCursor(direction) {
+  switch (direction) {
+    case 'up':
+      microSkillCursorRow = Math.max(0, microSkillCursorRow - 1);
+      break;
+    case 'down':
+      microSkillCursorRow = Math.min(2, microSkillCursorRow + 1);
+      break;
+    case 'left':
+      microSkillCursorCol = Math.max(0, microSkillCursorCol - 1);
+      break;
+    case 'right':
+      microSkillCursorCol = Math.min(2, microSkillCursorCol + 1);
+      break;
+  }
+
+  updateMicroCursorPosition();
+  updateSelectedMicroSkillInfo();
+}
+
+// Setup micro skill tree input handling
+function setupMicroSkillTreeInput() {
+  document.addEventListener('keydown', handleMicroSkillTreeKeyDown);
+}
+
+function cleanupMicroSkillTreeInput() {
+  document.removeEventListener('keydown', handleMicroSkillTreeKeyDown);
+}
+
+function handleMicroSkillTreeKeyDown(e) {
+  if (currentMenu !== 'microTree') return;
+
+  switch (e.key) {
+    case 'ArrowUp':
+    case 'w':
+    case 'W':
+      e.preventDefault();
+      moveMicroCursor('up');
+      break;
+    case 'ArrowDown':
+    case 's':
+    case 'S':
+      e.preventDefault();
+      moveMicroCursor('down');
+      break;
+    case 'ArrowLeft':
+    case 'a':
+    case 'A':
+      e.preventDefault();
+      moveMicroCursor('left');
+      break;
+    case 'ArrowRight':
+    case 'd':
+    case 'D':
+      e.preventDefault();
+      moveMicroCursor('right');
+      break;
+    case 'Enter':
+    case ' ':
+      e.preventDefault();
+      handleSelectMicroSkillClick();
+      break;
+    case 'Escape':
+      e.preventDefault();
+      hideMicroTree();
+      break;
+  }
+}
+
+// Handle micro skill selection
+function handleSelectMicroSkillClick() {
+  if (!currentMicroSkillParent) return;
+
+  const skillInfo = SKILL_TREE[currentMicroSkillParent];
+  const microSkills = skillInfo.microTree.skills;
+  const skillIndex = microSkillCursorRow * 3 + microSkillCursorCol;
+  const microSkill = microSkills[skillIndex];
+
+  if (microSkill) {
+    console.log(`Selected micro skill: ${microSkill.name} for parent skill: ${skillInfo.name}`);
+    // TODO: Implement actual selection logic (store in player data, apply effects, etc.)
+
+    // For now, just close the modal
+    hideMicroTree();
+  }
+}

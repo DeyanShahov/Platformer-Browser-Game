@@ -119,7 +119,15 @@ const SKILL_TREE = {
     resourceType: RESOURCE_TYPES.NONE,
     resourceCost: 0,
     iconRow: 5,  // Row in sprite sheet (1-5)
-    iconCol: 6   // Column in sprite sheet (1-10)
+    iconCol: 6,   // Column in sprite sheet (1-10)
+    // Micro skill tree for specializations
+    microTree: {
+      title: "Специализации - Лека основна атака",
+      description: "Избери специализации за подобряване на леката атака",
+      skills: [
+        // Placeholder skills - to be populated later
+      ]
+    }
   },
   [SKILL_TYPES.BASIC_ATTACK_MEDIUM]: {
     name: 'Средна основна атака',
@@ -146,7 +154,15 @@ const SKILL_TREE = {
     resourceType: RESOURCE_TYPES.MANA,
     resourceCost: 10,
     iconRow: 5,
-    iconCol: 5
+    iconCol: 5,
+    // Micro skill tree for specializations
+    microTree: {
+      title: "Специализации - Средна основна атака",
+      description: "Избери специализации за подобряване на средната атака",
+      skills: [
+        // Placeholder skills - to be populated later
+      ]
+    }
   },
   [SKILL_TYPES.BASIC_ATTACK_HEAVY]: {
     name: 'Тежка основна атака',
@@ -173,7 +189,15 @@ const SKILL_TREE = {
     resourceType: RESOURCE_TYPES.ENERGY,
     resourceCost: 20,
     iconRow: 5,
-    iconCol: 3
+    iconCol: 3,
+    // Micro skill tree for specializations
+    microTree: {
+      title: "Специализации - Тежка основна атака",
+      description: "Избери специализации за подобряване на тежката атака",
+      skills: [
+        // Placeholder skills - to be populated later
+      ]
+    }
   },
   [SKILL_TYPES.SECONDARY_ATTACK_LIGHT]: {
     name: 'Лека допълнителна атака',
@@ -189,7 +213,15 @@ const SKILL_TREE = {
     resourceType: RESOURCE_TYPES.NONE,
     resourceCost: 0,
     iconRow: 3,
-    iconCol: 2
+    iconCol: 2,
+    // Micro skill tree for specializations
+    microTree: {
+      title: "Специализации - Лека допълнителна атака",
+      description: "Избери специализации за подобряване на леката допълнителна атака",
+      skills: [
+        // Placeholder skills - to be populated later
+      ]
+    }
   },
   [SKILL_TYPES.SECONDARY_ATTACK_MEDIUM]: {
     name: 'Средна допълнителна атака',
@@ -216,7 +248,15 @@ const SKILL_TREE = {
     resourceType: RESOURCE_TYPES.MANA,
     resourceCost: 10,
     iconRow: 3,
-    iconCol: 1
+    iconCol: 1,
+    // Micro skill tree for specializations
+    microTree: {
+      title: "Специализации - Средна допълнителна атака",
+      description: "Избери специализации за подобряване на средната допълнителна атака",
+      skills: [
+        // Placeholder skills - to be populated later
+      ]
+    }
   },
   [SKILL_TYPES.SECONDARY_ATTACK_HEAVY]: {
     name: 'Тежка допълнителна атака',
@@ -243,7 +283,15 @@ const SKILL_TREE = {
     resourceType: RESOURCE_TYPES.ENERGY,
     resourceCost: 20,
     iconRow: 3,
-    iconCol: 3
+    iconCol: 3,
+    // Micro skill tree for specializations
+    microTree: {
+      title: "Специализации - Тежка допълнителна атака",
+      description: "Избери специализации за подобряване на тежката допълнителна атака",
+      skills: [
+        // Placeholder skills - to be populated later
+      ]
+    }
   },
 
   // Defense skills
@@ -277,7 +325,7 @@ const SKILL_TREE = {
   [SKILL_TYPES.COMBAT_STANCE]: {
     name: 'Бойна стойка',
     description: 'Мощна бойна стойка която подобрява всички бойни умения',
-    usageType: SKILL_USAGE_TYPES.PASSIVE,
+    usageType: SKILL_USAGE_TYPES.ACTIVE_PASSIVE,
     passiveEffect: {
       stat: 'maxHealth',  // Primary stat for display
       statDisplay: 'бойни умения',
