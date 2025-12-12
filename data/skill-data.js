@@ -97,11 +97,18 @@ const TARGET_TYPES = {
   AOE: 'aoe'
 };
 
+const SKILL_USAGE_TYPES = {
+  ACTIVE: 'active',
+  PASSIVE: 'passive',
+  ACTIVE_PASSIVE: 'active_passive'
+}
+
 // Skill tree definition with prerequisites, resource costs, and icon coordinates
 const SKILL_TREE = {
   [SKILL_TYPES.BASIC_ATTACK_LIGHT]: {
     name: 'Лека основна атака',
     description: 'Бърза лека атака без ресурсни изисквания',
+    usageType: SKILL_USAGE_TYPES.ACTIVE,   // Active skill - manually activated
     damageModifier: 1,           // Сила на атаката
     damageType: DAMAGE_TYPES.PHYSICAL,      // physical/magical/special
     rangeType: RANGE_TYPES.MELEE,          // melee/range
@@ -117,6 +124,7 @@ const SKILL_TREE = {
   [SKILL_TYPES.BASIC_ATTACK_MEDIUM]: {
     name: 'Средна основна атака',
     description: 'Средна атака, изисква 10 мана',
+    usageType: SKILL_USAGE_TYPES.ACTIVE,
     damageModifier: 3,           // Сила на атаката
     damageType: DAMAGE_TYPES.PHYSICAL,      // physical/magical/special
     rangeType: RANGE_TYPES.MELEE,          // melee/range
@@ -143,6 +151,7 @@ const SKILL_TREE = {
   [SKILL_TYPES.BASIC_ATTACK_HEAVY]: {
     name: 'Тежка основна атака',
     description: 'Мощна тежка атака, изисква 20 енергия',
+    usageType: SKILL_USAGE_TYPES.ACTIVE,
     damageModifier: 5,           // Сила на атаката
     damageType: DAMAGE_TYPES.PHYSICAL,      // physical/magical/special
     rangeType: RANGE_TYPES.MELEE,          // melee/range
@@ -169,6 +178,7 @@ const SKILL_TREE = {
   [SKILL_TYPES.SECONDARY_ATTACK_LIGHT]: {
     name: 'Лека допълнителна атака',
     description: 'Бърза допълнителна атака без ресурсни изисквания',
+    usageType: SKILL_USAGE_TYPES.ACTIVE,
     damageModifier: 3,           // Сила на атаката
     damageType: DAMAGE_TYPES.PHYSICAL,      // physical/magical/special
     rangeType: RANGE_TYPES.MELEE,          // melee/range
@@ -184,6 +194,7 @@ const SKILL_TREE = {
   [SKILL_TYPES.SECONDARY_ATTACK_MEDIUM]: {
     name: 'Средна допълнителна атака',
     description: 'Средна допълнителна атака, изисква 10 мана',
+    usageType: SKILL_USAGE_TYPES.ACTIVE,
     damageModifier: 6,           // Сила на атаката
     damageType: DAMAGE_TYPES.PHYSICAL,      // physical/magical/special
     rangeType: RANGE_TYPES.MELEE,          // melee/range
@@ -210,6 +221,7 @@ const SKILL_TREE = {
   [SKILL_TYPES.SECONDARY_ATTACK_HEAVY]: {
     name: 'Тежка допълнителна атака',
     description: 'Мощна тежка допълнителна атака, изисква 20 енергия',
+    usageType: SKILL_USAGE_TYPES.ACTIVE,
     damageModifier: 9,           // Сила на атаката
     damageType: DAMAGE_TYPES.PHYSICAL,      // physical/magical/special
     rangeType: RANGE_TYPES.MELEE,          // melee/range
@@ -238,6 +250,7 @@ const SKILL_TREE = {
   [SKILL_TYPES.BASIC_DEFENSE]: {
     name: 'Базова защита',
     description: 'Увеличава базовата защита с 10 точки',
+    usageType: SKILL_USAGE_TYPES.PASSIVE,
     passiveEffect: { stat: 'characterInfo.baseDefense', statDisplay: 'защита', value: 10 }, // Пасивен ефект
     unlocked: false,
     prerequisites: [
@@ -264,6 +277,7 @@ const SKILL_TREE = {
   [SKILL_TYPES.COMBAT_STANCE]: {
     name: 'Бойна стойка',
     description: 'Мощна бойна стойка която подобрява всички бойни умения',
+    usageType: SKILL_USAGE_TYPES.PASSIVE,
     passiveEffect: {
       stat: 'maxHealth',  // Primary stat for display
       statDisplay: 'бойни умения',
@@ -294,6 +308,7 @@ const SKILL_TREE = {
   [SKILL_TYPES.COMBAT_SENSE]: {
     name: 'Боен усет',
     description: 'Подобрява бойните сетива и увеличава шансовете за успех в битка',
+    usageType: SKILL_USAGE_TYPES.PASSIVE,
     passiveEffect: {
       stat: 'characterInfo.hitChance',  // Primary stat for display
       statDisplay: 'бойни сетива',
@@ -323,6 +338,7 @@ const SKILL_TREE = {
   [SKILL_TYPES.WATER_PROTECTION]: {
     name: 'Водна защита',
     description: 'Увеличава резистанса към водни магии',
+    usageType: SKILL_USAGE_TYPES.PASSIVE,
     passiveEffect: {
       stat: 'characterInfo.magicResistance.water',
       statDisplay: 'водна резистанс',
@@ -350,6 +366,7 @@ const SKILL_TREE = {
   [SKILL_TYPES.FIRE_PROTECTION]: {
     name: 'Огнена защита',
     description: 'Увеличава резистанса към огнени магии',
+    usageType: SKILL_USAGE_TYPES.PASSIVE,
     passiveEffect: {
       stat: 'characterInfo.magicResistance.fire',
       statDisplay: 'огнена резистанс',
@@ -377,6 +394,7 @@ const SKILL_TREE = {
   [SKILL_TYPES.AIR_PROTECTION]: {
     name: 'Въздушна защита',
     description: 'Увеличава резистанса към въздушни магии',
+    usageType: SKILL_USAGE_TYPES.PASSIVE,
     passiveEffect: {
       stat: 'characterInfo.magicResistance.air',
       statDisplay: 'въздушна резистанс',
@@ -404,6 +422,7 @@ const SKILL_TREE = {
   [SKILL_TYPES.EARTH_PROTECTION]: {
     name: 'Земна защита',
     description: 'Увеличава резистанса към земни магии',
+    usageType: SKILL_USAGE_TYPES.PASSIVE,
     passiveEffect: {
       stat: 'characterInfo.magicResistance.earth',
       statDisplay: 'земна резистанс',
@@ -432,6 +451,7 @@ const SKILL_TREE = {
   [SKILL_TYPES.MASS_RESISTANCE]: {
     name: 'Масов резистанс',
     description: 'Увеличава всички магически резистанси едновременно',
+    usageType: SKILL_USAGE_TYPES.PASSIVE,
     passiveEffect: {
       stat: 'characterInfo.magicResistance.water',  // Primary stat for display
       statDisplay: 'всички резистанси',
@@ -515,6 +535,7 @@ const SKILL_TREE = {
   [SKILL_TYPES.STRONG_BODY]: {
     name: 'Здраво тяло',
     description: 'Подобрява физическото тяло и увеличава основните характеристики',
+    usageType: SKILL_USAGE_TYPES.PASSIVE,
     passiveEffect: {
       stat: 'characterInfo.strength',  // Primary stat for display
       statDisplay: 'основни характеристики',
@@ -556,6 +577,7 @@ const SKILL_TREE = {
   [SKILL_TYPES.SYNERGY]: {
     name: 'Синергия',
     description: 'Увеличава максималната мана и енергия, подобрявайки общата ефективност',
+    usageType: SKILL_USAGE_TYPES.PASSIVE,
     passiveEffect: {
       stat: 'maxMana',  // Primary stat for display
       statDisplay: 'мана и енергия',
@@ -604,6 +626,7 @@ const SKILL_TREE = {
   [SKILL_TYPES.ENHANCED_ATTACK]: {
     name: 'Засилена атака',
     description: 'Перманентно увеличава основната атака',
+    usageType: SKILL_USAGE_TYPES.PASSIVE,
     passiveEffect: { stat: 'baseAttack', statDisplay: 'атака', value: 2 }, // Пасивен ефект
     unlocked: false,
     prerequisites: [],
@@ -624,6 +647,7 @@ const SKILL_TREE = {
   [SKILL_TYPES.STRONG_ATTACK]: {
     name: 'Силна атака',
     description: 'Мощна атака която увеличава базовата атака',
+    usageType: SKILL_USAGE_TYPES.PASSIVE,
     passiveEffect: { stat: 'baseAttack', statDisplay: 'атака', value: 2 }, // Пасивен ефект
     unlocked: false,
     prerequisites: [
@@ -653,6 +677,7 @@ const SKILL_TREE = {
   [SKILL_TYPES.ULTIMATE_ATTACK]: {
     name: 'Ултимативна атака',
     description: 'Мощна ултимативна атака с огромна сила',
+    usageType: SKILL_USAGE_TYPES.PASSIVE,
     passiveEffect: { stat: 'baseAttack', statDisplay: 'атака', value: 50 }, // Пасивен ефект
     unlocked: false,
     prerequisites: [

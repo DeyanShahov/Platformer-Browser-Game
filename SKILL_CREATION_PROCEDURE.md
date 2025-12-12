@@ -54,6 +54,7 @@ Add the complete skill definition to the `SKILL_TREE` object:
 [SKILL_TYPES.NEW_SKILL]: {
   name: 'Skill Name',
   description: 'Brief description of the skill',
+  usageType: SKILL_USAGE_TYPES.PASSIVE,  // ACTIVE, PASSIVE, or ACTIVE_PASSIVE
   passiveEffect: {
     stat: 'stat.path',           // e.g., 'characterInfo.baseDefense'
     statDisplay: 'display name',  // e.g., 'защита'
@@ -77,8 +78,8 @@ Add the complete skill definition to the `SKILL_TREE` object:
       [
         {
           stat: 'stat.path',           // e.g., 'characterInfo.baseDefense'
-          value: 10,
-          description: '+10 display name'  // e.g., '+10 защита'
+          statDisplay: 'display name',  // e.g., '+10 защита'
+          value: 10
         },
         // Add more effects for the same level
         {
