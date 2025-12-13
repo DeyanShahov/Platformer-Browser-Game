@@ -258,7 +258,6 @@ function initMenu() {
     <!-- Micro Skill Tree Modal -->
     <div id="microTreeModal" class="menu micro-tree-modal" style="display:none;">
       <h2 id="microTreeTitle">Специализации</h2>
-      <div id="microTreeDescription">Избери специализации за подобряване на умението</div>
 
       <div id="microTreeSplitContainer">
         <div id="microTreeLeftPanel">
@@ -1518,9 +1517,8 @@ function showMicroTreeForSkill(skillType) {
 
   currentMicroSkillParent = skillType;
 
-  // Update modal title and description
+  // Update modal title
   document.getElementById('microTreeTitle').textContent = skillInfo.microTree.title;
-  document.getElementById('microTreeDescription').textContent = skillInfo.microTree.description;
 
   // Reset micro cursor
   microSkillCursorRow = 0;
@@ -1568,8 +1566,8 @@ function renderMicroSkillTree() {
   const skillInfo = SKILL_TREE[currentMicroSkillParent];
   const microSkills = skillInfo.microTree.skills;
 
-  // Create 3x3 grid (9 positions)
-  for (let row = 0; row < 3; row++) {
+  // Create 3x4 grid (12 positions)
+  for (let row = 0; row < 4; row++) {
     for (let col = 0; col < 3; col++) {
       const skillIndex = row * 3 + col;
       const microSkill = microSkills[skillIndex];
@@ -1604,19 +1602,32 @@ function renderMicroSkillTree() {
 // Update micro skill cursor position
 function updateMicroCursorPosition() {
   const cursorEl = document.getElementById('microSkillCursor');
-  const gridEl = document.getElementById('microSkillGrid');
+  const leftPanelEl = document.getElementById('microTreeLeftPanel');
 
-  if (!cursorEl || !gridEl) return;
+  if (!cursorEl || !leftPanelEl) return;
 
-  // Calculate position based on 3x3 grid, 48px icons + 12px gap = 60px total per cell
-  const cellSize = 48 + 12; // icon + gap
-  const cursorX = microSkillCursorCol * cellSize + 4; // +4 for border
-  const cursorY = microSkillCursorRow * cellSize + 4;
+  // Find the currently selected micro skill icon by calculating its position in the grid
+  const selectedIcon = document.querySelectorAll('.micro-skill-icon')[microSkillCursorRow * 3 + microSkillCursorCol];
 
-  cursorEl.style.left = `${cursorX}px`;
-  cursorEl.style.top = `${cursorY}px`;
+  if (selectedIcon) {
+    // Get positions relative to the left panel
+    const iconRect = selectedIcon.getBoundingClientRect();
+    const panelRect = leftPanelEl.getBoundingClientRect();
 
-  // Update selected class
+    // Calculate cursor position to center it over the icon
+    const iconCenterX = iconRect.left + iconRect.width / 2 - panelRect.left;
+    const iconCenterY = iconRect.top + iconRect.height / 2 - panelRect.top;
+
+    // Position cursor so its center aligns with icon center
+    // Micro cursor is 56x56px, so subtract 28px (half) from center
+    const cursorX = iconCenterX - 33;
+    const cursorY = iconCenterY - 31;
+
+    cursorEl.style.left = `${cursorX}px`;
+    cursorEl.style.top = `${cursorY}px`;
+  }
+
+  // Update selected class on micro skill icons
   document.querySelectorAll('.micro-skill-icon').forEach((icon, index) => {
     const row = Math.floor(index / 3);
     const col = index % 3;
@@ -1665,7 +1676,7 @@ function moveMicroCursor(direction) {
       microSkillCursorRow = Math.max(0, microSkillCursorRow - 1);
       break;
     case 'down':
-      microSkillCursorRow = Math.min(2, microSkillCursorRow + 1);
+      microSkillCursorRow = Math.min(3, microSkillCursorRow + 1); // Changed from 2 to 3 (4 rows total: 0-3)
       break;
     case 'left':
       microSkillCursorCol = Math.max(0, microSkillCursorCol - 1);
