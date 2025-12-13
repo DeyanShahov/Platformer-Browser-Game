@@ -189,65 +189,78 @@ function handleSkillTreeKeys() {
     keys['m'] = false;
   }
 
-  // Player 1 skill tree (key 5) - toggle player's own menu
+  // Player 1 skill tree (key 5) - 3-tier toggle system
   key5Pressed = keys['5'];
   if (key5Pressed && !key5WasPressed && players.length >= 1) { // Key just pressed
     console.log('Key 5 pressed - currentMenu:', currentMenu, 'currentSkillTreePlayer:', currentSkillTreePlayer);
-    if (currentMenu === 'skills' && currentSkillTreePlayer === 0) {
-      // Close if player's own skill tree is open
+    if (currentMenu === 'microTree' && currentSkillTreePlayer === 0) {
+      // Tier 3: Micro tree is open - close micro tree (main tree stays open)
+      console.log('Closing micro tree for player 1 (main tree stays open)');
+      hideMicroTree();
+    } else if (currentMenu === 'skills' && currentSkillTreePlayer === 0) {
+      // Tier 2: Main skill tree is open (no micro tree) - close everything
       console.log('Closing skill tree for player 1');
       hideSkillTree();
     } else if (!menuActive) {
-      // Open only if no menu is active
+      // Tier 1: No menu is active - open main skill tree
       console.log('Opening skill tree for player 1');
       showSkillTreeForPlayer(0);
     }
-    // If another player's skill tree is open, do nothing
+    // If another player's menu is open, do nothing
     lastSkillTreeToggleTime = now;
   }
   key5WasPressed = key5Pressed;
 
-  // Player 2 skill tree (key 6) - toggle player's own menu
+  // Player 2 skill tree (key 6) - 3-tier toggle system
   key6Pressed = keys['6'];
   if (key6Pressed && !key6WasPressed && players.length >= 2) {
-    if (currentMenu === 'skills' && currentSkillTreePlayer === 1) {
-      // Close if player's own skill tree is open
+    if (currentMenu === 'microTree' && currentSkillTreePlayer === 1) {
+      // Tier 3: Micro tree is open - close micro tree (main tree stays open)
+      hideMicroTree();
+    } else if (currentMenu === 'skills' && currentSkillTreePlayer === 1) {
+      // Tier 2: Main skill tree is open (no micro tree) - close everything
       hideSkillTree();
     } else if (!menuActive) {
-      // Open only if no menu is active
+      // Tier 1: No menu is active - open main skill tree
       showSkillTreeForPlayer(1);
     }
-    // If another player's skill tree is open, do nothing
+    // If another player's menu is open, do nothing
     lastSkillTreeToggleTime = now;
   }
   key6WasPressed = key6Pressed;
 
-  // Player 3 skill tree (key 7) - toggle player's own menu
+  // Player 3 skill tree (key 7) - 3-tier toggle system
   key7Pressed = keys['7'];
   if (key7Pressed && !key7WasPressed && players.length >= 3) {
-    if (currentMenu === 'skills' && currentSkillTreePlayer === 2) {
-      // Close if player's own skill tree is open
+    if (currentMenu === 'microTree' && currentSkillTreePlayer === 2) {
+      // Tier 3: Micro tree is open - close micro tree (main tree stays open)
+      hideMicroTree();
+    } else if (currentMenu === 'skills' && currentSkillTreePlayer === 2) {
+      // Tier 2: Main skill tree is open (no micro tree) - close everything
       hideSkillTree();
     } else if (!menuActive) {
-      // Open only if no menu is active
+      // Tier 1: No menu is active - open main skill tree
       showSkillTreeForPlayer(2);
     }
-    // If another player's skill tree is open, do nothing
+    // If another player's menu is open, do nothing
     lastSkillTreeToggleTime = now;
   }
   key7WasPressed = key7Pressed;
 
-  // Player 4 skill tree (key 8) - toggle player's own menu
+  // Player 4 skill tree (key 8) - 3-tier toggle system
   key8Pressed = keys['8'];
   if (key8Pressed && !key8WasPressed && players.length >= 4) {
-    if (currentMenu === 'skills' && currentSkillTreePlayer === 3) {
-      // Close if player's own skill tree is open
+    if (currentMenu === 'microTree' && currentSkillTreePlayer === 3) {
+      // Tier 3: Micro tree is open - close micro tree (main tree stays open)
+      hideMicroTree();
+    } else if (currentMenu === 'skills' && currentSkillTreePlayer === 3) {
+      // Tier 2: Main skill tree is open (no micro tree) - close everything
       hideSkillTree();
     } else if (!menuActive) {
-      // Open only if no menu is active
+      // Tier 1: No menu is active - open main skill tree
       showSkillTreeForPlayer(3);
     }
-    // If another player's skill tree is open, do nothing
+    // If another player's menu is open, do nothing
     lastSkillTreeToggleTime = now;
   }
   key8WasPressed = key8Pressed;

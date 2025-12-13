@@ -222,7 +222,6 @@ function initMenu() {
     </div>
     <div id="skillTreeMenu" class="menu" style="display:none;">
       <h2 id="skillTreeTitle">Дърво на уменията</h2>
-      <div id="skillPointsDisplay">Налични точки: 0</div>
 
       <!-- Tab Display -->
       <div id="skillTreeTabDisplay">
@@ -272,7 +271,6 @@ function initMenu() {
               <div id="microSkillEffects">Няма ефекти</div>
             </div>
             <button id="selectMicroSkillBtn" style="display:none;">Избери</button>
-            <button id="closeMicroTreeBtn">Затвори</button>
           </div>
         </div>
       </div>
@@ -287,7 +285,6 @@ function initMenu() {
   document.getElementById('backToMainBtn').onclick = showMainMenu;
   document.getElementById('unlockSkillBtn').onclick = handleUnlockClick; // Централизираме го тук
   document.getElementById('selectMicroSkillBtn').onclick = handleSelectMicroSkillClick;
-  document.getElementById('closeMicroTreeBtn').onclick = hideMicroTree;
 
 
 
@@ -847,14 +844,14 @@ function drawConnectionLines(svgContainer, player) {
   const iconMargin = 10;
   const totalIconSize = iconSize + iconMargin;
 
-  // Define skill chains and their gap positions (shifted one column inward)
+  // Define skill chains and their gap positions (moved 2 columns to the right due to padding changes)
   const skillChains = [
-    // Basic attack chain - gap at column 1.5 (between col 1 and 2)
-    { skills: [SKILL_TYPES.BASIC_ATTACK_LIGHT, SKILL_TYPES.BASIC_ATTACK_MEDIUM, SKILL_TYPES.BASIC_ATTACK_HEAVY], gapColumn: 1.25 },
-    // Secondary attack chain - gap at column 2.5 (between col 2 and 3)
-    { skills: [SKILL_TYPES.SECONDARY_ATTACK_LIGHT, SKILL_TYPES.SECONDARY_ATTACK_MEDIUM, SKILL_TYPES.SECONDARY_ATTACK_HEAVY], gapColumn: 2.3 },
-    // Enhanced attack chain - gap at column 3.5 (between col 3 and 4)
-    { skills: [SKILL_TYPES.ENHANCED_ATTACK, SKILL_TYPES.STRONG_ATTACK, SKILL_TYPES.ULTIMATE_ATTACK], gapColumn: 3.4 }
+    // Basic attack chain - gap at column 3.5 (between col 3 and 4) - moved +2 from 1.25
+    { skills: [SKILL_TYPES.BASIC_ATTACK_LIGHT, SKILL_TYPES.BASIC_ATTACK_MEDIUM, SKILL_TYPES.BASIC_ATTACK_HEAVY], gapColumn: 3 },
+    // Secondary attack chain - gap at column 4.5 (between col 4 and 5) - moved +2 from 2.3
+    { skills: [SKILL_TYPES.SECONDARY_ATTACK_LIGHT, SKILL_TYPES.SECONDARY_ATTACK_MEDIUM, SKILL_TYPES.SECONDARY_ATTACK_HEAVY], gapColumn: 4.05 },
+    // Enhanced attack chain - gap at column 5.5 (between col 5 and 6) - moved +2 from 3.4
+    { skills: [SKILL_TYPES.ENHANCED_ATTACK, SKILL_TYPES.STRONG_ATTACK, SKILL_TYPES.ULTIMATE_ATTACK], gapColumn: 5.15 }
   ];
 
   // Draw vertical lines for each skill chain
@@ -947,13 +944,9 @@ function showSkillTreeForPlayer(playerIndex) {
   skillCursorRow = 0;
   skillCursorCol = 0;
 
-  // Update title
+  // Update title with combined player info and skill points
   const titleEl = document.getElementById('skillTreeTitle');
-  titleEl.textContent = `Дърво на уменията - Играч ${playerIndex + 1}`;
-
-  // Update skill points
-  const pointsEl = document.getElementById('skillPointsDisplay');
-  pointsEl.textContent = `Налични точки: ${player.skillPoints}`;
+  titleEl.textContent = `Дърво на уменията - Играч ${playerIndex + 1} / Налични точки за разпределение: ${player.skillPoints}`;
 
   // Render skill tree
   console.log(`[SKILL TREE] Rendering skill tree for player ${playerIndex + 1}`);
@@ -1361,9 +1354,9 @@ function tryUnlockSelectedSkill() {
   if (window.skillTreeManager.unlockSkill(player, skillType)) {
     console.log(`Player ${currentSkillTreePlayer + 1} unlocked skill: ${SKILL_TREE[skillType].name}`);
 
-    // Update UI
-    const pointsEl = document.getElementById('skillPointsDisplay');
-    pointsEl.textContent = `Налични точки: ${player.skillPoints}`;
+    // Update title with new skill points
+    const titleEl = document.getElementById('skillTreeTitle');
+    titleEl.textContent = `Дърво на уменията - Играч ${currentSkillTreePlayer + 1} / Налични точки за разпределение: ${player.skillPoints}`;
 
     // Refresh skill tree
     renderSkillTree(player);
