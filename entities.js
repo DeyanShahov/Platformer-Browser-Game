@@ -42,6 +42,9 @@ class Player {
     // Skill Tree System
     this.skillPoints = 0;  // Available skill points for unlocking skills
 
+    // Micro skill tracking - completely separate from main skill system
+    this.selectedMicroSkills = new Map(); // parentSkillType -> Set(skillIndices)
+
     // Нова система за нива на уменията по страници (замества старата unlockedSkills)
     this.skillLevelsByPage = {
       [SKILL_PAGES.MAIN]: new Map([

@@ -42,6 +42,20 @@ const SKILL_TYPES = {
   // Synergy skill
   SYNERGY: 'synergy',
 
+  // Micro skills for BASIC_ATTACK_LIGHT (standard micro tree)
+  BASIC_ATTACK_LIGHT_POWERFUL: 'basic_attack_light_powerful',
+  BASIC_ATTACK_LIGHT_BALANCED: 'basic_attack_light_balanced',
+  BASIC_ATTACK_LIGHT_EFFICIENT: 'basic_attack_light_efficient',
+  BASIC_ATTACK_LIGHT_FAST: 'basic_attack_light_fast',
+  BASIC_ATTACK_LIGHT_VERY_FAST: 'basic_attack_light_very_fast',
+  BASIC_ATTACK_LIGHT_CONTROLLED: 'basic_attack_light_controlled',
+  BASIC_ATTACK_LIGHT_CRITICAL: 'basic_attack_light_critical',
+  BASIC_ATTACK_LIGHT_DOUBLE: 'basic_attack_light_double',
+  BASIC_ATTACK_LIGHT_ENERGY: 'basic_attack_light_energy',
+  BASIC_ATTACK_LIGHT_ULTIMATE: 'basic_attack_light_ultimate',
+  BASIC_ATTACK_LIGHT_PERFECT: 'basic_attack_light_perfect',
+  BASIC_ATTACK_LIGHT_MASTER: 'basic_attack_light_master',
+
   // Test placeholder skills for main page grid (6x5 = 30 total)
   // Row 1
   SKILL_01_01: 'skill_01_01', SKILL_01_02: 'skill_01_02', SKILL_01_03: 'skill_01_03', SKILL_01_04: 'skill_01_04', SKILL_01_05: 'skill_01_05',
@@ -109,24 +123,55 @@ const SKILL_TREE = {
     name: 'Лека основна атака',
     description: 'Бърза лека атака без ресурсни изисквания',
     usageType: SKILL_USAGE_TYPES.ACTIVE,   // Active skill - manually activated
-    damageModifier: 1,           // Сила на атаката
+    damageModifier: 1,           // Сила на атаката - модифицира се от микро скилове
     damageType: DAMAGE_TYPES.PHYSICAL,      // physical/magical/special
     rangeType: RANGE_TYPES.MELEE,          // melee/range
     targetType: TARGET_TYPES.SINGLE_TARGET, // singletarget/aoe
+    // Additional properties for micro skill modifications
+    executionTimeModifier: 1.0,   // Модифицира се от микро скилове за скорост
+    cooldownModifier: 1.0,        // Модифицира се от микро скилове за cooldown
+    criticalChanceModifier: 0.0,  // Модифицира се от микро скилове за критичен удар
+    targetCountModifier: 0,       // Модифицира се от микро скилове за множество цели
+    energyCostModifier: 0,        // Модифицира се от микро скилове за енергийна цена
+    accuracyModifier: 0.0,        // Модифицира се от микро скилове за точност
+    resourceCostModifier: 1.0,    // Модифицира се от микро скилове за ресурсна цена
     unlocked: true, // Always available
     prerequisites: [],
     levelCosts: [0],  // No skill points needed (always available)
-    resourceType: RESOURCE_TYPES.NONE,
+    resourceType: RESOURCE_TYPES.MANA,
     resourceCost: 0,
     iconRow: 5,  // Row in sprite sheet (1-5)
     iconCol: 6,   // Column in sprite sheet (1-10)
-    // Micro skill tree for specializations
+    // Micro skill tree for specializations - One Per Row system
     microTree: {
+      type: 'standard',
+      progressionSystem: 'one_per_row',
       title: "Специализации - Лека основна атака",
-      description: "Избери специализации за подобряване на леката атака",
+      description: "Избери една специализация от всеки ред за персонализиране на атаката",
       skills: [
-        // Placeholder skills - to be populated later
-      ]
+        // Ред 1: Мощност (позиции 0-2)
+        SKILL_TYPES.BASIC_ATTACK_LIGHT_POWERFUL,
+        SKILL_TYPES.BASIC_ATTACK_LIGHT_BALANCED,
+        SKILL_TYPES.BASIC_ATTACK_LIGHT_EFFICIENT,
+
+        // Ред 2: Скорост (позиции 3-5)
+        SKILL_TYPES.BASIC_ATTACK_LIGHT_FAST,
+        SKILL_TYPES.BASIC_ATTACK_LIGHT_VERY_FAST,
+        SKILL_TYPES.BASIC_ATTACK_LIGHT_CONTROLLED,
+
+        // Ред 3: Специални ефекти (позиции 6-8)
+        SKILL_TYPES.BASIC_ATTACK_LIGHT_CRITICAL,
+        SKILL_TYPES.BASIC_ATTACK_LIGHT_DOUBLE,
+        SKILL_TYPES.BASIC_ATTACK_LIGHT_ENERGY,
+
+        // Ред 4: Ултимативни способности (позиции 9-11)
+        SKILL_TYPES.BASIC_ATTACK_LIGHT_ULTIMATE,
+        SKILL_TYPES.BASIC_ATTACK_LIGHT_PERFECT,
+        SKILL_TYPES.BASIC_ATTACK_LIGHT_MASTER
+      ],
+      requirements: {
+        skillPointCost: 1
+      }
     }
   },
   [SKILL_TYPES.BASIC_ATTACK_MEDIUM]: {
@@ -669,6 +714,357 @@ const SKILL_TREE = {
       ]
     ]
   },
+
+
+  //------------------------------------------ MICRO SKILLS FOR BASIC_ATTACK_LIGHT ------------------------------------------//
+
+  // Micro skills for BASIC_ATTACK_LIGHT (full passive skills)
+  [SKILL_TYPES.BASIC_ATTACK_LIGHT_POWERFUL]: {
+    name: 'Мощна лека атака',
+    description: 'Увеличава щетите на леката атака с 20%',
+    usageType: SKILL_USAGE_TYPES.PASSIVE,
+    passiveEffect: {
+      stat: 'parentSkill.damageModifier',
+      statDisplay: 'щета на лека атака',
+      value: 0.2
+    },
+    unlocked: false,
+    prerequisites: [],
+    resourceType: RESOURCE_TYPES.NONE,
+    resourceCost: 0,
+    iconRow: 1,
+    iconCol: 1,
+    maxLevel: 1,
+    levelCosts: [1],
+    levelEffects: [[{
+      stat: 'parentSkill.damageModifier',
+      value: 0.2,
+      description: '+20% щета на лека атака'
+    }]]
+  },
+
+  [SKILL_TYPES.BASIC_ATTACK_LIGHT_BALANCED]: {
+    name: 'Балансирана лека атака',
+    description: 'Увеличава щетите с 15% и намалява cooldown с 10%',
+    usageType: SKILL_USAGE_TYPES.PASSIVE,
+    passiveEffect: {
+      stat: 'parentSkill.damageModifier',
+      statDisplay: 'щета и скорост',
+      value: 0.15
+    },
+    unlocked: false,
+    prerequisites: [],
+    resourceType: RESOURCE_TYPES.NONE,
+    resourceCost: 0,
+    iconRow: 1,
+    iconCol: 2,
+    maxLevel: 1,
+    levelCosts: [1],
+    levelEffects: [[
+      {
+        stat: 'parentSkill.damageModifier',
+        value: 0.15,
+        description: '+15% щета на лека атака'
+      },
+      {
+        stat: 'parentSkill.cooldownModifier',
+        value: -0.1,
+        description: '-10% cooldown на лека атака'
+      }
+    ]]
+  },
+
+  [SKILL_TYPES.BASIC_ATTACK_LIGHT_EFFICIENT]: {
+    name: 'Ефикасна лека атака',
+    description: 'Увеличава щетите с 10% и намалява ресурсната цена с 15%',
+    usageType: SKILL_USAGE_TYPES.PASSIVE,
+    passiveEffect: {
+      stat: 'parentSkill.damageModifier',
+      statDisplay: 'щета и ефективност',
+      value: 0.1
+    },
+    unlocked: false,
+    prerequisites: [],
+    resourceType: RESOURCE_TYPES.NONE,
+    resourceCost: 0,
+    iconRow: 1,
+    iconCol: 3,
+    maxLevel: 1,
+    levelCosts: [1],
+    levelEffects: [[
+      {
+        stat: 'parentSkill.damageModifier',
+        value: 0.1,
+        description: '+10% щета на лека атака'
+      },
+      {
+        stat: 'parentSkill.resourceCostModifier',
+        value: -0.15,
+        description: '-15% ресурсна цена'
+      }
+    ]]
+  },
+
+  [SKILL_TYPES.BASIC_ATTACK_LIGHT_FAST]: {
+    name: 'Бърза лека атака',
+    description: 'Намалява времето за изпълнение на леката атака с 25%',
+    usageType: SKILL_USAGE_TYPES.PASSIVE,
+    passiveEffect: {
+      stat: 'parentSkill.executionTimeModifier',
+      statDisplay: 'скорост на атака',
+      value: -0.25
+    },
+    unlocked: false,
+    prerequisites: [],
+    resourceType: RESOURCE_TYPES.NONE,
+    resourceCost: 0,
+    iconRow: 1,
+    iconCol: 4,
+    maxLevel: 1,
+    levelCosts: [1],
+    levelEffects: [[{
+      stat: 'parentSkill.executionTimeModifier',
+      value: -0.25,
+      description: '-25% време за изпълнение'
+    }]]
+  },
+
+  [SKILL_TYPES.BASIC_ATTACK_LIGHT_VERY_FAST]: {
+    name: 'Много бърза лека атака',
+    description: 'Намалява времето за изпълнение с 35%, но +10% ресурсна цена',
+    usageType: SKILL_USAGE_TYPES.PASSIVE,
+    passiveEffect: {
+      stat: 'parentSkill.executionTimeModifier',
+      statDisplay: 'екстремна скорост',
+      value: -0.35
+    },
+    unlocked: false,
+    prerequisites: [],
+    resourceType: RESOURCE_TYPES.NONE,
+    resourceCost: 0,
+    iconRow: 1,
+    iconCol: 5,
+    maxLevel: 1,
+    levelCosts: [1],
+    levelEffects: [[
+      {
+        stat: 'parentSkill.executionTimeModifier',
+        value: -0.35,
+        description: '-35% време за изпълнение'
+      },
+      {
+        stat: 'parentSkill.resourceCostModifier',
+        value: 0.1,
+        description: '+10% ресурсна цена'
+      }
+    ]]
+  },
+
+  [SKILL_TYPES.BASIC_ATTACK_LIGHT_CONTROLLED]: {
+    name: 'Контролирана лека атака',
+    description: 'Намалява времето за изпълнение с 15% и увеличава точността с 10%',
+    usageType: SKILL_USAGE_TYPES.PASSIVE,
+    passiveEffect: {
+      stat: 'parentSkill.executionTimeModifier',
+      statDisplay: 'контрол и скорост',
+      value: -0.15
+    },
+    unlocked: false,
+    prerequisites: [],
+    resourceType: RESOURCE_TYPES.NONE,
+    resourceCost: 0,
+    iconRow: 1,
+    iconCol: 6,
+    maxLevel: 1,
+    levelCosts: [1],
+    levelEffects: [[
+      {
+        stat: 'parentSkill.executionTimeModifier',
+        value: -0.15,
+        description: '-15% време за изпълнение'
+      },
+      {
+        stat: 'parentSkill.accuracyModifier',
+        value: 0.1,
+        description: '+10% точност'
+      }
+    ]]
+  },
+
+  [SKILL_TYPES.BASIC_ATTACK_LIGHT_CRITICAL]: {
+    name: 'Критичен удар',
+    description: 'Увеличава шанса за критичен удар с 15%',
+    usageType: SKILL_USAGE_TYPES.PASSIVE,
+    passiveEffect: {
+      stat: 'parentSkill.criticalChanceModifier',
+      statDisplay: 'критичен удар',
+      value: 0.15
+    },
+    unlocked: false,
+    prerequisites: [],
+    resourceType: RESOURCE_TYPES.NONE,
+    resourceCost: 0,
+    iconRow: 2,
+    iconCol: 1,
+    maxLevel: 1,
+    levelCosts: [1],
+    levelEffects: [[{
+      stat: 'parentSkill.criticalChanceModifier',
+      value: 0.15,
+      description: '+15% критичен удар'
+    }]]
+  },
+
+  [SKILL_TYPES.BASIC_ATTACK_LIGHT_DOUBLE]: {
+    name: 'Двоен удар',
+    description: 'Леката атака удря до 2 противника едновременно',
+    usageType: SKILL_USAGE_TYPES.PASSIVE,
+    passiveEffect: {
+      stat: 'parentSkill.targetCountModifier',
+      statDisplay: 'множество цели',
+      value: 1
+    },
+    unlocked: false,
+    prerequisites: [],
+    resourceType: RESOURCE_TYPES.NONE,
+    resourceCost: 0,
+    iconRow: 2,
+    iconCol: 2,
+    maxLevel: 1,
+    levelCosts: [1],
+    levelEffects: [[{
+      stat: 'parentSkill.targetCountModifier',
+      value: 1,
+      description: 'Удря до 2 противника едновременно'
+    }]]
+  },
+
+  [SKILL_TYPES.BASIC_ATTACK_LIGHT_ENERGY]: {
+    name: 'Енергийна вълна',
+    description: 'Удвоява щетите но изразходва 10 енергия',
+    usageType: SKILL_USAGE_TYPES.PASSIVE,
+    passiveEffect: {
+      stat: 'parentSkill.damageModifier',
+      statDisplay: 'енергийна мощ',
+      value: 1.0
+    },
+    unlocked: false,
+    prerequisites: [],
+    resourceType: RESOURCE_TYPES.NONE,
+    resourceCost: 0,
+    iconRow: 2,
+    iconCol: 3,
+    maxLevel: 1,
+    levelCosts: [1],
+    levelEffects: [[
+      {
+        stat: 'parentSkill.damageModifier',
+        value: 1.0,
+        description: '+100% щета'
+      },
+      {
+        stat: 'parentSkill.energyCostModifier',
+        value: 10,
+        description: '+10 енергия цена'
+      }
+    ]]
+  },
+
+  [SKILL_TYPES.BASIC_ATTACK_LIGHT_ULTIMATE]: {
+    name: 'Ултимативен удар',
+    description: 'Максимални щети но с 5 секунди cooldown',
+    usageType: SKILL_USAGE_TYPES.PASSIVE,
+    passiveEffect: {
+      stat: 'parentSkill.damageModifier',
+      statDisplay: 'ултимативна мощ',
+      value: 2.0
+    },
+    unlocked: false,
+    prerequisites: [],
+    resourceType: RESOURCE_TYPES.NONE,
+    resourceCost: 0,
+    iconRow: 2,
+    iconCol: 4,
+    maxLevel: 1,
+    levelCosts: [1],
+    levelEffects: [[
+      {
+        stat: 'parentSkill.damageModifier',
+        value: 2.0,
+        description: '+200% щета'
+      },
+      {
+        stat: 'parentSkill.cooldownModifier',
+        value: 5.0,
+        description: '+5 секунди cooldown'
+      }
+    ]]
+  },
+
+  [SKILL_TYPES.BASIC_ATTACK_LIGHT_PERFECT]: {
+    name: 'Перфектен удар',
+    description: '100% шанс за критичен удар, но само при пълно здраве',
+    usageType: SKILL_USAGE_TYPES.PASSIVE,
+    passiveEffect: {
+      stat: 'parentSkill.criticalChanceModifier',
+      statDisplay: 'перфектен критичен удар',
+      value: 1.0
+    },
+    unlocked: false,
+    prerequisites: [],
+    resourceType: RESOURCE_TYPES.NONE,
+    resourceCost: 0,
+    iconRow: 2,
+    iconCol: 5,
+    maxLevel: 1,
+    levelCosts: [1],
+    levelEffects: [[{
+      stat: 'parentSkill.criticalChanceModifier',
+      value: 1.0,
+      description: '100% критичен удар при пълно здраве'
+    }]]
+  },
+
+  [SKILL_TYPES.BASIC_ATTACK_LIGHT_MASTER]: {
+    name: 'Майстор на атаката',
+    description: 'Комбинира всички предишни бонуси с 50% ефективност',
+    usageType: SKILL_USAGE_TYPES.PASSIVE,
+    passiveEffect: {
+      stat: 'parentSkill.damageModifier',
+      statDisplay: 'майсторска мощ',
+      value: 0.5
+    },
+    unlocked: false,
+    prerequisites: [],
+    resourceType: RESOURCE_TYPES.NONE,
+    resourceCost: 0,
+    iconRow: 2,
+    iconCol: 6,
+    maxLevel: 1,
+    levelCosts: [1],
+    levelEffects: [[
+      {
+        stat: 'parentSkill.damageModifier',
+        value: 0.5,
+        description: '+50% щета'
+      },
+      {
+        stat: 'parentSkill.executionTimeModifier',
+        value: -0.125,
+        description: '-12.5% време за изпълнение'
+      },
+      {
+        stat: 'parentSkill.criticalChanceModifier',
+        value: 0.075,
+        description: '+7.5% критичен удар'
+      }
+    ]]
+  },
+
+
+
+
+  //------------------------------------------ PASSIVE SKILLS FOR GENERAL USE ------------------------------------------//
 
   // Passive skills
   [SKILL_TYPES.ENHANCED_ATTACK]: {

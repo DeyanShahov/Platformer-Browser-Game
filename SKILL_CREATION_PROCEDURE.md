@@ -31,10 +31,15 @@ Before creating a skill, gather the following information:
 
 ## Step-by-Step Creation Procedure
 
-### Step 1: Add Skill Type Constant
+### Step 1: Determine Skill Location
+Choose where the skill will be placed:
+- **Main Skill Tree**: Add to main/secondary skill pages (6x5 grids)
+- **Micro Skill Tree**: Add to existing ACTIVE skill's microTree specialization grid (3x4 grid)
+
+### Step 2: Add Skill Type Constant (if needed)
 **File**: `data/skill-data.js`
 
-Add the new skill type to the `SKILL_TYPES` object:
+For new skills, add the skill type to the `SKILL_TYPES` object:
 
 ```javascript
 const SKILL_TYPES = {
@@ -244,4 +249,117 @@ When a user requests to create a new skill:
 3. Place in grid at [1][2] (row 1, column 2)
 4. Test that it works correctly
 
-This procedure ensures consistent, error-free skill creation across the entire skill tree system.
+## Micro Skill Tree Creation Procedure
+
+### Overview
+Micro skill trees are specialization grids (3x4 = 12 positions) that appear when you unlock ACTIVE skills. They allow players to choose specific upgrades for their abilities.
+
+### Step 1: Locate Parent ACTIVE Skill
+Find an existing ACTIVE skill in `SKILL_TREE` that will have specializations:
+
+```javascript
+[SKILL_TYPES.BASIC_ATTACK_LIGHT]: {
+  // ... existing skill properties
+  microTree: {
+    // Add micro tree here
+  }
+}
+```
+
+### Step 2: Add Micro Tree Structure
+Add the microTree object to the ACTIVE skill:
+
+```javascript
+microTree: {
+  title: "Специализации - [Skill Name]",
+  description: "Избери специализации за подобряване на [skill description]",
+  skills: [
+    // Array of 12 micro skills (3x4 grid)
+    // Position 0-11 corresponds to grid positions
+  ]
+}
+```
+
+### Step 3: Create Micro Skills
+Each micro skill in the array has this structure:
+
+```javascript
+{
+  name: "Specialization Name",
+  description: "What this specialization does",
+  effects: ["+20% damage boost", "Additional effects"],
+  iconRow: 1,    // From sprite sheet
+  iconCol: 2     // From sprite sheet
+}
+```
+
+### Step 4: Micro Skill Effects
+Micro skills can have various effects:
+- **Stat modifiers**: `"+20% damage boost"`
+- **New mechanics**: `"Hits up to 2 enemies simultaneously"`
+- **Resource costs**: `"+100% damage but costs 10 energy"`
+- **Cooldowns**: `"Massive damage but 5 second cooldown"`
+
+### Step 5: Grid Positioning
+Micro skills are arranged in a 3x4 grid (3 columns, 4 rows):
+- Position 0: Row 1, Column 1
+- Position 1: Row 1, Column 2
+- Position 2: Row 1, Column 3
+- Position 3: Row 2, Column 1
+- ... up to Position 11: Row 4, Column 3
+
+### Example: Micro Skills for Basic Attack Light
+
+```javascript
+microTree: {
+  title: "Специализации - Лека основна атака",
+  description: "Избери специализации за подобряване на леката атака",
+  skills: [
+    {
+      name: "Мощна лека атака",
+      description: "Увеличава щетите на леката атака с 20%",
+      effects: ["+20% damage boost"],
+      iconRow: 1,
+      iconCol: 2
+    },
+    {
+      name: "Бърза лека атака",
+      description: "Намалява времето за изпълнение на леката атака с 25%",
+      effects: ["-25% attack execution time"],
+      iconRow: 1,
+      iconCol: 2
+    },
+    // ... 10 more specializations
+  ]
+}
+```
+
+### Step 6: Implementation Notes
+- **Icon Position**: All test skills use `iconRow: 1, iconCol: 2`
+- **Grid Size**: Always 12 positions (some can be empty)
+- **Selection**: Only one micro skill can be chosen per parent skill
+- **Effects**: Applied immediately when selected
+- **No Prerequisites**: Micro skills are always available for selection
+
+### Step 7: Testing
+After adding micro skills:
+- [ ] Unlock the parent ACTIVE skill
+- [ ] Press ENTER on the skill to open micro tree
+- [ ] Verify all 12 positions display correctly
+- [ ] Test skill selection and effect application
+- [ ] Confirm icons load from sprite sheet position 1-2
+
+This procedure ensures micro skill trees are created consistently with proper integration into the skill system.
+
+## Usage Instructions
+
+When creating micro skills:
+
+1. **Choose parent ACTIVE skill** that needs specializations
+2. **Design 6-12 meaningful upgrades** with different effects
+3. **Use consistent icon positioning** (row 1, col 2 for testing)
+4. **Test the complete flow**: Unlock → Enter → Select → Apply effects
+5. **Balance the power levels** to provide meaningful choices
+
+This procedure ensures consistent, error-free micro skill creation across the entire skill tree system.
++++++++ REPLACE</parameter>
