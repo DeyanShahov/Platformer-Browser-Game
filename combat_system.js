@@ -63,8 +63,17 @@ class CombatCalculator {
     const attackPower = this.calculateAttackPower(attacker, skillType);
     const defense = this.calculateDefense(defender);
 
+    // Get skill info for damage modifier
+    const skillInfo = window.skillTreeManager ? window.skillTreeManager.getSkillInfo(skillType) : null;
+    const skillModifier = skillInfo ? skillInfo.damageModifier || 0 : 0;
+
     // Base damage = attack - defense (minimum 0)
     let damage = Math.max(0, attackPower - defense);
+
+    // Apply skill modifier as damage multiplier (not added to attack power)
+    if (skillModifier > 0) {
+      damage *= (1 + skillModifier); // skillModifier is percentage (e.g., 0.2 = +20%)
+    }
 
     // Critical hit check
     const isCritical = this.checkCriticalHit(attacker);
@@ -77,7 +86,7 @@ class CombatCalculator {
       isCritical: isCritical,
       attackPower: attackPower,
       defense: defense,
-      skillModifier: skillInfo ? skillInfo.damageModifier || 0 : 0
+      skillModifier: skillModifier
     };
   }
 
@@ -97,35 +106,99 @@ class CombatCalculator {
     return false;
   }
 
-  // Placeholder methods for future systems
+  // Equipment bonus methods
   getEquipmentAttackBonus(entity) {
-    // Future: sum bonuses from equipped weapons, etc.
-    return 0;
-  }
+    if (!entity.characterInfo) return 0;
 
-  getBuffAttackBonus(entity) {
-    // Future: temporary attack buffs
-    return 0;
-  }
+    // Check for equipped weapon attack bonus
+    const weaponBonus = entity.characterInfo.equippedWeapon?.attackBonus || 0;
 
-  getDebuffAttackPenalty(entity) {
-    // Future: temporary attack debuffs
-    return 0;
+    // Check for armor attack bonuses (some armor might give attack bonuses)
+    const armorBonus = entity.characterInfo.equippedArmor?.attackBonus || 0;
+
+    return weaponBonus + armorBonus;
   }
 
   getEquipmentDefenseBonus(entity) {
-    // Future: sum bonuses from equipped armor, etc.
-    return 0;
+    if (!entity.characterInfo) return 0;
+
+    // Check for equipped armor defense bonus
+    const armorBonus = entity.characterInfo.equippedArmor?.defenseBonus || 0;
+
+    // Check for shield defense bonus
+    const shieldBonus = entity.characterInfo.equippedShield?.defenseBonus || 0;
+
+    return armorBonus + shieldBonus;
+  }
+
+  // Buff bonus methods (temporary positive effects)
+  getBuffAttackBonus(entity) {
+    if (!entity.characterInfo) return 0;
+
+    let totalBonus = 0;
+
+    // Check active buffs
+    if (entity.characterInfo.activeBuffs) {
+      entity.characterInfo.activeBuffs.forEach(buff => {
+        if (buff.type === 'attack' && buff.remainingTime > 0) {
+          totalBonus += buff.value || 0;
+        }
+      });
+    }
+
+    return totalBonus;
   }
 
   getBuffDefenseBonus(entity) {
-    // Future: temporary defense buffs
-    return 0;
+    if (!entity.characterInfo) return 0;
+
+    let totalBonus = 0;
+
+    // Check active buffs
+    if (entity.characterInfo.activeBuffs) {
+      entity.characterInfo.activeBuffs.forEach(buff => {
+        if (buff.type === 'defense' && buff.remainingTime > 0) {
+          totalBonus += buff.value || 0;
+        }
+      });
+    }
+
+    return totalBonus;
+  }
+
+  // Debuff penalty methods (temporary negative effects)
+  getDebuffAttackPenalty(entity) {
+    if (!entity.characterInfo) return 0;
+
+    let totalPenalty = 0;
+
+    // Check active debuffs
+    if (entity.characterInfo.activeDebuffs) {
+      entity.characterInfo.activeDebuffs.forEach(debuff => {
+        if (debuff.type === 'attack' && debuff.remainingTime > 0) {
+          totalPenalty += debuff.value || 0;
+        }
+      });
+    }
+
+    return totalPenalty;
   }
 
   getDebuffDefensePenalty(entity) {
-    // Future: temporary defense debuffs
-    return 0;
+    if (!entity.characterInfo) return 0;
+
+    let totalPenalty = 0;
+
+    // Check active debuffs
+    if (entity.characterInfo.activeDebuffs) {
+      entity.characterInfo.activeDebuffs.forEach(debuff => {
+        if (debuff.type === 'defense' && debuff.remainingTime > 0) {
+          totalPenalty += debuff.value || 0;
+        }
+      });
+    }
+
+    return totalPenalty;
   }
 }
 
@@ -141,6 +214,35 @@ class CombatResolver {
     if (!defender) {
       console.warn('No defender for attack resolution');
       return null;
+    }
+
+    // Check and consume resources for the skill
+    if (!this.checkAndConsumeSkillResources(attacker, skillType)) {
+      console.log(`[COMBAT] ${attacker.characterInfo?.getDisplayName() || 'Attacker'} doesn't have enough resources for ${skillType}`);
+      return null; // Attack failed due to insufficient resources
+    }
+
+    // Check accuracy and dodge
+    const accuracyResult = this.checkAccuracyAndDodge(attacker, defender, skillType);
+    if (!accuracyResult.hit) {
+      // Attack missed
+      console.log(`[COMBAT] ${attacker.characterInfo?.getDisplayName() || 'Attacker'} missed ${defender.characterInfo?.getDisplayName() || 'Defender'} with ${skillType} (${accuracyResult.reason})`);
+
+      // Create miss event
+      const missEvent = {
+        timestamp: Date.now(),
+        attacker: attacker,
+        defender: defender,
+        skillType: skillType,
+        damageResult: { damage: 0, isCritical: false, attackPower: 0, defense: 0, skillModifier: 0 },
+        actualDamage: 0,
+        defenderDied: false,
+        missed: true,
+        missReason: accuracyResult.reason
+      };
+
+      this.logCombatEvent(missEvent);
+      return missEvent;
     }
 
     // Calculate damage using the combat calculator
@@ -340,6 +442,120 @@ class CombatResolver {
     defeatedEnemy.visible = (timeInBlink < 0.25);
 
     return false; // Enemy still dying
+  }
+
+  // Check and consume skill resources
+  checkAndConsumeSkillResources(attacker, skillType) {
+    // Skip resource check for enemies or basic attacks
+    if (attacker.entityType === 'enemy' || skillType === 'enemy_attack') {
+      return true;
+    }
+
+    // Get skill info
+    const skillInfo = window.skillTreeManager ? window.skillTreeManager.getSkillInfo(skillType) : null;
+    if (!skillInfo) {
+      console.warn(`[COMBAT] No skill info found for ${skillType}`);
+      return true; // Allow attack if skill not found (for backwards compatibility)
+    }
+
+    // Check resource requirements
+    const resourceType = skillInfo.resourceType;
+    const resourceCost = skillInfo.resourceCost || 0;
+
+    // Skip if no resource cost
+    if (!resourceType || resourceCost <= 0) {
+      return true;
+    }
+
+    // Check if attacker has character info (players have resources)
+    if (!attacker.characterInfo) {
+      console.warn(`[COMBAT] Attacker has no characterInfo for resource check:`, attacker);
+      return false;
+    }
+
+    // Get current resource amount
+    let currentResource = 0;
+    switch (resourceType) {
+      case RESOURCE_TYPES.MANA:
+        currentResource = attacker.characterInfo.mana || 0;
+        break;
+      case RESOURCE_TYPES.ENERGY:
+        currentResource = attacker.characterInfo.energy || 0;
+        break;
+      default:
+        console.warn(`[COMBAT] Unknown resource type: ${resourceType}`);
+        return false;
+    }
+
+    // Check if enough resources
+    if (currentResource < resourceCost) {
+      console.log(`[COMBAT] Insufficient ${resourceType}: ${currentResource}/${resourceCost} for ${skillType}`);
+      return false;
+    }
+
+    // Consume resources
+    switch (resourceType) {
+      case RESOURCE_TYPES.MANA:
+        attacker.characterInfo.mana -= resourceCost;
+        break;
+      case RESOURCE_TYPES.ENERGY:
+        attacker.characterInfo.energy -= resourceCost;
+        break;
+    }
+
+    console.log(`[COMBAT] Consumed ${resourceCost} ${resourceType} for ${skillType} (${attacker.characterInfo.mana || attacker.characterInfo.energy || 0} remaining)`);
+    return true;
+  }
+
+  // Check accuracy and dodge for an attack
+  checkAccuracyAndDodge(attacker, defender, skillType) {
+    // Enemies always hit (for now) - they have perfect accuracy
+    if (attacker.entityType === 'enemy' || skillType === 'enemy_attack') {
+      return { hit: true };
+    }
+
+    // Get skill info for accuracy modifier
+    const skillInfo = window.skillTreeManager ? window.skillTreeManager.getSkillInfo(skillType) : null;
+    const accuracyModifier = skillInfo ? skillInfo.accuracyModifier || 0 : 0;
+
+    // Base accuracy (70% for players)
+    let accuracy = 0.7;
+
+    // Apply accuracy modifier from skill (can be positive or negative)
+    accuracy += accuracyModifier;
+
+    // Clamp accuracy between 5% and 95%
+    accuracy = Math.max(0.05, Math.min(0.95, accuracy));
+
+    // Get defender's dodge chance
+    let dodgeChance = 0;
+    if (defender.characterInfo && defender.characterInfo.dodgeChance !== undefined) {
+      dodgeChance = defender.characterInfo.dodgeChance / 100; // Convert from percentage
+    }
+
+    // Clamp dodge chance between 0% and 50%
+    dodgeChance = Math.max(0, Math.min(0.5, dodgeChance));
+
+    // Calculate hit chance: accuracy vs dodge
+    const hitChance = accuracy * (1 - dodgeChance);
+
+    // Roll for hit
+    const hitRoll = Math.random();
+    const hit = hitRoll < hitChance;
+
+    if (!hit) {
+      // Determine miss reason
+      let reason = 'miss';
+      if (hitRoll < accuracy) {
+        reason = 'dodged';
+      } else {
+        reason = 'inaccurate';
+      }
+
+      return { hit: false, reason: reason };
+    }
+
+    return { hit: true };
   }
 
   // Placeholder for UI notifications
