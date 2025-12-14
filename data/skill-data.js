@@ -127,6 +127,9 @@ const SKILL_TREE = {
     damageType: DAMAGE_TYPES.PHYSICAL,      // physical/magical/special
     rangeType: RANGE_TYPES.MELEE,          // melee/range
     targetType: TARGET_TYPES.SINGLE_TARGET, // singletarget/aoe
+    // Timing properties (data-driven instead of constants)
+    executionTime: 0.15,         // ⏱️ Време за изпълнение в секунди
+    cooldownTime: 0.5,           // 🔄 Време за презареждане в секунди
     // Additional properties for micro skill modifications
     executionTimeModifier: 1.0,   // Модифицира се от микро скилове за скорост
     cooldownModifier: 1.0,        // Модифицира се от микро скилове за cooldown
@@ -182,6 +185,9 @@ const SKILL_TREE = {
     damageType: DAMAGE_TYPES.PHYSICAL,      // physical/magical/special
     rangeType: RANGE_TYPES.MELEE,          // melee/range
     targetType: TARGET_TYPES.SINGLE_TARGET, // singletarget/aoe
+    // Timing properties (data-driven instead of constants)
+    executionTime: 0.3,          // ⏱️ Време за изпълнение в секунди
+    cooldownTime: 1.0,           // 🔄 Време за презареждане в секунди
     unlocked: false,
     prerequisites: [
       {
@@ -217,6 +223,9 @@ const SKILL_TREE = {
     damageType: DAMAGE_TYPES.PHYSICAL,      // physical/magical/special
     rangeType: RANGE_TYPES.MELEE,          // melee/range
     targetType: TARGET_TYPES.SINGLE_TARGET, // singletarget/aoe
+    // Timing properties (data-driven instead of constants)
+    executionTime: 0.6,          // ⏱️ Време за изпълнение в секунди
+    cooldownTime: 2.0,           // 🔄 Време за презареждане в секунди
     unlocked: false,
     prerequisites: [
       {
@@ -252,6 +261,9 @@ const SKILL_TREE = {
     damageType: DAMAGE_TYPES.PHYSICAL,      // physical/magical/special
     rangeType: RANGE_TYPES.MELEE,          // melee/range
     targetType: TARGET_TYPES.SINGLE_TARGET, // singletarget/aoe
+    // Timing properties (data-driven instead of constants)
+    executionTime: 0.2,          // ⏱️ Време за изпълнение в секунди
+    cooldownTime: 0.8,           // 🔄 Време за презареждане в секунди
     unlocked: true, // Always available
     prerequisites: [],
     levelCosts: [0],  // No skill points needed (always available)
@@ -276,6 +288,9 @@ const SKILL_TREE = {
     damageType: DAMAGE_TYPES.PHYSICAL,      // physical/magical/special
     rangeType: RANGE_TYPES.MELEE,          // melee/range
     targetType: TARGET_TYPES.SINGLE_TARGET, // singletarget/aoe
+    // Timing properties (data-driven instead of constants)
+    executionTime: 0.4,          // ⏱️ Време за изпълнение в секунди
+    cooldownTime: 1.5,           // 🔄 Време за презареждане в секунди
     unlocked: false,
     prerequisites: [
       {
@@ -311,6 +326,9 @@ const SKILL_TREE = {
     damageType: DAMAGE_TYPES.PHYSICAL,      // physical/magical/special
     rangeType: RANGE_TYPES.MELEE,          // melee/range
     targetType: TARGET_TYPES.SINGLE_TARGET, // singletarget/aoe
+    // Timing properties (data-driven instead of constants)
+    executionTime: 0.8,          // ⏱️ Време за изпълнение в секунди
+    cooldownTime: 3.0,           // 🔄 Време за презареждане в секунди
     unlocked: false,
     prerequisites: [
       {
@@ -371,6 +389,9 @@ const SKILL_TREE = {
     name: 'Бойна стойка',
     description: 'Мощна бойна стойка която подобрява всички бойни умения',
     usageType: SKILL_USAGE_TYPES.ACTIVE_PASSIVE,
+    // Timing properties (data-driven instead of constants)
+    executionTime: 0.0,   // ⏱️ Инстантно - няма време за изпълнение
+    cooldownTime: 0.0,     // 🔄 Няма cooldown
     passiveEffect: {
       stat: 'maxHealth',  // Primary stat for display
       statDisplay: 'бойни умения',

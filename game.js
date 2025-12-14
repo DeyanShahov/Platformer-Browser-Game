@@ -642,7 +642,9 @@ function updateEnemyAI(enemy, dt) {
         ];
         const randomAttack = attackTypes[Math.floor(Math.random() * attackTypes.length)];
         enemy.currentAction = randomAttack;
-        enemy.executionTimer = EXECUTION_TIMERS[randomAttack] || 0.5;
+        // Get timing data from skill definition (data-driven approach)
+        const skillData = SKILL_TREE[randomAttack];
+        enemy.executionTimer = skillData ? skillData.executionTime : 0.5;
         console.log(`Enemy ${enemy.id} attacks with ${getActionDisplayName(randomAttack)}`);
       }
     }

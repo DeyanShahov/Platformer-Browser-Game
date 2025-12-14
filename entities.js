@@ -156,9 +156,14 @@ class Player {
       const resourcesConsumed = window.skillTreeManager.consumeResources(this, actionType);
       if (!resourcesConsumed) return false;
 
+      // Get timing data from skill definition (data-driven approach)
+      const skillData = SKILL_TREE[actionType];
+      const executionTime = skillData ? skillData.executionTime : 0.5;
+      const cooldownTime = skillData ? skillData.cooldownTime : 1.0;
+
       this.currentAction = actionType;
-      this.executionTimer = EXECUTION_TIMERS[actionType];
-      this.cooldownTimers[actionType] = COOLDOWN_TIMERS[actionType];
+      this.executionTimer = executionTime;
+      this.cooldownTimers[actionType] = cooldownTime;
       return true;
     }
     return false;
