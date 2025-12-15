@@ -1,0 +1,500 @@
+// Animation State Machine
+// Implements State Design Pattern for character animation states
+// Provides clean, scalable FSM for managing animation transitions
+
+// ===========================================
+// BASE STATE CLASS
+// ===========================================
+
+class AnimationState {
+  constructor(name) {
+    this.name = name;
+  }
+
+  // Called when entering this state
+  enter(entity) {
+    console.log(`[FSM] Entering state: ${this.name}`);
+  }
+
+  // Called when exiting this state
+  exit(entity) {
+    console.log(`[FSM] Exiting state: ${this.name}`);
+  }
+
+  // Called every frame while in this state
+  update(entity, dt) {
+    // Override in subclasses
+  }
+
+  // Handle input and return transition state name or null
+  handleInput(entity, input) {
+    // Override in subclasses
+    return null; // No transition
+  }
+
+  // Check if can transition to another state
+  canTransitionTo(newStateName) {
+    // Override in subclasses for transition validation
+    return true;
+  }
+
+  // Helper to get movement speed
+  getMovementSpeed(entity) {
+    return Math.sqrt(entity.vx * entity.vx + entity.vz * entity.vz);
+  }
+
+  // Helper to check if entity has movement input
+  hasMovementInput(entity) {
+    return Math.abs(entity.vx) > 0.1 || Math.abs(entity.vz) > 0.1;
+  }
+}
+
+// ===========================================
+// CONCRETE STATE CLASSES
+// ===========================================
+
+class IdleState extends AnimationState {
+  constructor() {
+    super('idle');
+  }
+
+  enter(entity) {
+    super.enter(entity);
+    entity.animation.setAnimation(window.ANIMATION_TYPES.IDLE);
+  }
+
+  handleInput(entity, input) {
+    // Transition to walking if movement detected
+    if (this.hasMovementInput(entity)) {
+      return 'walking';
+    }
+
+    // Can jump from idle
+    if (input.jumpPressed) {
+      return 'jumping';
+    }
+
+    // Can attack from idle
+    if (input.attackPressed) {
+      return this.getAttackState(input.attackType);
+    }
+
+    return null;
+  }
+
+  getAttackState(attackType) {
+    switch (attackType) {
+      case window.ACTION_TYPES.BASIC_ATTACK_LIGHT:
+        return 'attack_light';
+      case window.ACTION_TYPES.BASIC_ATTACK_MEDIUM:
+        return 'attack_medium';
+      case window.ACTION_TYPES.BASIC_ATTACK_HEAVY:
+        return 'attack_heavy';
+      case window.ACTION_TYPES.SECONDARY_ATTACK_LIGHT:
+        return 'secondary_attack_light';
+      case window.ACTION_TYPES.SECONDARY_ATTACK_MEDIUM:
+        return 'secondary_attack_medium';
+      case window.ACTION_TYPES.SECONDARY_ATTACK_HEAVY:
+        return 'secondary_attack_heavy';
+    }
+    return null;
+  }
+}
+
+class WalkingState extends AnimationState {
+  constructor() {
+    super('walking');
+  }
+
+  enter(entity) {
+    super.enter(entity);
+    entity.animation.setAnimation(window.ANIMATION_TYPES.WALK);
+  }
+
+  handleInput(entity, input) {
+    // Transition to idle if no movement
+    if (!this.hasMovementInput(entity)) {
+      return 'idle';
+    }
+
+    // Check for running (higher speed)
+    const speed = this.getMovementSpeed(entity);
+    const runThreshold = window.SPEED * 0.7;
+    if (speed >= runThreshold) {
+      return 'running';
+    }
+
+    // Can jump while walking
+    if (input.jumpPressed) {
+      return 'jumping';
+    }
+
+    // Can attack while walking
+    if (input.attackPressed) {
+      return this.getAttackState(input.attackType);
+    }
+
+    return null;
+  }
+
+  getAttackState(attackType) {
+    // Same as IdleState
+    switch (attackType) {
+      case window.ACTION_TYPES.BASIC_ATTACK_LIGHT:
+        return 'attack_light';
+      case window.ACTION_TYPES.BASIC_ATTACK_MEDIUM:
+        return 'attack_medium';
+      case window.ACTION_TYPES.BASIC_ATTACK_HEAVY:
+        return 'attack_heavy';
+      case window.ACTION_TYPES.SECONDARY_ATTACK_LIGHT:
+        return 'secondary_attack_light';
+      case window.ACTION_TYPES.SECONDARY_ATTACK_MEDIUM:
+        return 'secondary_attack_medium';
+      case window.ACTION_TYPES.SECONDARY_ATTACK_HEAVY:
+        return 'secondary_attack_heavy';
+    }
+    return null;
+  }
+}
+
+class RunningState extends AnimationState {
+  constructor() {
+    super('running');
+  }
+
+  enter(entity) {
+    super.enter(entity);
+    entity.animation.setAnimation(window.ANIMATION_TYPES.RUN);
+  }
+
+  handleInput(entity, input) {
+    // Transition to walking if speed drops
+    const speed = this.getMovementSpeed(entity);
+    const runThreshold = window.SPEED * 0.7;
+
+    if (speed < runThreshold) {
+      if (this.hasMovementInput(entity)) {
+        return 'walking';
+      } else {
+        return 'idle';
+      }
+    }
+
+    // Can jump while running
+    if (input.jumpPressed) {
+      return 'jumping';
+    }
+
+    // Can attack while running (run + attack)
+    if (input.attackPressed) {
+      return 'run_attack';
+    }
+
+    return null;
+  }
+}
+
+class JumpingState extends AnimationState {
+  constructor() {
+    super('jumping');
+  }
+
+  enter(entity) {
+    super.enter(entity);
+    // Force jump animation
+    entity.animation.forceAnimationType(window.ANIMATION_TYPES.JUMP, () => {
+      console.log(`[FSM] Jump animation completed, checking landing state`);
+      // Animation completed - check if we should transition
+      // This will be handled by landing detection in game.js
+    });
+  }
+
+  update(entity, dt) {
+    // Check if landed during jump animation
+    if (entity.onGround) {
+      console.log(`[FSM] Landed during jump animation, transitioning to movement state`);
+      // Determine next state based on movement
+      if (this.hasMovementInput(entity)) {
+        return 'walking';
+      } else {
+        return 'idle';
+      }
+    }
+  }
+
+  // Jumping state doesn't handle input - physics handles jumping
+  handleInput(entity, input) {
+    // Can't interrupt jump with other actions
+    return null;
+  }
+}
+
+class AttackLightState extends AnimationState {
+  constructor() {
+    super('attack_light');
+  }
+
+  enter(entity) {
+    super.enter(entity);
+    entity.animation.forceAnimationType(window.ANIMATION_TYPES.ATTACK_1, () => {
+      console.log(`[FSM] Attack light completed, returning to movement`);
+      // Return to appropriate movement state
+      if (this.hasMovementInput(entity)) {
+        return 'walking';
+      } else {
+        return 'idle';
+      }
+    });
+  }
+
+  // Attack states don't handle input until animation completes
+}
+
+class AttackMediumState extends AnimationState {
+  constructor() {
+    super('attack_medium');
+  }
+
+  enter(entity) {
+    super.enter(entity);
+    entity.animation.forceAnimationType(window.ANIMATION_TYPES.ATTACK_2, () => {
+      console.log(`[FSM] Attack medium completed, returning to movement`);
+      if (this.hasMovementInput(entity)) {
+        return 'walking';
+      } else {
+        return 'idle';
+      }
+    });
+  }
+}
+
+class AttackHeavyState extends AnimationState {
+  constructor() {
+    super('attack_heavy');
+  }
+
+  enter(entity) {
+    super.enter(entity);
+    entity.animation.forceAnimationType(window.ANIMATION_TYPES.ATTACK_3, () => {
+      console.log(`[FSM] Attack heavy completed, returning to movement`);
+      if (this.hasMovementInput(entity)) {
+        return 'walking';
+      } else {
+        return 'idle';
+      }
+    });
+  }
+}
+
+// Secondary attacks
+class SecondaryAttackLightState extends AnimationState {
+  constructor() {
+    super('secondary_attack_light');
+  }
+
+  enter(entity) {
+    super.enter(entity);
+    entity.animation.forceAnimationType(window.ANIMATION_TYPES.ATTACK_1, () => {
+      console.log(`[FSM] Secondary attack light completed, returning to movement`);
+      if (this.hasMovementInput(entity)) {
+        return 'walking';
+      } else {
+        return 'idle';
+      }
+    });
+  }
+}
+
+class SecondaryAttackMediumState extends AnimationState {
+  constructor() {
+    super('secondary_attack_medium');
+  }
+
+  enter(entity) {
+    super.enter(entity);
+    entity.animation.forceAnimationType(window.ANIMATION_TYPES.ATTACK_2, () => {
+      console.log(`[FSM] Secondary attack medium completed, returning to movement`);
+      if (this.hasMovementInput(entity)) {
+        return 'walking';
+      } else {
+        return 'idle';
+      }
+    });
+  }
+}
+
+class SecondaryAttackHeavyState extends AnimationState {
+  constructor() {
+    super('secondary_attack_heavy');
+  }
+
+  enter(entity) {
+    super.enter(entity);
+    entity.animation.forceAnimationType(window.ANIMATION_TYPES.ATTACK_3, () => {
+      console.log(`[FSM] Secondary attack heavy completed, returning to movement`);
+      if (this.hasMovementInput(entity)) {
+        return 'walking';
+      } else {
+        return 'idle';
+      }
+    });
+  }
+}
+
+class RunAttackState extends AnimationState {
+  constructor() {
+    super('run_attack');
+  }
+
+  enter(entity) {
+    super.enter(entity);
+    entity.animation.forceAnimationType(window.ANIMATION_TYPES.RUN_ATTACK, () => {
+      console.log(`[FSM] Run attack completed, returning to movement`);
+      // Always return to running if still moving fast
+      const speed = this.getMovementSpeed(entity);
+      const runThreshold = window.SPEED * 0.7;
+
+      if (speed >= runThreshold) {
+        return 'running';
+      } else if (this.hasMovementInput(entity)) {
+        return 'walking';
+      } else {
+        return 'idle';
+      }
+    });
+  }
+}
+
+// ===========================================
+// STATE MACHINE CLASS
+// ===========================================
+
+class AnimationStateMachine {
+  constructor(entity) {
+    this.entity = entity;
+    this.currentState = null;
+    this.states = new Map();
+    this.pendingTransition = null;
+
+    // Register all states
+    this.addState('idle', IdleState);
+    this.addState('walking', WalkingState);
+    this.addState('running', RunningState);
+    this.addState('jumping', JumpingState);
+    this.addState('attack_light', AttackLightState);
+    this.addState('attack_medium', AttackMediumState);
+    this.addState('attack_heavy', AttackHeavyState);
+    this.addState('secondary_attack_light', SecondaryAttackLightState);
+    this.addState('secondary_attack_medium', SecondaryAttackMediumState);
+    this.addState('secondary_attack_heavy', SecondaryAttackHeavyState);
+    this.addState('run_attack', RunAttackState);
+
+    // Start in idle state
+    this.changeState('idle');
+  }
+
+  addState(stateName, stateClass) {
+    this.states.set(stateName, new stateClass());
+  }
+
+  changeState(newStateName) {
+    if (!this.states.has(newStateName)) {
+      console.error(`[FSM] Unknown state: ${newStateName}`);
+      return false;
+    }
+
+    // Check if transition is allowed
+    if (this.currentState && !this.currentState.canTransitionTo(newStateName)) {
+      console.warn(`[FSM] Transition to ${newStateName} not allowed from ${this.currentState.name}`);
+      return false;
+    }
+
+    // Exit current state
+    if (this.currentState) {
+      this.currentState.exit(this.entity);
+    }
+
+    // Enter new state
+    const newState = this.states.get(newStateName);
+    this.currentState = newState;
+    newState.enter(this.entity);
+
+    console.log(`[FSM] Changed to state: ${newStateName}`);
+    return true;
+  }
+
+  update(dt) {
+    if (!this.currentState) return;
+
+    // Update current state
+    this.currentState.update(this.entity, dt);
+
+    // Check for state return value (transition request)
+    const transitionResult = this.currentState.update(this.entity, dt);
+    if (transitionResult) {
+      this.changeState(transitionResult);
+    }
+  }
+
+  handleInput(input) {
+    if (!this.currentState) return;
+
+    // Let current state handle input
+    const transitionResult = this.currentState.handleInput(this.entity, input);
+    if (transitionResult) {
+      this.changeState(transitionResult);
+    }
+  }
+
+  getCurrentStateName() {
+    return this.currentState ? this.currentState.name : 'none';
+  }
+
+  isInState(stateName) {
+    return this.currentState && this.currentState.name === stateName;
+  }
+
+  // Force transition (for special cases)
+  forceState(stateName) {
+    if (this.currentState) {
+      this.currentState.exit(this.entity);
+    }
+
+    const newState = this.states.get(stateName);
+    if (newState) {
+      this.currentState = newState;
+      newState.enter(this.entity);
+      console.log(`[FSM] Force changed to state: ${stateName}`);
+      return true;
+    }
+    return false;
+  }
+}
+
+// ===========================================
+// INPUT HELPER
+// ===========================================
+
+class AnimationInput {
+  constructor() {
+    this.jumpPressed = false;
+    this.attackPressed = false;
+    this.attackType = null;
+    this.hasMovement = false;
+  }
+
+  reset() {
+    this.jumpPressed = false;
+    this.attackPressed = false;
+    this.attackType = null;
+  }
+}
+
+// Global instances
+window.AnimationStateMachine = AnimationStateMachine;
+window.AnimationInput = AnimationInput;
+
+// Export for module use
+if (typeof module !== 'undefined' && module.exports) {
+  module.exports = { AnimationStateMachine, AnimationInput };
+}

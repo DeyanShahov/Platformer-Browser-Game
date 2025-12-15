@@ -560,6 +560,14 @@ async function initGameWithSelections() {
           isInitialized: window.animationSystem ? window.animationSystem.isInitialized : false
         });
       }
+
+      // Initialize State Machine for player
+      if (window.AnimationStateMachine) {
+        player.stateMachine = new window.AnimationStateMachine(player);
+        console.log(`[MAIN] Player ${playerId} state machine initialized:`, player.stateMachine.getCurrentStateName());
+      } else {
+        console.warn(`[MAIN] AnimationStateMachine not available for player ${playerId}`);
+      }
     } else {
       console.warn(`No controls found for player ${playerId} (${playerKey})`);
     }

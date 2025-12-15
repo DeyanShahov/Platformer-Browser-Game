@@ -117,11 +117,20 @@ function handleKeyboardInput(player) {
     player.vy = JUMP_FORCE;
     player.onGround = false;
 
-    // Trigger animation immediately for jump (since executionTime = 0)
-    if (player.animation) {
+    // Use state machine if available, otherwise fallback to direct animation
+    if (player.stateMachine) {
+      // Create input object for state machine
+      const input = new window.AnimationInput();
+      input.jumpPressed = true;
+      input.attackType = null;
+      input.hasMovement = Math.abs(player.vx) > 0.1 || Math.abs(player.vz) > 0.1;
+
+      player.stateMachine.handleInput(input);
+      input.reset(); // Reset for next frame
+    } else if (player.animation) {
+      // Fallback to old system
       player.animation.forceAnimationType(window.ANIMATION_TYPES.JUMP, () => {
         console.log(`[JUMP] Jump animation ended naturally, transitioning to movement animation`);
-        // Jump animation ended - transition to movement animation
         player.animation.updateMovementAnimation();
       });
     }
@@ -373,11 +382,20 @@ function handleControllerInput(player, playerIndex) {
       player.vy = JUMP_FORCE;
       player.onGround = false;
 
-      // Trigger animation immediately for jump (since executionTime = 0)
-      if (player.animation) {
+      // Use state machine if available, otherwise fallback to direct animation
+      if (player.stateMachine) {
+        // Create input object for state machine
+        const input = new window.AnimationInput();
+        input.jumpPressed = true;
+        input.attackType = null;
+        input.hasMovement = Math.abs(player.vx) > 0.1 || Math.abs(player.vz) > 0.1;
+
+        player.stateMachine.handleInput(input);
+        input.reset(); // Reset for next frame
+      } else if (player.animation) {
+        // Fallback to old system
         player.animation.forceAnimationType(window.ANIMATION_TYPES.JUMP, () => {
           console.log(`[JUMP] Jump animation ended naturally, transitioning to movement animation`);
-          // Jump animation ended - transition to movement animation
           player.animation.updateMovementAnimation();
         });
       }
@@ -456,12 +474,11 @@ function handleMovement(player, dt) {
     if (wasInAir) {
       console.log(`[JUMP] Player landed on ground (y: ${groundY})`);
 
-      // Check if player was jumping and transition to movement animation
+      // Check if player was jumping - clear force flag so movement state machine can take over
       if (player.animation && player.animation.currentAnimation === window.ANIMATION_TYPES.JUMP) {
-        console.log(`[JUMP] Player was jumping, transitioning to movement animation`);
-        // Player landed - transition to movement animation
-        player.animation.forceAnimation = false; // Clear force flag
-        player.animation.updateMovementAnimation();
+        console.log(`[JUMP] Player was jumping, clearing force flag for movement transition`);
+        // Clear force flag - updateMovementState will handle transition in next animation update
+        player.animation.forceAnimation = false;
       }
     }
   } else {

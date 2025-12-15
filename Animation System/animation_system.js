@@ -83,8 +83,13 @@ class AnimationSystem {
       // Update facing direction based on movement
       animation.updateFacingDirection();
 
-      // Update movement state machine (finite state machine)
-      animation.updateMovementState();
+      // Update state machine if entity has one
+      if (entity.stateMachine) {
+        entity.stateMachine.update(dt);
+      } else {
+        // Fallback to old system for entities without state machine
+        animation.updateMovementState();
+      }
 
       // Update animation timing
       animation.update(dt);

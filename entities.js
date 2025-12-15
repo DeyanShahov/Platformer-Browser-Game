@@ -132,6 +132,9 @@ class Player {
 
     // Animation system - will be registered by animation system after creation
     this.animation = null;
+
+    // New State Machine for animation states
+    this.stateMachine = null;
   }
 
   // Helper method to determine character ID from color
