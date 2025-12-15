@@ -51,7 +51,8 @@ class Player {
     this.skillLevelsByPage = {
       [SKILL_PAGES.MAIN]: new Map([
         [SKILL_TYPES.BASIC_ATTACK_LIGHT, 1],  // Започват отключени на ниво 1
-        [SKILL_TYPES.SECONDARY_ATTACK_LIGHT, 1]
+        [SKILL_TYPES.SECONDARY_ATTACK_LIGHT, 1],
+        [SKILL_TYPES.JUMP, 1]  // Jump is always available
       ]),
       [SKILL_PAGES.SECONDARY]: new Map() // Втората страница започва празна
     };
@@ -59,7 +60,8 @@ class Player {
     // Обратна съвместимост - комбинирано unlockedSkills Set от всички страници
     this.unlockedSkills = new Set([
       SKILL_TYPES.BASIC_ATTACK_LIGHT,
-      SKILL_TYPES.SECONDARY_ATTACK_LIGHT
+      SKILL_TYPES.SECONDARY_ATTACK_LIGHT,
+      SKILL_TYPES.JUMP
     ]);
 
     // Helper method to get skill levels for a specific page

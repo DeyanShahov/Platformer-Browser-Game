@@ -63,6 +63,9 @@ const ANIMATION_DEFINITIONS = {
     [ANIMATION_TYPES.JUMP]: {
       spriteSheet: './Knight_1/Jump.png',
       frames: 6,
+      frameWidth: 120,    // How much to take from each frame start
+      frameHeight: 128,
+      frameStarts: [0, 128, 256, 384, 512, 640], // Original frame start positions
       duration: 1.2,
       loop: false, // Jump is typically not looped
       keyframe: 'sprite-6-frames'

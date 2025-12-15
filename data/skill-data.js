@@ -19,6 +19,9 @@ const SKILL_TYPES = {
   SECONDARY_ATTACK_MEDIUM: 'secondary_attack_medium',
   SECONDARY_ATTACK_HEAVY: 'secondary_attack_heavy',
 
+  // Движения
+  JUMP: 'jump',
+
   // Passive skills
   ENHANCED_ATTACK: 'enhanced_attack',
   STRONG_ATTACK: 'strong_attack',
@@ -355,6 +358,27 @@ const SKILL_TREE = {
         // Placeholder skills - to be populated later
       ]
     }
+  },
+
+  // Jump skill
+  [SKILL_TYPES.JUMP]: {
+    name: 'Скок',
+    description: 'Бърз скок без ресурсни изисквания',
+    usageType: SKILL_USAGE_TYPES.ACTIVE,
+    damageModifier: 0,           // Not a damage skill
+    damageType: DAMAGE_TYPES.PHYSICAL,
+    rangeType: RANGE_TYPES.MELEE,          // melee/range
+    targetType: TARGET_TYPES.SINGLE_TARGET, // singletarget/aoe
+    // Timing properties (data-driven instead of constants)
+    executionTime: 0.0,          // ⏱️ Инстантно - няма време за изпълнение
+    cooldownTime: 0.0,           // 🔄 Няма cooldown
+    unlocked: true, // Always available
+    prerequisites: [],
+    levelCosts: [0],  // No skill points needed (always available)
+    resourceType: RESOURCE_TYPES.NONE,
+    resourceCost: 0,
+    iconRow: 1,  // Placeholder icon position
+    iconCol: 1
   },
 
   // Defense skills

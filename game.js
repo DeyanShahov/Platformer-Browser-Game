@@ -111,10 +111,20 @@ function handleKeyboardInput(player) {
 
   // Скок
   if (keys[controls.jump] && player.onGround && player.canPerformAction(ACTION_TYPES.JUMP)) {
+    console.log(`[JUMP] Jump started - player on ground, triggering JUMP animation`);
     logAction(0, 'клавиатура', controls.jump.toUpperCase(), ACTION_TYPES.JUMP);
     player.startAction(ACTION_TYPES.JUMP);
     player.vy = JUMP_FORCE;
     player.onGround = false;
+
+    // Trigger animation immediately for jump (since executionTime = 0)
+    if (player.animation) {
+      player.animation.forceAnimationType(window.ANIMATION_TYPES.JUMP, () => {
+        console.log(`[JUMP] Jump animation ended naturally, transitioning to movement animation`);
+        // Jump animation ended - transition to movement animation
+        player.animation.updateMovementAnimation();
+      });
+    }
   }
 
   // Основни атаки
@@ -356,12 +366,22 @@ function handleControllerInput(player, playerIndex) {
 
     // Скок
     if (isButtonPressed(gamepad, controls.jump) && player.onGround && player.canPerformAction(ACTION_TYPES.JUMP)) {
+      console.log(`[JUMP] Jump started - player on ground, triggering JUMP animation`);
       const buttonName = getButtonName(controls.jump);
       logAction(playerIndex, 'контролер', buttonName, ACTION_TYPES.JUMP);
       player.startAction(ACTION_TYPES.JUMP);
       player.vy = JUMP_FORCE;
       player.onGround = false;
-    } 
+
+      // Trigger animation immediately for jump (since executionTime = 0)
+      if (player.animation) {
+        player.animation.forceAnimationType(window.ANIMATION_TYPES.JUMP, () => {
+          console.log(`[JUMP] Jump animation ended naturally, transitioning to movement animation`);
+          // Jump animation ended - transition to movement animation
+          player.animation.updateMovementAnimation();
+        });
+      }
+    }
 
     // Основни атаки
     if (isButtonPressed(gamepad, controls.basicAttackLight) && player.canPerformAction(ACTION_TYPES.BASIC_ATTACK_LIGHT)) {
@@ -426,9 +446,27 @@ function handleMovement(player, dt) {
   // Земя - използвай spawn позицията вместо hardcoded 100px
   const groundY = CANVAS_HEIGHT - 600; // Съответства на spawnY в main.js
   if (player.y >= groundY) {
+    // Check if this is the first frame of landing (transition from air to ground)
+    const wasInAir = !player.onGround;
+
     player.y = groundY;
     player.vy = 0;
     player.onGround = true;
+
+    if (wasInAir) {
+      console.log(`[JUMP] Player landed on ground (y: ${groundY})`);
+
+      // Check if player was jumping and transition to movement animation
+      if (player.animation && player.animation.currentAnimation === window.ANIMATION_TYPES.JUMP) {
+        console.log(`[JUMP] Player was jumping, transitioning to movement animation`);
+        // Player landed - transition to movement animation
+        player.animation.forceAnimation = false; // Clear force flag
+        player.animation.updateMovementAnimation();
+      }
+    }
+  } else {
+    // Player is in air
+    player.onGround = false;
   }
 }
 

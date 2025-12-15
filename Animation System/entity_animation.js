@@ -225,7 +225,10 @@ class EntityAnimation {
 
     // Set the animation if it's different from current
     if (newAnimation && newAnimation !== this.currentAnimation) {
-      this.setAnimation(newAnimation);
+      // Force action animations to interrupt movement
+      const isActionAnimation = entity.currentAction !== null;
+      console.log(`[ANIMATION] Setting ${newAnimation} animation (forced: ${isActionAnimation})`);
+      this.setAnimation(newAnimation, isActionAnimation);
     }
   }
 
