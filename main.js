@@ -2,6 +2,38 @@
 let ctx;
 let gameState = 'start'; // 'start', 'playing'
 
+// Initialize animation system (scripts are loaded statically in HTML)
+function initializeAnimationSystem() {
+  return new Promise((resolve) => {
+    // Wait for animation system to be available
+    const checkSystemReady = () => {
+      if (window.animationSystem && window.spriteManager) {
+        console.log('[MAIN] Animation system ready, initializing...');
+
+        // Initialize animation system
+        const canvas = document.getElementById("game");
+        if (canvas) {
+          window.animationSystem.initialize(canvas).then(() => {
+            console.log('[MAIN] Animation system initialized successfully');
+            resolve();
+          }).catch(error => {
+            console.error('[MAIN] Failed to initialize animation system:', error);
+            resolve(); // Continue even if animation fails
+          });
+        } else {
+          console.error('[MAIN] Canvas not found for animation system');
+          resolve();
+        }
+      } else {
+        // Check again in next frame
+        setTimeout(checkSystemReady, 100);
+      }
+    };
+
+    checkSystemReady();
+  });
+}
+
 // Character definitions
 const characters = [
   { id: 'blue', name: 'Син герой', color: '#3AA0FF', position: 0 },
@@ -446,7 +478,7 @@ function updateStartButton() {
   }
 }
 
-function startGame() {
+async function startGame() {
   // Hide start screen
   const startScreen = document.getElementById('startScreen');
   if (startScreen) {
@@ -457,13 +489,16 @@ function startGame() {
   gameState = 'playing';
 
   // Initialize actual game with selected characters
-  initGameWithSelections();
+  await initGameWithSelections();
 }
 
-function initGameWithSelections() {
+async function initGameWithSelections() {
   // Setup canvas
   const canvas = document.getElementById("game");
   ctx = canvas.getContext("2d");
+
+  // Initialize animation system first
+  await initializeAnimationSystem();
 
   // Initialize damage number manager
   if (window.damageNumberManager) {
@@ -491,8 +526,17 @@ function initGameWithSelections() {
     console.log(`[MAIN] Creating player ${playerId} with key ${playerKey}, controls exist:`, !!window.controls[playerKey]);
 
     if (window.controls[playerKey]) {
-      const x = 100 + (index * 100);
-      const player = new Player(window.controls[playerKey], x, CANVAS_HEIGHT - 100, char.position, char.color, char.id);
+      // Scale X positions for new canvas size (from 900 to 1920)
+      // Old positions: 100 + (index * 100) for 900px canvas
+      // New positions: scale proportionally to maintain spacing
+      const scaleFactor = CANVAS_WIDTH / 900; // ~2.13
+      const baseX = 100 * scaleFactor; // ~213
+      const spacing = 100 * scaleFactor; // ~213
+      const x = baseX + (index * spacing);
+
+      // Move entities higher up - responsive to canvas size
+      const spawnY = Math.max(200, CANVAS_HEIGHT - 600); // Min 200px from top
+      const player = new Player(window.controls[playerKey], x, spawnY, char.position, char.color, char.id);
 
       // Играчите започват без начални skill points
       // player.skillPoints = 0; // вече е 0 по подразбиране
@@ -502,6 +546,20 @@ function initGameWithSelections() {
       // Добавяне в game state вместо директно в players
       window.gameState.addEntity(player, 'player');
       console.log(`[MAIN] Player ${playerId} added to game state`);
+
+      // Register player with animation system
+      if (window.animationSystem && window.animationSystem.isInitialized) {
+        const animation = window.animationSystem.registerEntity(player, 'knight');
+        console.log(`[MAIN] Player ${playerId} registered with animation system:`, animation ? 'SUCCESS' : 'FAILED');
+        if (animation) {
+          console.log(`[MAIN] Player ${playerId} animation state:`, animation.getDebugInfo());
+        }
+      } else {
+        console.warn(`[MAIN] Animation system not ready for player ${playerId}:`, {
+          systemExists: !!window.animationSystem,
+          isInitialized: window.animationSystem ? window.animationSystem.isInitialized : false
+        });
+      }
     } else {
       console.warn(`No controls found for player ${playerId} (${playerKey})`);
     }
@@ -511,21 +569,22 @@ function initGameWithSelections() {
   // Create NPCs using the new enemy data system
   const enemy = createEnemyWithData('basic', 1); // Basic enemy, level 1
   window.gameState.addEntity(enemy, 'enemy');
-  console.log('Enemy 1 added to game state:', enemy.id);
+  //console.log('Enemy 1 added to game state:', enemy.id);
 
   // Добавяне на втори противник за тест на множество противници
   const enemy2 = createEnemyWithData('elite', 2); // Elite enemy, level 2
-  enemy2.x = 550; // Позициониране вдясно
+  enemy2.x = 550 * (CANVAS_WIDTH / 900); // Scale X position proportionally
   enemy2.z = 30; // Различна Z позиция
   window.gameState.addEntity(enemy2, 'enemy');
-  console.log('Enemy 2 added to game state:', enemy2.id);
+  //console.log('Enemy 2 added to game state:', enemy2.id);
 
   // Добавяне на съюзник
-  const ally = createEntity(520, CANVAS_HEIGHT - 100, 90, 50, 50, "#00FF00");
+  const ally = createEntity(520 * (CANVAS_WIDTH / 900), Math.max(200, CANVAS_HEIGHT - 600), 90, 50, 50, "#00FF00");
   window.gameState.addEntity(ally, 'ally');
-  console.log('Ally added to game state:', ally.id);
+  //console.log('Ally added to game state:', ally.id);
 
   // За backwards compatibility - players array се поддържа автоматично от game state
+  // Обновява се след създаването на всички играчи
   window.players = window.gameState.players;
 
   // Initialize menu

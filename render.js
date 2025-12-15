@@ -1,5 +1,4 @@
 // Rendering functions
-// Rendering functions
 function drawEntity(e) {
   const zOffset = e.z * 1.0;
 
@@ -25,11 +24,27 @@ function drawEntity(e) {
     return; // Don't draw entity if it's dying and invisible
   }
 
-  // Debug drawing removed - was causing duplicate red objects
+  // Use animation system if available and entity has animation
+  if (window.animationSystem && e.animation) {
+    // Animation system will handle drawing
+    return;
+  }
 
-  // Draw the normal entity rectangle for all entities
+  // Fallback: Draw the normal entity rectangle for entities without animation
   ctx.fillStyle = e.color;
   ctx.fillRect(e.x, e.y - e.h - zOffset, e.w, e.h);
+
+  // Debug: Draw yellow collision box border for player (always visible during development)
+  if (e.entityType === 'player') {
+    ctx.strokeStyle = 'yellow';
+    ctx.lineWidth = 3;
+    ctx.strokeRect(e.x, e.y - e.h - zOffset, e.w, e.h);
+
+    // Draw collision box dimensions text
+    ctx.fillStyle = 'yellow';
+    ctx.font = '12px Arial';
+    ctx.fillText(`${e.w}x${e.h}`, e.x + e.w/2 - 20, e.y - e.h - zOffset - 5);
+  }
 
   if (e.currentAction && isAttackAction(e.currentAction)) {
     // Основни атаки - вертикални линии вдясно
@@ -80,17 +95,20 @@ function drawEntity(e) {
 function render() {
   ctx.clearRect(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT);
 
-  // DEBUG Z LINES
+  // DEBUG Z LINES - използвай реалния canvas размер и spawn позиция като baseline
+  const realCanvasHeight = ctx.canvas.height; // Използвай реалния canvas размер
+  const baselineY = realCanvasHeight - 600; // Spawn позиция спрямо реалния размер
+
   ctx.strokeStyle = "#00FF00";
   ctx.beginPath();
-  ctx.moveTo(0, 400 - Z_MIN*1.0);
-  ctx.lineTo(CANVAS_WIDTH, 400 - Z_MIN*1.0);
+  ctx.moveTo(0, baselineY - Z_MIN*1.0);
+  ctx.lineTo(ctx.canvas.width, baselineY - Z_MIN*1.0);
   ctx.stroke();
 
   ctx.strokeStyle = "#FF00FF";
   ctx.beginPath();
-  ctx.moveTo(0, 400 - Z_MAX*1.0);
-  ctx.lineTo(CANVAS_WIDTH, 400 - Z_MAX*1.0);
+  ctx.moveTo(0, baselineY - Z_MAX*1.0);
+  ctx.lineTo(ctx.canvas.width, baselineY - Z_MAX*1.0);
   ctx.stroke();
 
   // Взимане на всички елементи от game state или fallback към старата система
@@ -110,18 +128,30 @@ function render() {
     });
   }
 
+  // Sort ALL entities by Z-order (effective Y position)
   entities.sort((a, b) => (a.y - a.z) - (b.y - b.z)); // Sort by effective bottom Y ascending
-  entities.forEach((entity, index) => {
-    drawEntity(entity);
 
-    // Универсална система за надписи базирана на entity тип
-    renderEntityLabels(entity, index);
+  // Render ALL entities in correct Z-order (single loop)
+  entities.forEach((entity, index) => {
+    if (entity.animation && window.animationSystem && window.animationSystem.isInitialized) {
+      // Render animated entity
+      const animatedEntities = [entity]; // Single entity array for animation system
+      window.animationSystem.renderSorted(animatedEntities);
+    } else {
+      // Render non-animated entity
+      drawEntity(entity);
+    }
   });
 
   // Render damage numbers
   if (window.damageNumberManager) {
     window.damageNumberManager.render(ctx);
   }
+
+  // Render entity labels on top of everything (preserves Z-order visibility)
+  entities.forEach((entity, index) => {
+    renderEntityLabels(entity, index);
+  });
 
   // Render UI on top of everything else
   if (window.UISystem) {
@@ -169,6 +199,7 @@ function renderDebugLabels(entity, index) {
   ctx.fillStyle = "#FFFFFF";
   ctx.font = "12px Arial";
   const effectiveY = entity.y - entity.z;
+  // Move Z debug text closer to character (above the character)
   ctx.fillText(`Z:${entity.z.toFixed(1)} EffY:${effectiveY.toFixed(1)} Order:${index+1}`,
-               entity.x, entity.y - entity.h - entity.z - 20);
+               entity.x, entity.y - entity.h - entity.z + 80);
 }

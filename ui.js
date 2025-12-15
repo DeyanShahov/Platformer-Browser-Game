@@ -18,19 +18,19 @@ function renderStatusBar(ctx, label, current, max, x, y, width, height, color, b
 
   // Text
   ctx.fillStyle = '#fff';
-  ctx.font = '12px Arial';
+  ctx.font = '14px Arial';
   ctx.textAlign = 'left';
-  ctx.fillText(`${label}: ${Math.floor(current)}/${max}`, x + width + 10, y + height - 2);
+  ctx.fillText(`${label}: ${Math.floor(current)}/${max}`, x + width + 12, y + height - 2);
 }
 
 // Render character portrait/icon
-function renderCharacterPortrait(ctx, player, x, y, size = 40) {
+function renderCharacterPortrait(ctx, player, x, y, size = 60) {
   // Player number - now positioned to the left of portrait
   ctx.fillStyle = '#fff';
-  ctx.font = '16px Arial';
+  ctx.font = '18px Arial';
   ctx.textAlign = 'right';
   const playerIndex = window.players.indexOf(player) + 1;
-  ctx.fillText(`P${playerIndex}`, x - 10, y + size/2 + 6);
+  ctx.fillText(`P${playerIndex}`, x - 12, y + size/2 + 8);
 
   // Portrait background
   ctx.fillStyle = '#222';
@@ -38,7 +38,7 @@ function renderCharacterPortrait(ctx, player, x, y, size = 40) {
 
   // Character color square
   ctx.fillStyle = player.color;
-  ctx.fillRect(x + 5, y + 5, size - 10, size - 10);
+  ctx.fillRect(x + 7.5, y + 7.5, size - 15, size - 15);
 
   // Border
   ctx.strokeStyle = '#666';
@@ -47,14 +47,17 @@ function renderCharacterPortrait(ctx, player, x, y, size = 40) {
 
 // Render complete status UI for a single player
 function renderCharacterStatusUI(ctx, player, x, y) {
-  const barWidth = 120;
-  const barHeight = 16;
-  const spacing = 25;
+  const barWidth = 150;  // Increased from 120
+  const barHeight = 20;  // Increased from 16
+  const spacing = 30;    // Increased from 25
+
+  // Save current canvas state
+  ctx.save();
 
   // Character portrait
   renderCharacterPortrait(ctx, player, x, y);
 
-  let currentX = x + 50; // Position bars to the right of portrait
+  let currentX = x + 75; // Position bars to the right of portrait (increased from 50)
   const barStartY = y; // Align bars with top of portrait
 
   // Health bar (red)
@@ -65,6 +68,9 @@ function renderCharacterStatusUI(ctx, player, x, y) {
 
   // Mana bar (blue)
   renderStatusBar(ctx, 'MP', player.mana, player.maxMana, currentX, barStartY + spacing * 2, barWidth, barHeight, '#0088ff');
+
+  // Restore canvas state
+  ctx.restore();
 }
 
 // Main UI rendering function - renders all player status UIs in screen halves
@@ -73,10 +79,10 @@ function renderPlayerPortraits(ctx) {
 
   // Define half-screen positions for up to 4 players
   const halfPositions = [
-    { x: 40, y: 10 },           // Top-left half (Player 1) - moved left to account for P# label
-    { x: CANVAS_WIDTH/2 + 40, y: 10 },    // Top-right half (Player 2) - moved left to account for P# label
-    { x: 40, y: CANVAS_HEIGHT - 100 },  // Bottom-left half (Player 3)
-    { x: CANVAS_WIDTH/2 + 40, y: CANVAS_HEIGHT - 100 }  // Bottom-right half (Player 4)
+    { x: 40, y: 10 },           // Top-left half (Player 1)
+    { x: CANVAS_WIDTH/2 - 100, y: 10 },    // Top-right half (Player 2) - moved left for larger UI
+    { x: 40, y: 950 },          // Player 3 - moved up slightly for larger UI
+    { x: CANVAS_WIDTH/2 - 100, y: 950 }   // Player 4 - moved left and up for larger UI
   ];
 
   window.players.forEach((player, index) => {

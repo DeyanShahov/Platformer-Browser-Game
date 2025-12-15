@@ -1,6 +1,10 @@
 // Game logic and loop
+
+// Global variables for skill tree timing
+let lastSkillTreeToggleTime = 0; // Timestamp to prevent rapid toggling
+
 function updatePlayer(player, playerIndex, dt) {
-  console.log('[UPDATE_PLAYER] Called with player:', player, 'index:', playerIndex, 'type:', typeof player);
+  //console.log('[UPDATE_PLAYER] Called with player:', player, 'index:', playerIndex, 'type:', typeof player);
 
   // Safety check for undefined/null players
   if (!player || typeof player !== 'object') {
@@ -8,7 +12,7 @@ function updatePlayer(player, playerIndex, dt) {
     return;
   }
 
-  console.log('[UPDATE_PLAYER] Player properties - currentAction:', player.currentAction, 'controls:', !!player.controls);
+  //console.log('[UPDATE_PLAYER] Player properties - currentAction:', player.currentAction, 'controls:', !!player.controls);
 
   player.vx = 0;
   player.vz = 0;
@@ -142,8 +146,7 @@ function handleKeyboardInput(player) {
   }
 }
 
-// Skill Tree Key Handling (separate function to avoid cluttering player input)
-let lastSkillTreeToggleTime = 0; // Timestamp to prevent rapid toggling
+  // MOVED TO update() function below
 
 // Key press tracking variables for skill trees
 let key5Pressed = false;
@@ -179,7 +182,7 @@ function handleSkillTreeKeys() {
   if (now - lastSkillTreeToggleTime < 300) return; // 300ms debounce
 
   // Debug logging
-  console.log('handleSkillTreeKeys called - currentMenu:', currentMenu, 'keys.t:', keys['t'], 'keys.y:', keys['y'], 'keys.u:', keys['u'], 'keys.i:', keys['i']);
+  //console.log('handleSkillTreeKeys called - currentMenu:', currentMenu, 'keys.t:', keys['t'], 'keys.y:', keys['y'], 'keys.u:', keys['u'], 'keys.i:', keys['i']);
 
   // Toggle main menu (Escape or 'm')
   if (keys['Escape'] || keys['m']) {
@@ -192,18 +195,18 @@ function handleSkillTreeKeys() {
   // Player 1 skill tree (key 5) - 3-tier toggle system
   key5Pressed = keys['5'];
   if (key5Pressed && !key5WasPressed && players.length >= 1) { // Key just pressed
-    console.log('Key 5 pressed - currentMenu:', currentMenu, 'currentSkillTreePlayer:', currentSkillTreePlayer);
+    //console.log('Key 5 pressed - currentMenu:', currentMenu, 'currentSkillTreePlayer:', currentSkillTreePlayer);
     if (currentMenu === 'microTree' && currentSkillTreePlayer === 0) {
       // Tier 3: Micro tree is open - close micro tree (main tree stays open)
-      console.log('Closing micro tree for player 1 (main tree stays open)');
+      //console.log('Closing micro tree for player 1 (main tree stays open)');
       hideMicroTree();
     } else if (currentMenu === 'skills' && currentSkillTreePlayer === 0) {
       // Tier 2: Main skill tree is open (no micro tree) - close everything
-      console.log('Closing skill tree for player 1');
+      //console.log('Closing skill tree for player 1');
       hideSkillTree();
     } else if (!menuActive) {
       // Tier 1: No menu is active - open main skill tree
-      console.log('Opening skill tree for player 1');
+      //console.log('Opening skill tree for player 1');
       showSkillTreeForPlayer(0);
     }
     // If another player's menu is open, do nothing
@@ -267,16 +270,16 @@ function handleSkillTreeKeys() {
 
   // Tab navigation (only when skill tree is open) - unified logic with proper key tracking
   if (currentMenu === 'skills') {
-    console.log('Skill tree is open, checking tab navigation for player:', currentSkillTreePlayer);
+    //console.log('Skill tree is open, checking tab navigation for player:', currentSkillTreePlayer);
 
     // Player 1 tab navigation (key t)
     keyTPressed = keys['t'] || keys['T'];
     if (keyTPressed && !keyTWasPressed) {
-      console.log('T key pressed, currentSkillTreePlayer:', currentSkillTreePlayer);
+      //console.log('T key pressed, currentSkillTreePlayer:', currentSkillTreePlayer);
       if (currentSkillTreePlayer === 0) {
-        console.log('Switching tab for player 1');
+        //console.log('Switching tab for player 1');
         const nextPage = currentSkillPage === SKILL_PAGES.MAIN ? SKILL_PAGES.SECONDARY : SKILL_PAGES.MAIN;
-        console.log('Switching from', currentSkillPage, 'to', nextPage);
+        //console.log('Switching from', currentSkillPage, 'to', nextPage);
         switchSkillTreePage(nextPage);
         lastSkillTreeToggleTime = now;
       }
@@ -420,9 +423,10 @@ function handleMovement(player, dt) {
   player.vy += GRAVITY * dt;
   player.y += player.vy * dt;
 
-  // Земя
-  if (player.y >= CANVAS_HEIGHT - 100) {
-    player.y = CANVAS_HEIGHT - 100;
+  // Земя - използвай spawn позицията вместо hardcoded 100px
+  const groundY = CANVAS_HEIGHT - 600; // Съответства на spawnY в main.js
+  if (player.y >= groundY) {
+    player.y = groundY;
     player.vy = 0;
     player.onGround = true;
   }
@@ -586,7 +590,7 @@ function update(dt) {
   handleSkillTreeKeys();
   handleCharacterStatsKeys();
 
-  console.log('[UPDATE] Starting update, menuActive:', menuActive);
+  //console.log('[UPDATE] Starting update, menuActive:', menuActive);
 
   // Ако имаме активно меню, не ъпдейтвай играчите и враговете.
   // Това ефективно "паузира" играта.
@@ -596,27 +600,27 @@ function update(dt) {
 
     // Обновяване на всички играчи
     if (window.gameState) {
-      console.log('[UPDATE] Processing players via game state:', window.gameState.players.length, 'players');
+      //console.log('[UPDATE] Processing players via game state:', window.gameState.players.length, 'players');
       window.gameState.players.forEach((player, index) => {
-        console.log(`[UPDATE] Processing player at index ${index}:`, player);
+        //console.log(`[UPDATE] Processing player at index ${index}:`, player);
         updatePlayer(player, index, dt);
       });
 
       // Обновяване на всички противници (само живи и не умиращи)
       const enemies = window.gameState.getEntitiesByType('enemy');
-      console.log('[UPDATE] Processing enemies:', enemies.length);
+      //console.log('[UPDATE] Processing enemies:', enemies.length);
       enemies.forEach(enemy => {
         if (!enemy.isDying) { // Не обновяваме AI за умиращи противници
           updateEnemyAI(enemy, dt);
         }
       });
 
-      console.log('[UPDATE] Game state debug:', window.gameState.getDebugInfo());
+      //console.log('[UPDATE] Game state debug:', window.gameState.getDebugInfo());
     } else {
       // Fallback към старата система за backwards compatibility
-      console.log('[UPDATE] Using legacy system, players:', players.length);
+      //console.log('[UPDATE] Using legacy system, players:', players.length);
       players.forEach((player, index) => {
-        console.log(`[UPDATE] Processing player at index ${index}:`, player);
+        //console.log(`[UPDATE] Processing player at index ${index}:`, player);
         updatePlayer(player, index, dt);
       });
       updateEnemyAI(dt);
@@ -645,7 +649,7 @@ function updateEnemyAI(enemy, dt) {
         // Get timing data from skill definition (data-driven approach)
         const skillData = SKILL_TREE[randomAttack];
         enemy.executionTimer = skillData ? skillData.executionTime : 0.5;
-        console.log(`Enemy ${enemy.id} attacks with ${getActionDisplayName(randomAttack)}`);
+        //console.log(`Enemy ${enemy.id} attacks with ${getActionDisplayName(randomAttack)}`);
       }
     }
 
@@ -693,6 +697,12 @@ function loop(ts) {
   last = ts;
 
   update(dt);
+
+  // Update animation system AFTER physics (velocity updates)
+  if (window.animationSystem && window.animationSystem.isInitialized) {
+    window.animationSystem.update(dt);
+  }
+
   render();
 
   // Update damage numbers

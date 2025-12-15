@@ -20,7 +20,7 @@ class GameState {
       this.players.push(entity);
     }
 
-    console.log(`[GAME_STATE] Added ${type} entity with ID ${id}`);
+    //console.log(`[GAME_STATE] Added ${type} entity with ID ${id}`);
     return id;
   }
 

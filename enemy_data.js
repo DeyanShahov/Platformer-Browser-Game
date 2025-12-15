@@ -112,8 +112,14 @@ function createEnemyWithData(enemyType = 'basic', level = 1) {
 
     // Create the enemy entity (using existing createEntity function)
     // Use default Y position if CANVAS_HEIGHT is not available
-    const enemyY = (typeof CANVAS_HEIGHT !== 'undefined') ? CANVAS_HEIGHT - 100 : 300;
-    const enemy = window.createEntity(450, enemyY, 50, 60, 60, "#FF3020");
+    // Move entities higher up - responsive to canvas size
+    const enemyY = (typeof CANVAS_HEIGHT !== 'undefined') ? Math.max(200, CANVAS_HEIGHT - 600) : 300;
+
+    // Scale X position for new canvas size
+    const scaleFactor = (typeof CANVAS_WIDTH !== 'undefined') ? CANVAS_WIDTH / 900 : 1;
+    const enemyX = 450 * scaleFactor;
+
+    const enemy = window.createEntity(enemyX, enemyY, 50, 60, 60, "#FF3020");
 
     // Apply stats from enemy data
     enemy.maxHealth = stats.maxHealth;
@@ -146,7 +152,7 @@ function createEnemyWithData(enemyType = 'basic', level = 1) {
       window.enemyCombatManager.registerEnemy(enemy);
     }
 
-    console.log(`[ENEMY] Created ${enemyData.getDisplayName()} (Level ${level}) with ${stats.maxHealth} HP`);
+    //console.log(`[ENEMY] Created ${enemyData.getDisplayName()} (Level ${level}) with ${stats.maxHealth} HP`);
 
     return enemy;
   }

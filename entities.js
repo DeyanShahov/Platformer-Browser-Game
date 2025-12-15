@@ -4,8 +4,10 @@ class Player {
     this.x = x;
     this.y = y;
     this.z = z;
-    this.w = 50;
-    this.h = 50;
+    this.w = 500;  // Visual width (for sprite rendering) - DOUBLED from 250
+    this.h = 500;  // Visual height (for sprite rendering) - DOUBLED from 250
+    this.collisionW = 240;  // Collision width (smaller than visual) - DOUBLED from 120
+    this.collisionH = 260;  // Collision height - DOUBLED from 130
     this.vx = 0;
     this.vy = 0;
     this.vz = 0;
@@ -125,6 +127,9 @@ class Player {
     // Combat flags
     this.hit = false;
     this.damageDealt = false; // Prevent multiple damage calculations per attack
+
+    // Animation system - will be registered by animation system after creation
+    this.animation = null;
   }
 
   // Helper method to determine character ID from color

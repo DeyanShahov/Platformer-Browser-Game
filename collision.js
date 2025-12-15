@@ -76,9 +76,17 @@ function canMoveTo(entity, proposedX, proposedY, proposedZ) {
   // Филтрирай само други елементи (не текущия)
   const others = allEntities.filter(e => e !== entity && e !== null && e !== undefined);
 
+  // Use collision dimensions for player, visual dimensions for others
+  const entityW = entity.collisionW || entity.w;
+  const entityH = entity.collisionH || entity.h;
+
   for (const other of others) {
-    if (checkCollision(proposedX, proposedY, proposedZ, entity.w, entity.h,
-                      other.x, other.y, other.z, other.w, other.h,
+    // Use collision dimensions for other player entities too
+    const otherW = other.collisionW || other.w;
+    const otherH = other.collisionH || other.h;
+
+    if (checkCollision(proposedX, proposedY, proposedZ, entityW, entityH,
+                      other.x, other.y, other.z, otherW, otherH,
                       { zTolerance: 10, zThickness: 0 })) {
       return false; // Има колизия - не може да се движи
     }

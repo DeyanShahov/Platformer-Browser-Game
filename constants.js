@@ -1,8 +1,8 @@
 // Game constants
-const Z_MIN = 20;
-const Z_MAX = 320;
-const CANVAS_WIDTH = 900;
-const CANVAS_HEIGHT = 500;
+const Z_MIN = -450;
+const Z_MAX = 200;
+const CANVAS_WIDTH = 1920;
+const CANVAS_HEIGHT = 1080;
 const SPEED = 200;
 const Z_SPEED = 200;
 const GRAVITY = 800;
