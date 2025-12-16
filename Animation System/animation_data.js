@@ -73,7 +73,11 @@ const ANIMATION_DEFINITIONS = {
     [ANIMATION_TYPES.ATTACK_1]: {
       spriteSheet: './Knight_1/Attack 1.png',
       frames: 5,
-      duration: 0.6,
+      frameWidth: 120,    // How much to take from each frame start (collision box width)
+      frameHeight: 128,
+      frameStarts: [0, 128, 256, 384, 512], // Original frame start positions (5 frames)
+      duration: 0.8,     // Sum of frameDurations: 0.15*4 + 10 = 10.6s
+      frameDurations: [0.15, 0.15, 0.15, 0.15, 0.2], // Frame 5 shows for 0.2 seconds
       loop: false,
       keyframe: 'sprite-5-frames'
     },

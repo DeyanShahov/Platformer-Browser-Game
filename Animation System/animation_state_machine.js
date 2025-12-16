@@ -248,18 +248,51 @@ class AttackLightState extends AnimationState {
 
   enter(entity) {
     super.enter(entity);
-    entity.animation.forceAnimationType(window.ANIMATION_TYPES.ATTACK_1, () => {
-      console.log(`[FSM] Attack light completed, returning to movement`);
+    entity.animation.setAnimation(window.ANIMATION_TYPES.ATTACK_1, true);
+  }
+
+  // Track animation frame for hitbox generation and completion
+  update(entity, dt) {
+    // Skip transition on the first update after entering
+    if (this.justEntered) {
+      this.justEntered = false;
+      return null;
+    }
+
+    // Check if animation has completed (played full duration)
+    if (entity.animation && entity.animation.animationTime >= entity.animation.animationDefinition.duration) {
+      console.log(`[FSM] Attack light completed (duration: ${entity.animation.animationDefinition.duration}s), returning to movement`);
       // Return to appropriate movement state
       if (this.hasMovementInput(entity)) {
         return 'walking';
       } else {
         return 'idle';
       }
-    });
+    }
+
+    // Generate hitbox on frame 5 (last frame, 0-indexed as frame 4)
+    const currentFrame = entity.animation ? entity.animation.currentFrame : 0;
+    if (currentFrame === 4) { // 5th frame (0-indexed)
+      // Hitbox generation will be handled in collision.js based on animation frame
+      // The collision system will check currentFrame instead of currentAction
+    }
   }
 
-  // Attack states don't handle input until animation completes
+  // Prevent interrupting attacks with other attacks
+  handleAction(entity, actionType) {
+    // During attack animation, don't allow other attack actions
+    switch (actionType) {
+      case 'attack_light':
+      case 'attack_medium':
+      case 'attack_heavy':
+      case 'secondary_attack_light':
+      case 'secondary_attack_medium':
+      case 'secondary_attack_heavy':
+        return null; // Block attack actions during attack
+      default:
+        return null; // Block all actions during attack for simplicity
+    }
+  }
 }
 
 class AttackMediumState extends AnimationState {
@@ -269,14 +302,39 @@ class AttackMediumState extends AnimationState {
 
   enter(entity) {
     super.enter(entity);
-    entity.animation.forceAnimationType(window.ANIMATION_TYPES.ATTACK_2, () => {
-      console.log(`[FSM] Attack medium completed, returning to movement`);
+    entity.animation.setAnimation(window.ANIMATION_TYPES.ATTACK_2, true);
+  }
+
+  update(entity, dt) {
+    // Skip transition on the first update after entering
+    if (this.justEntered) {
+      this.justEntered = false;
+      return null;
+    }
+
+    // Check if animation has completed
+    if (entity.animation && entity.animation.animationTime >= entity.animation.animationDefinition.duration) {
       if (this.hasMovementInput(entity)) {
         return 'walking';
       } else {
         return 'idle';
       }
-    });
+    }
+  }
+
+  // Prevent interrupting attacks
+  handleAction(entity, actionType) {
+    switch (actionType) {
+      case 'attack_light':
+      case 'attack_medium':
+      case 'attack_heavy':
+      case 'secondary_attack_light':
+      case 'secondary_attack_medium':
+      case 'secondary_attack_heavy':
+        return null;
+      default:
+        return null;
+    }
   }
 }
 
@@ -287,14 +345,39 @@ class AttackHeavyState extends AnimationState {
 
   enter(entity) {
     super.enter(entity);
-    entity.animation.forceAnimationType(window.ANIMATION_TYPES.ATTACK_3, () => {
-      console.log(`[FSM] Attack heavy completed, returning to movement`);
+    entity.animation.setAnimation(window.ANIMATION_TYPES.ATTACK_3, true);
+  }
+
+  update(entity, dt) {
+    // Skip transition on the first update after entering
+    if (this.justEntered) {
+      this.justEntered = false;
+      return null;
+    }
+
+    // Check if animation has completed
+    if (entity.animation && entity.animation.animationTime >= entity.animation.animationDefinition.duration) {
       if (this.hasMovementInput(entity)) {
         return 'walking';
       } else {
         return 'idle';
       }
-    });
+    }
+  }
+
+  // Prevent interrupting attacks
+  handleAction(entity, actionType) {
+    switch (actionType) {
+      case 'attack_light':
+      case 'attack_medium':
+      case 'attack_heavy':
+      case 'secondary_attack_light':
+      case 'secondary_attack_medium':
+      case 'secondary_attack_heavy':
+        return null;
+      default:
+        return null;
+    }
   }
 }
 
@@ -306,14 +389,36 @@ class SecondaryAttackLightState extends AnimationState {
 
   enter(entity) {
     super.enter(entity);
-    entity.animation.forceAnimationType(window.ANIMATION_TYPES.ATTACK_1, () => {
-      console.log(`[FSM] Secondary attack light completed, returning to movement`);
+    entity.animation.setAnimation(window.ANIMATION_TYPES.ATTACK_1, true);
+  }
+
+  update(entity, dt) {
+    if (this.justEntered) {
+      this.justEntered = false;
+      return null;
+    }
+
+    if (entity.animation && entity.animation.animationTime >= entity.animation.animationDefinition.duration) {
       if (this.hasMovementInput(entity)) {
         return 'walking';
       } else {
         return 'idle';
       }
-    });
+    }
+  }
+
+  handleAction(entity, actionType) {
+    switch (actionType) {
+      case 'attack_light':
+      case 'attack_medium':
+      case 'attack_heavy':
+      case 'secondary_attack_light':
+      case 'secondary_attack_medium':
+      case 'secondary_attack_heavy':
+        return null;
+      default:
+        return null;
+    }
   }
 }
 
@@ -324,14 +429,36 @@ class SecondaryAttackMediumState extends AnimationState {
 
   enter(entity) {
     super.enter(entity);
-    entity.animation.forceAnimationType(window.ANIMATION_TYPES.ATTACK_2, () => {
-      console.log(`[FSM] Secondary attack medium completed, returning to movement`);
+    entity.animation.setAnimation(window.ANIMATION_TYPES.ATTACK_2, true);
+  }
+
+  update(entity, dt) {
+    if (this.justEntered) {
+      this.justEntered = false;
+      return null;
+    }
+
+    if (entity.animation && entity.animation.animationTime >= entity.animation.animationDefinition.duration) {
       if (this.hasMovementInput(entity)) {
         return 'walking';
       } else {
         return 'idle';
       }
-    });
+    }
+  }
+
+  handleAction(entity, actionType) {
+    switch (actionType) {
+      case 'attack_light':
+      case 'attack_medium':
+      case 'attack_heavy':
+      case 'secondary_attack_light':
+      case 'secondary_attack_medium':
+      case 'secondary_attack_heavy':
+        return null;
+      default:
+        return null;
+    }
   }
 }
 
@@ -342,14 +469,36 @@ class SecondaryAttackHeavyState extends AnimationState {
 
   enter(entity) {
     super.enter(entity);
-    entity.animation.forceAnimationType(window.ANIMATION_TYPES.ATTACK_3, () => {
-      console.log(`[FSM] Secondary attack heavy completed, returning to movement`);
+    entity.animation.setAnimation(window.ANIMATION_TYPES.ATTACK_3, true);
+  }
+
+  update(entity, dt) {
+    if (this.justEntered) {
+      this.justEntered = false;
+      return null;
+    }
+
+    if (entity.animation && entity.animation.animationTime >= entity.animation.animationDefinition.duration) {
       if (this.hasMovementInput(entity)) {
         return 'walking';
       } else {
         return 'idle';
       }
-    });
+    }
+  }
+
+  handleAction(entity, actionType) {
+    switch (actionType) {
+      case 'attack_light':
+      case 'attack_medium':
+      case 'attack_heavy':
+      case 'secondary_attack_light':
+      case 'secondary_attack_medium':
+      case 'secondary_attack_heavy':
+        return null;
+      default:
+        return null;
+    }
   }
 }
 
@@ -360,9 +509,16 @@ class RunAttackState extends AnimationState {
 
   enter(entity) {
     super.enter(entity);
-    entity.animation.forceAnimationType(window.ANIMATION_TYPES.RUN_ATTACK, () => {
-      console.log(`[FSM] Run attack completed, returning to movement`);
-      // Always return to running if still moving fast
+    entity.animation.setAnimation(window.ANIMATION_TYPES.RUN_ATTACK, true);
+  }
+
+  update(entity, dt) {
+    if (this.justEntered) {
+      this.justEntered = false;
+      return null;
+    }
+
+    if (entity.animation && entity.animation.animationTime >= entity.animation.animationDefinition.duration) {
       const speed = this.getMovementSpeed(entity);
       const runThreshold = window.SPEED * 0.7;
 
@@ -373,7 +529,21 @@ class RunAttackState extends AnimationState {
       } else {
         return 'idle';
       }
-    });
+    }
+  }
+
+  handleAction(entity, actionType) {
+    switch (actionType) {
+      case 'attack_light':
+      case 'attack_medium':
+      case 'attack_heavy':
+      case 'secondary_attack_light':
+      case 'secondary_attack_medium':
+      case 'secondary_attack_heavy':
+        return null;
+      default:
+        return null;
+    }
   }
 }
 
@@ -463,6 +633,19 @@ class AnimationStateMachine {
 
   isInState(stateName) {
     return this.currentState && this.currentState.name === stateName;
+  }
+
+  // Check if current state is an attack state (prevents movement during attacks)
+  isInAttackState() {
+    return this.currentState && (
+      this.currentState.name === 'attack_light' ||
+      this.currentState.name === 'attack_medium' ||
+      this.currentState.name === 'attack_heavy' ||
+      this.currentState.name === 'secondary_attack_light' ||
+      this.currentState.name === 'secondary_attack_medium' ||
+      this.currentState.name === 'secondary_attack_heavy' ||
+      this.currentState.name === 'run_attack'
+    );
   }
 
   // Handle discrete actions (jump, attack, etc.)

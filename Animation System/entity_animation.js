@@ -69,6 +69,16 @@ class EntityAnimation {
 
     this.animationTime += dt;
 
+    // Check if animation has individual frame durations
+    if (this.animationDefinition.frameDurations) {
+      this.updateWithVariableFrameTiming(dt);
+    } else {
+      this.updateWithFixedFrameTiming(dt);
+    }
+  }
+
+  // Update with fixed frame duration (original logic)
+  updateWithFixedFrameTiming(dt) {
     // Calculate current frame based on time
     const frameDuration = this.animationDefinition.duration / this.animationDefinition.frames;
     const totalFrames = Math.floor(this.animationTime / frameDuration);
@@ -82,6 +92,39 @@ class EntityAnimation {
       if (this.currentFrame >= this.animationDefinition.frames - 1) {
         this.onAnimationComplete();
       }
+    }
+  }
+
+  // Update with variable frame durations
+  updateWithVariableFrameTiming(dt) {
+    const frameDurations = this.animationDefinition.frameDurations;
+    let accumulatedTime = 0;
+    const prevFrame = this.currentFrame;
+
+    // Find which frame we should be on based on accumulated time
+    for (let frame = 0; frame < frameDurations.length; frame++) {
+      accumulatedTime += frameDurations[frame];
+      if (this.animationTime < accumulatedTime) {
+        this.currentFrame = frame;
+        if (this.currentFrame !== prevFrame) {
+          console.log(`[ANIMATION] Variable timing: Frame ${prevFrame} → ${this.currentFrame}, time: ${this.animationTime.toFixed(3)}s`);
+        }
+        return; // Still on this frame
+      }
+    }
+
+    // Animation has ended
+    this.currentFrame = frameDurations.length - 1;
+    if (prevFrame !== this.currentFrame) {
+      console.log(`[ANIMATION] Variable timing: Reached final frame ${this.currentFrame}, time: ${this.animationTime.toFixed(3)}s`);
+    }
+    if (!this.isLooping) {
+      console.log(`[ANIMATION] Animation completed, calling onAnimationComplete`);
+      this.onAnimationComplete();
+    } else {
+      // For looping animations with variable timing, wrap around
+      this.animationTime = this.animationTime % this.animationDefinition.duration;
+      this.updateWithVariableFrameTiming(0); // Recalculate current frame
     }
   }
 

@@ -133,6 +133,11 @@ function handleKeyboardInput(player) {
   if (keys[controls.basicAttackLight] && player.canPerformAction(ACTION_TYPES.BASIC_ATTACK_LIGHT)) {
     logAction(0, 'клавиатура', controls.basicAttackLight.toUpperCase(), ACTION_TYPES.BASIC_ATTACK_LIGHT);
     player.startAction(ACTION_TYPES.BASIC_ATTACK_LIGHT);
+
+    // Trigger FSM animation
+    if (player.stateMachine) {
+      player.stateMachine.handleAction('attack_light');
+    }
   }
   if (keys[controls.basicAttackMedium] && player.canPerformAction(ACTION_TYPES.BASIC_ATTACK_MEDIUM)) {
     logAction(0, 'клавиатура', controls.basicAttackMedium.toUpperCase(), ACTION_TYPES.BASIC_ATTACK_MEDIUM);
@@ -392,6 +397,11 @@ function handleControllerInput(player, playerIndex) {
       const buttonName = getButtonName(controls.basicAttackLight);
       logAction(playerIndex, 'контролер', buttonName, ACTION_TYPES.BASIC_ATTACK_LIGHT);
       player.startAction(ACTION_TYPES.BASIC_ATTACK_LIGHT);
+
+      // Trigger FSM animation
+      if (player.stateMachine) {
+        player.stateMachine.handleAction('attack_light');
+      }
     }
     if (isButtonPressed(gamepad, controls.basicAttackMedium) && player.canPerformAction(ACTION_TYPES.BASIC_ATTACK_MEDIUM)) {
       const buttonName = getButtonName(controls.basicAttackMedium);
@@ -423,8 +433,16 @@ function handleControllerInput(player, playerIndex) {
   }
 }
 
-// Обработка на движение и колизии
+  // Обработка на движение и колизии
 function handleMovement(player, dt) {
+  // Prevent movement during attack animations
+  if (player.stateMachine && player.stateMachine.isInAttackState()) {
+    // During attack, character should not move - set velocity to 0
+    player.vx = 0;
+    player.vz = 0;
+    return; // Skip movement processing during attacks
+  }
+
   // Check X movement collision
   const proposedX = player.x + player.vx * dt;
   if (!canMoveTo(player, proposedX, player.y, player.z)) {

@@ -84,6 +84,8 @@ function drawEntity(e) {
     }
   }
 
+
+
   if (e.hit) {
     ctx.strokeStyle = "#FFFFFF";
     ctx.beginPath();

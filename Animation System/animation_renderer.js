@@ -51,6 +51,21 @@ class AnimationRenderer {
       this.drawFallbackRectangle(entity);
     }
 
+    // FSM-based attack visualizations
+    if (entity.stateMachine && animation) {
+      const currentState = entity.stateMachine.getCurrentStateName();
+      const currentFrame = animation.currentFrame;
+
+      // Attack light - show red hitbox outline on frame 5 (index 4)
+      if (currentState === 'attack_light' && currentFrame === 4) {
+        console.log(`[RENDER] Drawing attack hitbox: state=${currentState}, frame=${currentFrame}, pos=${drawX + entity.w - 25}, ${drawY + entity.h / 2}`);
+        // Red outline positioned over the sprite's attack area (bottom half)
+        this.ctx.strokeStyle = "#FF0000";
+        this.ctx.lineWidth = 3;
+        this.ctx.strokeRect(drawX + entity.w, drawY + entity.h / 2, -260, entity.h / 2);
+      }
+    }
+
     // Debug: Draw collision boxes for player (always visible during development)
     if (entity.entityType === 'player' && animation) {
       // Get current animation frame dimensions

@@ -20,6 +20,26 @@ function checkCollision(ax, ay, az, aw, ah, tx, ty, tz, tw, th, params) {
 }
 
 function checkHitboxCollision(attacker, target, params) {
+  // Check FSM-based attacks first (new system)
+  if (attacker.stateMachine) {
+    const currentState = attacker.stateMachine.currentStateName;
+
+    // Attack Light - generate hitbox on frame 5 (last frame)
+    if (currentState === 'attack_light' && attacker.animation) {
+      const currentFrame = attacker.animation.currentFrame;
+      if (currentFrame === 4) { // 5th frame (0-indexed)
+        // Generate hitbox to the right of the character (attack hitbox)
+        return checkCollision(
+          attacker.x + attacker.w + 5, attacker.y, attacker.z,  // позиция
+          30, attacker.h,  // размер (широка област за удар)
+          target.x, target.y, target.z, target.w, target.h,
+          params
+        );
+      }
+    }
+  }
+
+  // Fallback to old action-based system for backwards compatibility
   // Основни атаки - само дясната страна
   if (attacker.currentAction === ACTION_TYPES.BASIC_ATTACK_LIGHT) {
     // Лека основна атака: 1 черта вдясно
