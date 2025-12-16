@@ -9,11 +9,14 @@
 class AnimationState {
   constructor(name) {
     this.name = name;
+    this.lastTransitionTime = 0;
+    this.justEntered = false;
   }
 
   // Called when entering this state
   enter(entity) {
     console.log(`[FSM] Entering state: ${this.name}`);
+    this.justEntered = true;
   }
 
   // Called when exiting this state
@@ -23,13 +26,24 @@ class AnimationState {
 
   // Called every frame while in this state
   update(entity, dt) {
-    // Override in subclasses
-  }
+    // Skip transition on the first update after entering
+    if (this.justEntered) {
+      this.justEntered = false;
+      return null;
+    }
 
-  // Handle input and return transition state name or null
-  handleInput(entity, input) {
-    // Override in subclasses
-    return null; // No transition
+    // Transition to idle if no movement, but prevent immediate oscillation
+    if (!this.hasMovementInput(entity) && performance.now() - this.lastTransitionTime > 100) {
+      console.log(`[FSM] Walking: no movement detected, vx=${entity.vx}, vz=${entity.vz}, transitioning to idle`);
+      return 'idle';
+    }
+
+    // Check for running (higher speed)
+    const speed = this.getMovementSpeed(entity);
+    const runThreshold = window.SPEED * 0.7;
+    if (speed >= runThreshold && performance.now() - this.lastTransitionTime > 100) {
+      return 'running';
+    }
   }
 
   // Check if can transition to another state
@@ -60,41 +74,37 @@ class IdleState extends AnimationState {
 
   enter(entity) {
     super.enter(entity);
-    entity.animation.setAnimation(window.ANIMATION_TYPES.IDLE);
+    entity.animation.setAnimation(window.ANIMATION_TYPES.IDLE, true); // Force animation
   }
 
-  handleInput(entity, input) {
-    // Transition to walking if movement detected
-    if (this.hasMovementInput(entity)) {
+  update(entity, dt) {
+    // Skip transition on the first update after entering
+    if (this.justEntered) {
+      this.justEntered = false;
+      return null;
+    }
+
+    // Check for movement transitions every frame, but prevent immediate oscillation
+    if (this.hasMovementInput(entity) && performance.now() - this.lastTransitionTime > 100) {
       return 'walking';
     }
-
-    // Can jump from idle
-    if (input.jumpPressed) {
-      return 'jumping';
-    }
-
-    // Can attack from idle
-    if (input.attackPressed) {
-      return this.getAttackState(input.attackType);
-    }
-
-    return null;
   }
 
-  getAttackState(attackType) {
-    switch (attackType) {
-      case window.ACTION_TYPES.BASIC_ATTACK_LIGHT:
+  handleAction(entity, actionType) {
+    switch (actionType) {
+      case 'jump':
+        return 'jumping';
+      case 'attack_light':
         return 'attack_light';
-      case window.ACTION_TYPES.BASIC_ATTACK_MEDIUM:
+      case 'attack_medium':
         return 'attack_medium';
-      case window.ACTION_TYPES.BASIC_ATTACK_HEAVY:
+      case 'attack_heavy':
         return 'attack_heavy';
-      case window.ACTION_TYPES.SECONDARY_ATTACK_LIGHT:
+      case 'secondary_attack_light':
         return 'secondary_attack_light';
-      case window.ACTION_TYPES.SECONDARY_ATTACK_MEDIUM:
+      case 'secondary_attack_medium':
         return 'secondary_attack_medium';
-      case window.ACTION_TYPES.SECONDARY_ATTACK_HEAVY:
+      case 'secondary_attack_heavy':
         return 'secondary_attack_heavy';
     }
     return null;
@@ -108,49 +118,45 @@ class WalkingState extends AnimationState {
 
   enter(entity) {
     super.enter(entity);
-    entity.animation.setAnimation(window.ANIMATION_TYPES.WALK);
+    entity.animation.setAnimation(window.ANIMATION_TYPES.WALK, true); // Force animation
   }
 
-  handleInput(entity, input) {
-    // Transition to idle if no movement
-    if (!this.hasMovementInput(entity)) {
+  update(entity, dt) {
+    // Skip transition on the first update after entering
+    if (this.justEntered) {
+      this.justEntered = false;
+      return null;
+    }
+
+    // Transition to idle if no movement, but prevent immediate oscillation
+    if (!this.hasMovementInput(entity) && performance.now() - this.lastTransitionTime > 100) {
+      console.log(`[FSM] Walking: no movement detected, vx=${entity.vx}, vz=${entity.vz}, transitioning to idle`);
       return 'idle';
     }
 
     // Check for running (higher speed)
     const speed = this.getMovementSpeed(entity);
     const runThreshold = window.SPEED * 0.7;
-    if (speed >= runThreshold) {
+    if (speed >= runThreshold && performance.now() - this.lastTransitionTime > 100) {
       return 'running';
     }
-
-    // Can jump while walking
-    if (input.jumpPressed) {
-      return 'jumping';
-    }
-
-    // Can attack while walking
-    if (input.attackPressed) {
-      return this.getAttackState(input.attackType);
-    }
-
-    return null;
   }
 
-  getAttackState(attackType) {
-    // Same as IdleState
-    switch (attackType) {
-      case window.ACTION_TYPES.BASIC_ATTACK_LIGHT:
+  handleAction(entity, actionType) {
+    switch (actionType) {
+      case 'jump':
+        return 'jumping';
+      case 'attack_light':
         return 'attack_light';
-      case window.ACTION_TYPES.BASIC_ATTACK_MEDIUM:
+      case 'attack_medium':
         return 'attack_medium';
-      case window.ACTION_TYPES.BASIC_ATTACK_HEAVY:
+      case 'attack_heavy':
         return 'attack_heavy';
-      case window.ACTION_TYPES.SECONDARY_ATTACK_LIGHT:
+      case 'secondary_attack_light':
         return 'secondary_attack_light';
-      case window.ACTION_TYPES.SECONDARY_ATTACK_MEDIUM:
+      case 'secondary_attack_medium':
         return 'secondary_attack_medium';
-      case window.ACTION_TYPES.SECONDARY_ATTACK_HEAVY:
+      case 'secondary_attack_heavy':
         return 'secondary_attack_heavy';
     }
     return null;
@@ -164,10 +170,16 @@ class RunningState extends AnimationState {
 
   enter(entity) {
     super.enter(entity);
-    entity.animation.setAnimation(window.ANIMATION_TYPES.RUN);
+    entity.animation.setAnimation(window.ANIMATION_TYPES.RUN, true); // Force animation
   }
 
-  handleInput(entity, input) {
+  update(entity, dt) {
+    // Skip transition on the first update after entering
+    if (this.justEntered) {
+      this.justEntered = false;
+      return null;
+    }
+
     // Transition to walking if speed drops
     const speed = this.getMovementSpeed(entity);
     const runThreshold = window.SPEED * 0.7;
@@ -179,17 +191,17 @@ class RunningState extends AnimationState {
         return 'idle';
       }
     }
+  }
 
-    // Can jump while running
-    if (input.jumpPressed) {
-      return 'jumping';
+  handleAction(entity, actionType) {
+    switch (actionType) {
+      case 'jump':
+        return 'jumping';
+      case 'attack_light':
+      case 'attack_medium':
+      case 'attack_heavy':
+        return 'run_attack'; // Running attacks are special
     }
-
-    // Can attack while running (run + attack)
-    if (input.attackPressed) {
-      return 'run_attack';
-    }
-
     return null;
   }
 }
@@ -417,6 +429,7 @@ class AnimationStateMachine {
     // Enter new state
     const newState = this.states.get(newStateName);
     this.currentState = newState;
+    newState.lastTransitionTime = performance.now();
     newState.enter(this.entity);
 
     console.log(`[FSM] Changed to state: ${newStateName}`);
@@ -426,12 +439,10 @@ class AnimationStateMachine {
   update(dt) {
     if (!this.currentState) return;
 
-    // Update current state
-    this.currentState.update(this.entity, dt);
-
-    // Check for state return value (transition request)
+    // Update current state and check for transition
     const transitionResult = this.currentState.update(this.entity, dt);
     if (transitionResult) {
+      console.log(`[FSM] State ${this.currentState.name} requesting transition to: ${transitionResult}`);
       this.changeState(transitionResult);
     }
   }
@@ -452,6 +463,17 @@ class AnimationStateMachine {
 
   isInState(stateName) {
     return this.currentState && this.currentState.name === stateName;
+  }
+
+  // Handle discrete actions (jump, attack, etc.)
+  handleAction(actionType) {
+    if (!this.currentState) return;
+
+    // Let current state handle the action
+    const transitionResult = this.currentState.handleAction(this.entity, actionType);
+    if (transitionResult) {
+      this.changeState(transitionResult);
+    }
   }
 
   // Force transition (for special cases)

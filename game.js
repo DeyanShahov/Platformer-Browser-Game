@@ -119,14 +119,7 @@ function handleKeyboardInput(player) {
 
     // Use state machine if available, otherwise fallback to direct animation
     if (player.stateMachine) {
-      // Create input object for state machine
-      const input = new window.AnimationInput();
-      input.jumpPressed = true;
-      input.attackType = null;
-      input.hasMovement = Math.abs(player.vx) > 0.1 || Math.abs(player.vz) > 0.1;
-
-      player.stateMachine.handleInput(input);
-      input.reset(); // Reset for next frame
+      player.stateMachine.handleAction('jump');
     } else if (player.animation) {
       // Fallback to old system
       player.animation.forceAnimationType(window.ANIMATION_TYPES.JUMP, () => {
@@ -384,14 +377,7 @@ function handleControllerInput(player, playerIndex) {
 
       // Use state machine if available, otherwise fallback to direct animation
       if (player.stateMachine) {
-        // Create input object for state machine
-        const input = new window.AnimationInput();
-        input.jumpPressed = true;
-        input.attackType = null;
-        input.hasMovement = Math.abs(player.vx) > 0.1 || Math.abs(player.vz) > 0.1;
-
-        player.stateMachine.handleInput(input);
-        input.reset(); // Reset for next frame
+        player.stateMachine.handleAction('jump');
       } else if (player.animation) {
         // Fallback to old system
         player.animation.forceAnimationType(window.ANIMATION_TYPES.JUMP, () => {
@@ -474,11 +460,27 @@ function handleMovement(player, dt) {
     if (wasInAir) {
       console.log(`[JUMP] Player landed on ground (y: ${groundY})`);
 
-      // Check if player was jumping - clear force flag so movement state machine can take over
+      // Check if player was jumping - force FSM transition
       if (player.animation && player.animation.currentAnimation === window.ANIMATION_TYPES.JUMP) {
-        console.log(`[JUMP] Player was jumping, clearing force flag for movement transition`);
-        // Clear force flag - updateMovementState will handle transition in next animation update
+        console.log(`[JUMP] Player was jumping, forcing FSM transition on landing`);
+        // Clear force flag first
         player.animation.forceAnimation = false;
+
+        // Force FSM transition by calling JumpingState update
+        if (player.stateMachine && player.stateMachine.currentState.name === 'jumping') {
+          // Temporarily set justEntered to false so update() will run
+          const wasJustEntered = player.stateMachine.currentState.justEntered;
+          player.stateMachine.currentState.justEntered = false;
+
+          const transition = player.stateMachine.currentState.update(player, 0);
+          if (transition) {
+            console.log(`[JUMP] Landing transition to: ${transition}`);
+            player.stateMachine.changeState(transition);
+          }
+
+          // Restore justEntered flag
+          player.stateMachine.currentState.justEntered = wasJustEntered;
+        }
       }
     }
   } else {
