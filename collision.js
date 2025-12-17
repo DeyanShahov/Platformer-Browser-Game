@@ -105,7 +105,7 @@ function canMoveTo(entity, proposedX, proposedY, proposedZ) {
 
     if (checkCollision(proposedX, proposedY, proposedZ, entityW, entityH,
                       other.x, other.y, other.z, otherW, otherH,
-                      { zTolerance: 10, zThickness: 0 })) {
+                      { zTolerance: 30, zThickness: 0 })) {
       return false; // Има колизия - не може да се движи
     }
   }

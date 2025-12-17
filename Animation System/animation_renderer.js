@@ -25,7 +25,8 @@ class AnimationRenderer {
     } else if (boxType === 'hit') {
       // Hit box positioning (anchored to bottom-left of sprite like collision box)
       boxX = drawX + boxData.x;
-      boxY = drawY + entity.h - boxData.height;
+      //boxY = drawY + entity.h - boxData.height;
+      boxY = drawY + entity.h/2 - boxData.y;
       boxW = boxData.width;
       boxH = boxData.height;
     }
@@ -105,18 +106,22 @@ class AnimationRenderer {
 
     // Debug: Draw collision boxes for players and enemies (always visible during development)
     if ((entity.entityType === 'player' || entity.entityType === 'enemy') && animation) {
-      // Check if entity is in attack state
-      const isInAttackState = entity.stateMachine && entity.stateMachine.isInAttackState();
+      // Check if entity should use per-frame data (attacks, idle, walking, and jumping)
+      const currentStateName = entity.stateMachine ? entity.stateMachine.getCurrentStateName() : null;
+      const usePerFrameData = entity.stateMachine && entity.stateMachine.isInAttackState() ||
+                             currentStateName === 'idle' ||
+                             currentStateName === 'walking' ||
+                             currentStateName === 'jumping';
 
       let hurtBoxPos = null;
 
-      if (isInAttackState) {
-        // During attacks: use per-frame hitBox data for dynamic sizing
+      if (usePerFrameData) {
+        // Use per-frame hitBox data for attacks and idle
         const currentFrame = animation.currentFrame;
         const animationDef = animation.animationDefinition;
 
         if (animationDef && animationDef.frameData && animationDef.frameData[currentFrame] && animationDef.frameData[currentFrame].hitBox) {
-          // Use per-frame hit box for attack animations
+          // Use per-frame hit box data
           hurtBoxPos = this.calculateBoxPosition(entity, animationDef.frameData[currentFrame].hitBox, 'hit');
         } else {
           // Fall back to static dimensions if no per-frame data
@@ -128,7 +133,7 @@ class AnimationRenderer {
           };
         }
       } else {
-        // During normal states: use constant hurt box
+        // During other normal states: use constant hurt box
         hurtBoxPos = {
           x: drawX,
           y: drawY + entity.h - (entity.collisionH || entity.h),
@@ -137,7 +142,7 @@ class AnimationRenderer {
         };
       }
 
-      // Orange border = Hurt box (dynamic during attacks, constant otherwise)
+      // Orange border = Hurt box (dynamic during attacks/idle, constant otherwise)
       this.ctx.strokeStyle = 'orange';
       this.ctx.lineWidth = 2;
       this.ctx.strokeRect(hurtBoxPos.x, hurtBoxPos.y, hurtBoxPos.width, hurtBoxPos.height);
@@ -145,7 +150,18 @@ class AnimationRenderer {
       // Draw dimensions text
       this.ctx.fillStyle = 'orange';
       this.ctx.font = '10px Arial';
-      const boxType = isInAttackState ? 'Attack' : 'Hurt';
+      let boxType = 'Hurt';
+      if (usePerFrameData) {
+        if (entity.stateMachine.isInAttackState()) {
+          boxType = 'Attack';
+        } else if (currentStateName === 'walking') {
+          boxType = 'Walk';
+        } else if (currentStateName === 'idle') {
+          boxType = 'Idle';
+        } else if (currentStateName === 'jumping') {
+          boxType = 'Jump';
+        }
+      }
       this.ctx.fillText(`${boxType}: ${Math.round(hurtBoxPos.width)}x${Math.round(hurtBoxPos.height)}`, hurtBoxPos.x - 60, hurtBoxPos.y - 5);
     }
 

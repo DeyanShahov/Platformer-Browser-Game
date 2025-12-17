@@ -38,6 +38,29 @@ const ANIMATION_DEFINITIONS = {
       frameHeight: 128,
       frameStarts: [0, 128, 256, 384], // Original frame start positions (assuming 128px original frames)
       duration: 1.5,
+       // Per-frame collision data
+      frameData: [
+        // Frame 0 
+        {
+          hitBox: { x: 65, y: 0, width: 110, height: 260 }, // Character body from ground up
+          attackBox: null
+        },
+        // Frame 1 
+        {
+          hitBox: { x: 65, y: 0, width: 110, height: 260 },
+          attackBox: null
+        },
+        // Frame 2 
+        {
+          hitBox: { x: 65, y: 0, width: 110, height: 260 },
+          attackBox: null
+        },
+        // Frame 3 
+        {
+          hitBox: { x: 65, y: 0, width: 110, height: 260 },
+          attackBox: null
+        }
+      ],
       loop: true,
       keyframe: 'sprite-4-frames'
     },
@@ -48,6 +71,49 @@ const ANIMATION_DEFINITIONS = {
       frameHeight: 128,
       frameStarts: [0, 128, 256, 384, 512, 640, 768, 896], // Original frame start positions
       duration: 1.0,
+       // Per-frame collision data
+      frameData: [
+        // Frame 0 
+        {
+          hitBox: { x: 65, y: 0, width: 130, height: 260 }, // Character body from ground up
+          attackBox: null
+        },
+        // Frame 1 
+        {
+          hitBox: { x: 65, y: 0, width: 130, height: 260 },
+          attackBox: null
+        },
+        // Frame 2 
+        {
+          hitBox: { x: 65, y: 0, width: 130, height: 260 },
+          attackBox: null
+        },
+        // Frame 3 
+        {
+          hitBox: { x: 65, y: 0, width: 130, height: 260 },
+          attackBox: null
+        },
+        // Frame 4 
+        {
+          hitBox: { x: 65, y: 0, width: 130, height: 260 },
+          attackBox: null
+        },
+        // Frame 5 
+        {
+          hitBox: { x: 65, y: 0, width: 130, height: 260 },
+          attackBox: null
+        },
+        // Frame 6 
+        {
+          hitBox: { x: 65, y: 0, width: 130, height: 260 },
+          attackBox: null
+        },
+        // Frame 7 
+        {
+          hitBox: { x: 65, y: 0, width: 130, height: 260 },
+          attackBox: null
+        }
+      ],
       loop: true,
       keyframe: 'sprite-8-frames'
     },
@@ -68,6 +134,39 @@ const ANIMATION_DEFINITIONS = {
       frameHeight: 128,
       frameStarts: [0, 128, 256, 384, 512, 640], // Original frame start positions
       duration: 1.2,
+       // Per-frame collision data
+      frameData: [
+        // Frame 0 
+        {
+          hitBox: { x: 80, y: 0, width: 135, height: 260 }, // Character body from ground up
+          attackBox: null
+        },
+        // Frame 1 
+        {
+          hitBox: { x: 80, y: 60, width: 135, height: 260 },
+          attackBox: null
+        },
+        // Frame 2 
+        {
+          hitBox: { x: 80, y: 90, width: 135, height: 260 },
+          attackBox: null
+        },
+        // Frame 3 
+        {
+          hitBox: { x: 80, y: 60, width: 135, height: 260 },
+          attackBox: null
+        },
+        // Frame 4 
+        {
+          hitBox: { x: 60, y: 30, width: 135, height: 260 },
+          attackBox: null
+        },
+        // Frame 5 
+        {
+          hitBox: { x: 60, y: 0, width: 135, height: 260 },
+          attackBox: null
+        }
+      ],
       loop: false, // Jump is typically not looped
       keyframe: 'sprite-6-frames'
     },
