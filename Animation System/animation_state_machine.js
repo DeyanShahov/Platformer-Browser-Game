@@ -15,13 +15,13 @@ class AnimationState {
 
   // Called when entering this state
   enter(entity) {
-    console.log(`[FSM] Entering state: ${this.name}`);
+    // console.log(`[FSM] Entering state: ${this.name}`); // Reduced spam
     this.justEntered = true;
   }
 
   // Called when exiting this state
   exit(entity) {
-    console.log(`[FSM] Exiting state: ${this.name}`);
+    // console.log(`[FSM] Exiting state: ${this.name}`); // Reduced spam
   }
 
   // Called every frame while in this state
@@ -249,6 +249,8 @@ class AttackLightState extends AnimationState {
   enter(entity) {
     super.enter(entity);
     entity.animation.setAnimation(window.ANIMATION_TYPES.ATTACK_1, true);
+    // Reset damage flag when starting attack
+    entity.damageDealt = false;
   }
 
   // Track animation frame for hitbox generation and completion
@@ -303,6 +305,8 @@ class AttackMediumState extends AnimationState {
   enter(entity) {
     super.enter(entity);
     entity.animation.setAnimation(window.ANIMATION_TYPES.ATTACK_2, true);
+    // Reset damage flag when starting attack
+    entity.damageDealt = false;
   }
 
   update(entity, dt) {
@@ -346,6 +350,8 @@ class AttackHeavyState extends AnimationState {
   enter(entity) {
     super.enter(entity);
     entity.animation.setAnimation(window.ANIMATION_TYPES.ATTACK_3, true);
+    // Reset damage flag when starting attack
+    entity.damageDealt = false;
   }
 
   update(entity, dt) {
@@ -646,6 +652,32 @@ class AnimationStateMachine {
       this.currentState.name === 'secondary_attack_heavy' ||
       this.currentState.name === 'run_attack'
     );
+  }
+
+  // Get current attack type from FSM state (automatic parsing)
+  getCurrentAttackType() {
+    const stateName = this.currentState?.name || '';
+
+    // Basic attacks
+    if (stateName.startsWith('attack_')) {
+      const attackLevel = stateName.split('_')[1]; // 'light', 'medium', 'heavy'
+      const actionTypeKey = `BASIC_ATTACK_${attackLevel.toUpperCase()}`;
+      return window.ACTION_TYPES?.[actionTypeKey] || null;
+    }
+
+    // Secondary attacks
+    if (stateName.startsWith('secondary_attack_')) {
+      const attackLevel = stateName.split('_')[2]; // 'light', 'medium', 'heavy'
+      const actionTypeKey = `SECONDARY_ATTACK_${attackLevel.toUpperCase()}`;
+      return window.ACTION_TYPES?.[actionTypeKey] || null;
+    }
+
+    // Run attack
+    if (stateName === 'run_attack') {
+      return window.ACTION_TYPES?.RUN_ATTACK || null;
+    }
+
+    return null;
   }
 
   // Handle discrete actions (jump, attack, etc.)

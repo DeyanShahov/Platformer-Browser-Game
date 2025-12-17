@@ -119,7 +119,7 @@ function createEnemyWithData(enemyType = 'basic', level = 1) {
     const scaleFactor = (typeof CANVAS_WIDTH !== 'undefined') ? CANVAS_WIDTH / 900 : 1;
     const enemyX = 450 * scaleFactor;
 
-    const enemy = window.createEntity(enemyX, enemyY, 50, 60, 60, "#FF3020");
+    const enemy = window.createEntity(enemyX, enemyY, 0, 60, 60, "#FF3020");
 
     // Apply stats from enemy data
     enemy.maxHealth = stats.maxHealth;
@@ -146,6 +146,12 @@ function createEnemyWithData(enemyType = 'basic', level = 1) {
 
     // Store enemy data for reference
     enemy.enemyData = enemyData;
+
+    // Add animation placeholder - will be registered by animation system
+    enemy.animation = null;
+
+    // FSM will be added after animation registration in main.js
+    enemy.stateMachine = null;
 
     // Register enemy with combat system
     if (window.enemyCombatManager) {

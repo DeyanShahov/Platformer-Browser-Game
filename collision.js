@@ -20,71 +20,69 @@ function checkCollision(ax, ay, az, aw, ah, tx, ty, tz, tw, th, params) {
 }
 
 function checkHitboxCollision(attacker, target, params) {
-  // Check FSM-based attacks first (new system)
-  if (attacker.stateMachine) {
-    const currentState = attacker.stateMachine.currentStateName;
+  // Only log when attacker is actually in attack state to reduce spam
+  const isAttackerAttacking = attacker.stateMachine && attacker.stateMachine.isInAttackState();
+  if (isAttackerAttacking) {
+    console.log(`[COLLISION] checkHitboxCollision: ${attacker?.entityType} attacking ${target?.entityType}`);
+  }
 
-    // Attack Light - generate hitbox on frame 5 (last frame)
-    if (currentState === 'attack_light' && attacker.animation) {
-      const currentFrame = attacker.animation.currentFrame;
-      if (currentFrame === 4) { // 5th frame (0-indexed)
-        // Generate hitbox to the right of the character (attack hitbox)
-        return checkCollision(
-          attacker.x + attacker.w + 5, attacker.y, attacker.z,  // позиция
-          30, attacker.h,  // размер (широка област за удар)
-          target.x, target.y, target.z, target.w, target.h,
-          params
-        );
+  // Check FSM-based attacks first (new system)
+  if (attacker.stateMachine && attacker.animation) {
+    const currentFrame = attacker.animation.currentFrame;
+    const animationDef = attacker.animation.animationDefinition;
+
+    // Check if current animation has per-frame collision data
+    if (animationDef && animationDef.frameData && animationDef.frameData[currentFrame]) {
+      const frameData = animationDef.frameData[currentFrame];
+
+      // Check if this frame has an attack box
+      if (frameData.attackBox) {
+        // Use centralized box position calculation from AnimationRenderer
+        if (window.animationSystem && window.animationSystem.renderer) {
+          const attackBoxPos = window.animationSystem.renderer.calculateBoxPosition(attacker, frameData.attackBox, 'attack');
+
+          // Get target's hit box position (per-frame if available, otherwise static)
+          let targetHitBox = {
+            x: target.x,
+            y: target.y,
+            width: target.collisionW || target.w,
+            height: target.collisionH || target.h
+          };
+
+          // Check if target has per-frame hit box data
+          if (target.animation && target.animation.animationDefinition) {
+            const targetFrame = target.animation.currentFrame;
+            const targetAnimationDef = target.animation.animationDefinition;
+            if (targetAnimationDef.frameData && targetAnimationDef.frameData[targetFrame] && targetAnimationDef.frameData[targetFrame].hitBox) {
+              targetHitBox = window.animationSystem.renderer.calculateBoxPosition(target, targetAnimationDef.frameData[targetFrame].hitBox, 'hit');
+            }
+          }
+
+          if (isAttackerAttacking) {
+            console.log(`[COLLISION] Frame ${currentFrame} attack box:`, attackBoxPos);
+            console.log(`[COLLISION] Target hit box:`, targetHitBox);
+          }
+
+          // Check collision between attack box and target's hit box
+          const collisionResult = checkCollision(
+            attackBoxPos.x, attackBoxPos.y, attacker.z,
+            attackBoxPos.width, attackBoxPos.height,
+            targetHitBox.x, targetHitBox.y, target.z,
+            targetHitBox.width, targetHitBox.height,
+            params
+          );
+
+          if (isAttackerAttacking && collisionResult) {
+            console.log(`[COLLISION] HIT DETECTED!`);
+          }
+
+          return collisionResult;
+        }
       }
     }
   }
 
-  // Fallback to old action-based system for backwards compatibility
-  // Основни атаки - само дясната страна
-  if (attacker.currentAction === ACTION_TYPES.BASIC_ATTACK_LIGHT) {
-    // Лека основна атака: 1 черта вдясно
-    return checkCollision(
-      attacker.x + attacker.w + 5, attacker.y, attacker.z,  // позиция
-      2, attacker.h,  // размер (тънка вертикална линия)
-      target.x, target.y, target.z, target.w, target.h,
-      params
-    );
-  } else if (attacker.currentAction === ACTION_TYPES.BASIC_ATTACK_MEDIUM) {
-    // Средна основна атака: 2 черти вдясно
-    return checkCollision(
-      attacker.x + attacker.w + 5, attacker.y, attacker.z,  // позиция
-      15, attacker.h,  // размер (по-широка област)
-      target.x, target.y, target.z, target.w, target.h,
-      params
-    );
-  } else if (attacker.currentAction === ACTION_TYPES.BASIC_ATTACK_HEAVY) {
-    // Тежка основна атака: 3 черти вдясно
-    return checkCollision(
-      attacker.x + attacker.w + 5, attacker.y, attacker.z,  // позиция
-      25, attacker.h,  // размер (най-широка област)
-      target.x, target.y, target.z, target.w, target.h,
-      params
-    );
-  }
-
-  // Допълнителни атаки - около целия герой
-  else if (attacker.currentAction === ACTION_TYPES.SECONDARY_ATTACK_LIGHT) {
-    // Лека допълнителна атака: единично очертание
-    return checkCollision(attacker.x, attacker.y, attacker.z, attacker.w, attacker.h,
-                          target.x, target.y, target.z, target.w, target.h, params);
-  } else if (attacker.currentAction === ACTION_TYPES.SECONDARY_ATTACK_MEDIUM) {
-    // Средна допълнителна атака: двойно очертание (по-голям хитбокс)
-    return checkCollision(attacker.x - 10, attacker.y - 10, attacker.z,
-                          attacker.w + 20, attacker.h + 20,
-                          target.x, target.y, target.z, target.w, target.h, params);
-  } else if (attacker.currentAction === ACTION_TYPES.SECONDARY_ATTACK_HEAVY) {
-    // Тежка допълнителна атака: тройно очертание (най-голям хитбокс)
-    return checkCollision(attacker.x - 20, attacker.y - 20, attacker.z,
-                          attacker.w + 40, attacker.h + 40,
-                          target.x, target.y, target.z, target.w, target.h, params);
-  }
-
-  // По подразбиране - няма колизия
+  // No collision detected
   return false;
 }
 

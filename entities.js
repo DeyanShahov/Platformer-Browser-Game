@@ -17,15 +17,8 @@ class Player {
     // Character info system
     this.characterInfo = new CharacterInfo(characterId || this.getCharacterIdFromColor(color));
 
-    // Нова система за действия
-    this.currentAction = null;      // Текущо изпълнявано действие
-    this.executionTimer = 0;        // Таймер за изпълнение
-    this.cooldownTimers = {};       // Таймери за презареждане
-
-    // Инициализация на cooldown таймери за всички действия
-    Object.values(ACTION_TYPES).forEach(actionType => {
-      this.cooldownTimers[actionType] = 0;
-    });
+    // FSM handles actions now - removed currentAction system
+    // Removed cooldown timers - FSM handles timing
 
     // UI Stats
     this.maxHealth = 100;
@@ -148,67 +141,7 @@ class Player {
     return colorMap[color] || 'blue'; // Default to blue if color not found
   }
 
-  // Проверка дали може да се изпълни дадено действие
-  canPerformAction(actionType) {
-    // First check cooldowns and current action
-    const baseCheck = this.cooldownTimers[actionType] <= 0 && !this.currentAction;
-
-    // Then check skill and resources
-    const skillCheck = window.skillTreeManager.canPerformActionWithResources(this, actionType);
-
-    return baseCheck && skillCheck;
-  }
-
-  // Започване на действие
-  startAction(actionType) {
-    if (this.canPerformAction(actionType)) {
-      // Consume resources before starting action
-      const resourcesConsumed = window.skillTreeManager.consumeResources(this, actionType);
-      if (!resourcesConsumed) return false;
-
-      // Get timing data from skill definition (data-driven approach)
-      const skillData = SKILL_TREE[actionType];
-      const executionTime = skillData ? skillData.executionTime : 0.5;
-      const cooldownTime = skillData ? skillData.cooldownTime : 1.0;
-
-      this.currentAction = actionType;
-      this.executionTimer = executionTime;
-      this.cooldownTimers[actionType] = cooldownTime;
-      return true;
-    }
-    return false;
-  }
-
-  // Обновяване на таймерите
-  updateTimers(dt) {
-    // Намаляване на cooldown таймерите
-    Object.keys(this.cooldownTimers).forEach(actionType => {
-      if (this.cooldownTimers[actionType] > 0) {
-        this.cooldownTimers[actionType] -= dt;
-        if (this.cooldownTimers[actionType] < 0) {
-          this.cooldownTimers[actionType] = 0;
-        }
-      }
-    });
-
-    // Намаляване на таймера за изпълнение
-    if (this.currentAction) {
-      if (this.executionTimer > 0) {
-        this.executionTimer -= dt;
-        if (this.executionTimer <= 0) {
-          // Action completed - reset flags
-          this.currentAction = null;
-          this.executionTimer = 0;
-          this.damageDealt = false; // Reset damage flag for next attack
-        }
-      } else {
-        // Действия с 0 време за изпълнение (като скок) се изчистват веднага
-        this.currentAction = null;
-        this.executionTimer = 0;
-        this.damageDealt = false; // Reset damage flag for next attack
-      }
-    }
-  }
+  // FSM handles all actions now - removed old action system methods
 }
 
 // Entity management for NPCs

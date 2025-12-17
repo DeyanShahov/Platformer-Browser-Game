@@ -579,12 +579,36 @@ async function initGameWithSelections() {
   window.gameState.addEntity(enemy, 'enemy');
   //console.log('Enemy 1 added to game state:', enemy.id);
 
+  // Register enemy with animation system
+  if (window.animationSystem && window.animationSystem.isInitialized) {
+    const enemyAnimation = window.animationSystem.registerEntity(enemy, 'enemy');
+    console.log(`[MAIN] Enemy 1 registered with animation system:`, enemyAnimation ? 'SUCCESS' : 'FAILED');
+
+    // Initialize FSM after animation is registered
+    if (window.AnimationStateMachine) {
+      enemy.stateMachine = new window.AnimationStateMachine(enemy);
+      console.log(`[MAIN] Enemy 1 FSM initialized:`, enemy.stateMachine.getCurrentStateName());
+    }
+  }
+
   // Добавяне на втори противник за тест на множество противници
   const enemy2 = createEnemyWithData('elite', 2); // Elite enemy, level 2
   enemy2.x = 550 * (CANVAS_WIDTH / 900); // Scale X position proportionally
-  enemy2.z = 30; // Различна Z позиция
+  enemy2.z = 0; // Същото Z като player
   window.gameState.addEntity(enemy2, 'enemy');
   //console.log('Enemy 2 added to game state:', enemy2.id);
+
+  // Register enemy2 with animation system
+  if (window.animationSystem && window.animationSystem.isInitialized) {
+    const enemy2Animation = window.animationSystem.registerEntity(enemy2, 'enemy');
+    console.log(`[MAIN] Enemy 2 registered with animation system:`, enemy2Animation ? 'SUCCESS' : 'FAILED');
+
+    // Initialize FSM after animation is registered
+    if (window.AnimationStateMachine) {
+      enemy2.stateMachine = new window.AnimationStateMachine(enemy2);
+      console.log(`[MAIN] Enemy 2 FSM initialized:`, enemy2.stateMachine.getCurrentStateName());
+    }
+  }
 
   // Добавяне на съюзник
   const ally = createEntity(520 * (CANVAS_WIDTH / 900), Math.max(200, CANVAS_HEIGHT - 600), 90, 50, 50, "#00FF00");

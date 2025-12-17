@@ -7,6 +7,32 @@ class AnimationRenderer {
     this.ctx = canvas.getContext('2d');
   }
 
+  // Calculate box position (centralized logic for rendering and collision)
+  calculateBoxPosition(entity, boxData, boxType = 'attack') {
+    // Calculate drawing position with Z-depth offset (same as in drawAnimatedEntity)
+    const zOffset = entity.z * 1.0;
+    const drawX = entity.x;
+    const drawY = entity.y - entity.h - zOffset;
+
+    let boxX, boxY, boxW, boxH;
+
+    if (boxType === 'attack') {
+      // Attack box positioning (extends from right side of entity)
+      boxX = drawX + entity.w + boxData.x;
+      boxY = drawY + (boxData.yRatio * entity.h);
+      boxW = boxData.width;
+      boxH = boxData.heightRatio * entity.h;
+    } else if (boxType === 'hit') {
+      // Hit box positioning (anchored to bottom-left of sprite like collision box)
+      boxX = drawX + boxData.x;
+      boxY = drawY + entity.h - boxData.height;
+      boxW = boxData.width;
+      boxH = boxData.height;
+    }
+
+    return { x: boxX, y: boxY, width: boxW, height: boxH };
+  }
+
   // Draw an animated entity
   drawAnimatedEntity(entity, animation) {
     if (!animation || !animation.currentAnimation) {
@@ -18,16 +44,17 @@ class AnimationRenderer {
     const frameRect = animation.getCurrentFrameRect();
     const spriteSheetInfo = animation.getCurrentSpriteSheetInfo();
 
-    if (!frameRect || !spriteSheetInfo) {
-      // Fallback if sprite not loaded
-      this.drawFallbackRectangle(entity);
-      return;
-    }
-
     // Calculate drawing position with Z-depth offset
     const zOffset = entity.z * 1.0;
     const drawX = entity.x;
     const drawY = entity.y - entity.h - zOffset;
+
+    // Check if we have a valid sprite or need to draw a colored rectangle
+    if (!frameRect || !spriteSheetInfo || !spriteSheetInfo.image) {
+      // Draw colored rectangle for entities without sprites (like enemies)
+      this.drawColoredRectangle(entity, drawX, drawY);
+      return;
+    }
 
     // Save context for transformations
     this.ctx.save();
@@ -48,63 +75,104 @@ class AnimationRenderer {
       );
     } catch (error) {
       console.warn(`[AnimationRenderer] Failed to draw sprite for ${animation.entityType}:${animation.currentAnimation}`, error);
-      this.drawFallbackRectangle(entity);
+      this.drawColoredRectangle(entity, drawX, drawY);
     }
 
-    // FSM-based attack visualizations
-    if (entity.stateMachine && animation) {
-      const currentState = entity.stateMachine.getCurrentStateName();
+    // FSM-based attack visualizations - per-frame collision boxes
+    if (entity.stateMachine && animation && animation.animationDefinition) {
       const currentFrame = animation.currentFrame;
+      const animationDef = animation.animationDefinition;
 
-      // Attack light - show red hitbox outline on frame 5 (index 4)
-      if (currentState === 'attack_light' && currentFrame === 4) {
-        console.log(`[RENDER] Drawing attack hitbox: state=${currentState}, frame=${currentFrame}, pos=${drawX + entity.w - 25}, ${drawY + entity.h / 2}`);
-        // Red outline positioned over the sprite's attack area (bottom half)
-        this.ctx.strokeStyle = "#FF0000";
-        this.ctx.lineWidth = 3;
-        this.ctx.strokeRect(drawX + entity.w, drawY + entity.h / 2, -260, entity.h / 2);
+      // Check if animation has per-frame collision data
+      if (animationDef.frameData && animationDef.frameData[currentFrame]) {
+        const frameData = animationDef.frameData[currentFrame];
+
+        // Draw attack box if present
+        if (frameData.attackBox) {
+          const attackBoxPos = this.calculateBoxPosition(entity, frameData.attackBox, 'attack');
+
+          console.log(`[RENDER] Drawing attack hitbox: frame=${currentFrame}, pos=${attackBoxPos.x}, ${attackBoxPos.y}, size=${attackBoxPos.width}x${attackBoxPos.height}`);
+
+          // Red outline for attack box
+          this.ctx.strokeStyle = "#FF0000";
+          this.ctx.lineWidth = 3;
+          this.ctx.strokeRect(attackBoxPos.x, attackBoxPos.y, attackBoxPos.width, attackBoxPos.height);
+        }
+
+
       }
     }
 
-    // Debug: Draw collision boxes for player (always visible during development)
-    if (entity.entityType === 'player' && animation) {
-      // Get current animation frame dimensions
-      const frameRect = animation.getCurrentFrameRect();
-      const originalFrameWidth = frameRect ? frameRect.width : entity.collisionW;
-      const originalFrameHeight = frameRect ? frameRect.height : entity.collisionH;
+    // Debug: Draw collision boxes for players and enemies (always visible during development)
+    if ((entity.entityType === 'player' || entity.entityType === 'enemy') && animation) {
+      // Check if entity is in attack state
+      const isInAttackState = entity.stateMachine && entity.stateMachine.isInAttackState();
 
-      // Scale frame dimensions to match the visual size of the entity
-      // Original entity size was 250x250, now it's 500x500 (2x scale)
-      const scaleX = entity.w / 250;
-      const scaleY = entity.h / 250;
-      const frameWidth = originalFrameWidth * scaleX;
-      const frameHeight = originalFrameHeight * scaleY;
+      let hurtBoxPos = null;
 
-      // Yellow border = Frame size (what gets extracted from sprite sheet) - SCALED
-      // Anchor to bottom-left like collision box
-      this.ctx.strokeStyle = 'yellow';
-      this.ctx.lineWidth = 2;
-      const frameX = drawX; // Left edge of sprite
-      const frameY = drawY + entity.h - frameHeight; // Bottom edge of sprite
-      this.ctx.strokeRect(frameX, frameY, frameWidth, frameHeight);
+      if (isInAttackState) {
+        // During attacks: use per-frame hitBox data for dynamic sizing
+        const currentFrame = animation.currentFrame;
+        const animationDef = animation.animationDefinition;
 
-      // Orange border = Collision box size (collisionW x collisionH)
-      // Anchor collision box to bottom-left of sprite
+        if (animationDef && animationDef.frameData && animationDef.frameData[currentFrame] && animationDef.frameData[currentFrame].hitBox) {
+          // Use per-frame hit box for attack animations
+          hurtBoxPos = this.calculateBoxPosition(entity, animationDef.frameData[currentFrame].hitBox, 'hit');
+        } else {
+          // Fall back to static dimensions if no per-frame data
+          hurtBoxPos = {
+            x: drawX,
+            y: drawY + entity.h - (entity.collisionH || entity.h),
+            width: entity.collisionW || entity.w,
+            height: entity.collisionH || entity.h
+          };
+        }
+      } else {
+        // During normal states: use constant hurt box
+        hurtBoxPos = {
+          x: drawX,
+          y: drawY + entity.h - (entity.collisionH || entity.h),
+          width: entity.collisionW || entity.w,
+          height: entity.collisionH || entity.h
+        };
+      }
+
+      // Orange border = Hurt box (dynamic during attacks, constant otherwise)
       this.ctx.strokeStyle = 'orange';
       this.ctx.lineWidth = 2;
-      const collisionX = drawX; // Left edge of sprite
-      const collisionY = drawY + entity.h - entity.collisionH; // Bottom edge of sprite
-      this.ctx.strokeRect(collisionX, collisionY, entity.collisionW, entity.collisionH);
+      this.ctx.strokeRect(hurtBoxPos.x, hurtBoxPos.y, hurtBoxPos.width, hurtBoxPos.height);
 
-      // Draw dimensions text (two lines close to character)
-      this.ctx.fillStyle = 'yellow';
-      this.ctx.font = '10px Arial';
-      this.ctx.fillText(`Frame: ${Math.round(frameWidth)}x${Math.round(frameHeight)}`, drawX - 60, frameY - 5);
-
+      // Draw dimensions text
       this.ctx.fillStyle = 'orange';
       this.ctx.font = '10px Arial';
-      this.ctx.fillText(`Collision: ${entity.collisionW}x${entity.collisionH}`, drawX - 60, frameY - 20);
+      const boxType = isInAttackState ? 'Attack' : 'Hurt';
+      this.ctx.fillText(`${boxType}: ${Math.round(hurtBoxPos.width)}x${Math.round(hurtBoxPos.height)}`, hurtBoxPos.x - 60, hurtBoxPos.y - 5);
     }
+
+    // Restore context
+    this.ctx.restore();
+  }
+
+  // Draw colored rectangle for entities without sprites (like enemies)
+  drawColoredRectangle(entity, drawX, drawY) {
+    // Save context for transformations
+    this.ctx.save();
+
+    // Apply facing direction transformation if needed
+    if (entity.animation && entity.animation.facingDirection === 'left') {
+      // Flip around collision center to prevent teleportation (X only)
+      this.ctx.scale(-1, 1);
+      this.ctx.translate(-drawX * 2 - entity.collisionW, 0);
+    }
+
+    // Draw colored rectangle
+    this.ctx.fillStyle = entity.color || '#FF0000'; // Default to red if no color
+    this.ctx.fillRect(drawX, drawY, entity.w, entity.h);
+
+    // Remove white border for better hit box visibility
+    // this.ctx.strokeStyle = '#FFFFFF';
+    // this.ctx.lineWidth = 2;
+    // this.ctx.strokeRect(drawX, drawY, entity.w, entity.h);
 
     // Restore context
     this.ctx.restore();

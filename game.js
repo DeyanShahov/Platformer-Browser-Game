@@ -19,8 +19,7 @@ function updatePlayer(player, playerIndex, dt) {
 
   const inputMode = player.controls.inputMode || 'keyboard';
 
-  // Обновяване на таймерите за действията
-  player.updateTimers(dt);
+
 
   // Движения и действия
   if (inputMode === 'keyboard') {
@@ -32,67 +31,84 @@ function updatePlayer(player, playerIndex, dt) {
   // Физика и колизии
   handleMovement(player, dt);
 
-  // Проверка за удар с врагове
-  if (player.currentAction && isAttackAction(player.currentAction)) {
-    // Only check for damage if we haven't dealt damage for this attack yet
-    if (!player.damageDealt) {
-      // Проверка за сблъсък с всички противници
-      const enemies = window.gameState ? window.gameState.getEntitiesByType('enemy') : [window.enemy].filter(e => e);
+  // Проверка за удар с врагове - FSM-based damage dealing
+  if (player.stateMachine && player.stateMachine.isInAttackState() && !player.damageDealt) {
+    console.log(`[ATTACK] Player in attack state: ${player.stateMachine.getCurrentStateName()}, damage not yet dealt`);
 
-      for (const enemy of enemies) {
-        if (!enemy) continue;
+    // Проверка за сблъсък с всички противници
+    const enemies = window.gameState ? window.gameState.getEntitiesByType('enemy') : [window.enemy].filter(e => e);
+    console.log(`[ATTACK] Found ${enemies.length} enemies to check`);
 
-        const hit = checkHitboxCollision(player, enemy, {
-          zTolerance: 20,
-          zThickness: 40
-        });
+    for (const enemy of enemies) {
+      if (!enemy) continue;
 
-        if (hit) {
-          // Use combat system to calculate and apply damage
-          const combatEvent = window.combatResolver.resolveAttack(player, enemy, player.currentAction);
+      console.log(`[ATTACK] Checking collision with enemy at (${enemy.x}, ${enemy.y})`);
+      const hit = checkHitboxCollision(player, enemy, {
+        zTolerance: 10,
+        zThickness: 0
+      });
+
+      console.log(`[ATTACK] Collision result: ${hit}`);
+
+      if (hit) {
+        // Use combat system to calculate and apply damage
+        const currentAttackType = player.stateMachine.getCurrentAttackType();
+        console.log(`[ATTACK] Current attack type: ${currentAttackType}`);
+
+        if (currentAttackType) {
+          console.log(`[ATTACK] Resolving attack with combat system...`);
+          const combatEvent = window.combatResolver.resolveAttack(player, enemy, currentAttackType);
+          console.log(`[ATTACK] Combat event result:`, combatEvent);
 
           // Add damage number for visual feedback
           if (combatEvent && combatEvent.actualDamage > 0) {
+            console.log(`[ATTACK] Applying ${combatEvent.actualDamage} damage`);
             const damageX = enemy.x + enemy.w / 2;
             const damageY = enemy.y - 10;
             window.damageNumberManager.addDamageNumber(damageX, damageY, combatEvent.actualDamage, combatEvent.damageResult.isCritical);
+          } else {
+            console.log(`[ATTACK] No damage applied - combat event:`, combatEvent);
           }
 
           // Mark damage as dealt for this attack and set visual hit flag
           player.damageDealt = true;
           enemy.hit = true;
           break; // Само един удар на атака
+        } else {
+          console.log(`[ATTACK] No current attack type found`);
         }
       }
     }
   }
 
-  // Enemy attacks using the new EnemyCombatManager system
-  // Check if any enemy can attack this player
-  if (window.enemyCombatManager) {
-    const enemies = window.gameState ? window.gameState.getEntitiesByType('enemy') : [window.enemy].filter(e => e);
+  // Enemy attacks using FSM system
+  // Check if any enemy is attacking this player
+  const enemyEntities = window.gameState ? window.gameState.getEntitiesByType('enemy') : [window.enemy].filter(e => e);
 
-    for (const enemy of enemies) {
-      if (!enemy || !enemy.currentAction || !isAttackAction(enemy.currentAction)) continue;
+  for (const enemy of enemyEntities) {
+    if (!enemy || !enemy.stateMachine || !enemy.stateMachine.isInAttackState()) continue;
 
-      // Check collision for enemy attack
-      const hit = checkHitboxCollision(enemy, player, {
-        zTolerance: 20,
-        zThickness: 40
-      });
+    // Check collision for enemy attack
+    const hit = checkHitboxCollision(enemy, player, {
+      zTolerance: 10,
+      zThickness: 0
+    });
 
-      if (hit && window.enemyCombatManager.canEnemyAttack(enemy)) {
-        // Use EnemyCombatManager to perform the attack
-        const attackSuccess = window.enemyCombatManager.performEnemyAttack(enemy, player);
+    if (hit) {
+      // Use combat system to calculate and apply damage
+      const enemyAttackType = enemy.stateMachine.getCurrentAttackType();
+      if (enemyAttackType) {
+        const combatEvent = window.combatResolver.resolveAttack(enemy, player, enemyAttackType);
 
-        if (attackSuccess) {
-          // Add damage number for visual feedback (damage numbers are handled inside resolveAttack)
-          // Give experience for taking damage (for testing stats system)
-          if (player.characterInfo) {
-            player.characterInfo.addExperience(5);
-            console.log(`Player ${window.gameState ? window.gameState.players.indexOf(player) + 1 : players.indexOf(player) + 1} gained 5 experience!`);
-          }
+        // Add damage number for visual feedback
+        if (combatEvent && combatEvent.actualDamage > 0) {
+          const damageX = player.x + player.w / 2;
+          const damageY = player.y - 10;
+          window.damageNumberManager.addDamageNumber(damageX, damageY, combatEvent.actualDamage, combatEvent.damageResult.isCritical);
         }
+
+        // Set visual hit flag for player
+        player.hit = true;
         break; // Only one enemy attack per player per frame
       }
     }
@@ -109,57 +125,42 @@ function handleKeyboardInput(player) {
   if (keys[controls.up]) player.vz = Z_SPEED;
   if (keys[controls.down]) player.vz = -Z_SPEED;
 
-  // Скок
-  if (keys[controls.jump] && player.onGround && player.canPerformAction(ACTION_TYPES.JUMP)) {
-    console.log(`[JUMP] Jump started - player on ground, triggering JUMP animation`);
-    logAction(0, 'клавиатура', controls.jump.toUpperCase(), ACTION_TYPES.JUMP);
-    player.startAction(ACTION_TYPES.JUMP);
+  // Скок - FSM-based
+  if (keys[controls.jump] && player.onGround && player.stateMachine) {
+    console.log(`[JUMP] Jump started - player on ground, triggering FSM jump`);
+    logAction(0, 'клавиатура', controls.jump.toUpperCase(), 'jump');
     player.vy = JUMP_FORCE;
     player.onGround = false;
-
-    // Use state machine if available, otherwise fallback to direct animation
-    if (player.stateMachine) {
-      player.stateMachine.handleAction('jump');
-    } else if (player.animation) {
-      // Fallback to old system
-      player.animation.forceAnimationType(window.ANIMATION_TYPES.JUMP, () => {
-        console.log(`[JUMP] Jump animation ended naturally, transitioning to movement animation`);
-        player.animation.updateMovementAnimation();
-      });
-    }
+    player.stateMachine.handleAction('jump');
   }
 
-  // Основни атаки
-  if (keys[controls.basicAttackLight] && player.canPerformAction(ACTION_TYPES.BASIC_ATTACK_LIGHT)) {
-    logAction(0, 'клавиатура', controls.basicAttackLight.toUpperCase(), ACTION_TYPES.BASIC_ATTACK_LIGHT);
-    player.startAction(ACTION_TYPES.BASIC_ATTACK_LIGHT);
-
-    // Trigger FSM animation
-    if (player.stateMachine) {
-      player.stateMachine.handleAction('attack_light');
-    }
+  // Основни атаки - FSM-based
+  if (keys[controls.basicAttackLight] && player.stateMachine && !player.stateMachine.isInAttackState()) {
+    logAction(0, 'клавиатура', controls.basicAttackLight.toUpperCase(), 'attack_light');
+    player.stateMachine.handleAction('attack_light');
   }
-  if (keys[controls.basicAttackMedium] && player.canPerformAction(ACTION_TYPES.BASIC_ATTACK_MEDIUM)) {
-    logAction(0, 'клавиатура', controls.basicAttackMedium.toUpperCase(), ACTION_TYPES.BASIC_ATTACK_MEDIUM);
-    player.startAction(ACTION_TYPES.BASIC_ATTACK_MEDIUM);
+  if (keys[controls.basicAttackMedium] && player.stateMachine && !player.stateMachine.isInAttackState()) {
+    logAction(0, 'клавиатура', controls.basicAttackMedium.toUpperCase(), 'attack_medium');
+    player.stateMachine.handleAction('attack_medium');
   }
-  if (keys[controls.basicAttackHeavy] && player.canPerformAction(ACTION_TYPES.BASIC_ATTACK_HEAVY)) {
-    logAction(0, 'клавиатура', controls.basicAttackHeavy.toUpperCase(), ACTION_TYPES.BASIC_ATTACK_HEAVY);
-    player.startAction(ACTION_TYPES.BASIC_ATTACK_HEAVY);
+  if (keys[controls.basicAttackHeavy] && player.stateMachine && !player.stateMachine.isInAttackState()) {
+    logAction(0, 'клавиатура', controls.basicAttackHeavy.toUpperCase(), 'attack_heavy');
+    player.stateMachine.handleAction('attack_heavy');
   }
 
-  // Допълнителни атаки
-  if (keys[controls.secondaryAttackLight] && player.canPerformAction(ACTION_TYPES.SECONDARY_ATTACK_LIGHT)) {
-    logAction(0, 'клавиатура', controls.secondaryAttackLight.toUpperCase(), ACTION_TYPES.SECONDARY_ATTACK_LIGHT);
-    player.startAction(ACTION_TYPES.SECONDARY_ATTACK_LIGHT);
+  // Допълнителни атаки - FSM-based (when implemented)
+  // For now, secondary attacks use the same as primary
+  if (keys[controls.secondaryAttackLight] && player.stateMachine && !player.stateMachine.isInAttackState()) {
+    logAction(0, 'клавиатура', controls.secondaryAttackLight.toUpperCase(), 'attack_light');
+    player.stateMachine.handleAction('attack_light');
   }
-  if (keys[controls.secondaryAttackMedium] && player.canPerformAction(ACTION_TYPES.SECONDARY_ATTACK_MEDIUM)) {
-    logAction(0, 'клавиатура', controls.secondaryAttackMedium.toUpperCase(), ACTION_TYPES.SECONDARY_ATTACK_MEDIUM);
-    player.startAction(ACTION_TYPES.SECONDARY_ATTACK_MEDIUM);
+  if (keys[controls.secondaryAttackMedium] && player.stateMachine && !player.stateMachine.isInAttackState()) {
+    logAction(0, 'клавиатура', controls.secondaryAttackMedium.toUpperCase(), 'attack_medium');
+    player.stateMachine.handleAction('attack_medium');
   }
-  if (keys[controls.secondaryAttackHeavy] && player.canPerformAction(ACTION_TYPES.SECONDARY_ATTACK_HEAVY)) {
-    logAction(0, 'клавиатура', controls.secondaryAttackHeavy.toUpperCase(), ACTION_TYPES.SECONDARY_ATTACK_HEAVY);
-    player.startAction(ACTION_TYPES.SECONDARY_ATTACK_HEAVY);
+  if (keys[controls.secondaryAttackHeavy] && player.stateMachine && !player.stateMachine.isInAttackState()) {
+    logAction(0, 'клавиатура', controls.secondaryAttackHeavy.toUpperCase(), 'attack_heavy');
+    player.stateMachine.handleAction('attack_heavy');
   }
 }
 
@@ -371,64 +372,48 @@ function handleControllerInput(player, playerIndex) {
       player.vx = SPEED;
     }
 
-    // Скок
-    if (isButtonPressed(gamepad, controls.jump) && player.onGround && player.canPerformAction(ACTION_TYPES.JUMP)) {
-      console.log(`[JUMP] Jump started - player on ground, triggering JUMP animation`);
+    // Скок - FSM-based
+    if (isButtonPressed(gamepad, controls.jump) && player.onGround && player.stateMachine) {
+      console.log(`[JUMP] Jump started - player on ground, triggering FSM jump`);
       const buttonName = getButtonName(controls.jump);
-      logAction(playerIndex, 'контролер', buttonName, ACTION_TYPES.JUMP);
-      player.startAction(ACTION_TYPES.JUMP);
+      logAction(playerIndex, 'контролер', buttonName, 'jump');
       player.vy = JUMP_FORCE;
       player.onGround = false;
-
-      // Use state machine if available, otherwise fallback to direct animation
-      if (player.stateMachine) {
-        player.stateMachine.handleAction('jump');
-      } else if (player.animation) {
-        // Fallback to old system
-        player.animation.forceAnimationType(window.ANIMATION_TYPES.JUMP, () => {
-          console.log(`[JUMP] Jump animation ended naturally, transitioning to movement animation`);
-          player.animation.updateMovementAnimation();
-        });
-      }
+      player.stateMachine.handleAction('jump');
     }
 
-    // Основни атаки
-    if (isButtonPressed(gamepad, controls.basicAttackLight) && player.canPerformAction(ACTION_TYPES.BASIC_ATTACK_LIGHT)) {
+    // Основни атаки - FSM-based
+    if (isButtonPressed(gamepad, controls.basicAttackLight) && player.stateMachine && !player.stateMachine.isInAttackState()) {
       const buttonName = getButtonName(controls.basicAttackLight);
-      logAction(playerIndex, 'контролер', buttonName, ACTION_TYPES.BASIC_ATTACK_LIGHT);
-      player.startAction(ACTION_TYPES.BASIC_ATTACK_LIGHT);
-
-      // Trigger FSM animation
-      if (player.stateMachine) {
-        player.stateMachine.handleAction('attack_light');
-      }
+      logAction(playerIndex, 'контролер', buttonName, 'attack_light');
+      player.stateMachine.handleAction('attack_light');
     }
-    if (isButtonPressed(gamepad, controls.basicAttackMedium) && player.canPerformAction(ACTION_TYPES.BASIC_ATTACK_MEDIUM)) {
+    if (isButtonPressed(gamepad, controls.basicAttackMedium) && player.stateMachine && !player.stateMachine.isInAttackState()) {
       const buttonName = getButtonName(controls.basicAttackMedium);
-      logAction(playerIndex, 'контролер', buttonName, ACTION_TYPES.BASIC_ATTACK_MEDIUM);
-      player.startAction(ACTION_TYPES.BASIC_ATTACK_MEDIUM);
+      logAction(playerIndex, 'контролер', buttonName, 'attack_medium');
+      player.stateMachine.handleAction('attack_medium');
     }
-    if (isButtonPressed(gamepad, controls.basicAttackHeavy) && player.canPerformAction(ACTION_TYPES.BASIC_ATTACK_HEAVY)) {
+    if (isButtonPressed(gamepad, controls.basicAttackHeavy) && player.stateMachine && !player.stateMachine.isInAttackState()) {
       const buttonName = getButtonName(controls.basicAttackHeavy);
-      logAction(playerIndex, 'контролер', buttonName, ACTION_TYPES.BASIC_ATTACK_HEAVY);
-      player.startAction(ACTION_TYPES.BASIC_ATTACK_HEAVY);
+      logAction(playerIndex, 'контролер', buttonName, 'attack_heavy');
+      player.stateMachine.handleAction('attack_heavy');
     }
 
-    // Допълнителни атаки
-    if (isButtonPressed(gamepad, controls.secondaryAttackLight) && player.canPerformAction(ACTION_TYPES.SECONDARY_ATTACK_LIGHT)) {
+    // Допълнителни атаки - FSM-based (for now use same as primary)
+    if (isButtonPressed(gamepad, controls.secondaryAttackLight) && player.stateMachine && !player.stateMachine.isInAttackState()) {
       const buttonName = getButtonName(controls.secondaryAttackLight);
-      logAction(playerIndex, 'контролер', buttonName, ACTION_TYPES.SECONDARY_ATTACK_LIGHT);
-      player.startAction(ACTION_TYPES.SECONDARY_ATTACK_LIGHT);
+      logAction(playerIndex, 'контролер', buttonName, 'attack_light');
+      player.stateMachine.handleAction('attack_light');
     }
-    if (isButtonPressed(gamepad, controls.secondaryAttackMedium) && player.canPerformAction(ACTION_TYPES.SECONDARY_ATTACK_MEDIUM)) {
+    if (isButtonPressed(gamepad, controls.secondaryAttackMedium) && player.stateMachine && !player.stateMachine.isInAttackState()) {
       const buttonName = getButtonName(controls.secondaryAttackMedium);
-      logAction(playerIndex, 'контролер', buttonName, ACTION_TYPES.SECONDARY_ATTACK_MEDIUM);
-      player.startAction(ACTION_TYPES.SECONDARY_ATTACK_MEDIUM);
+      logAction(playerIndex, 'контролер', buttonName, 'attack_medium');
+      player.stateMachine.handleAction('attack_medium');
     }
-    if (isButtonPressed(gamepad, controls.secondaryAttackHeavy) && player.canPerformAction(ACTION_TYPES.SECONDARY_ATTACK_HEAVY)) {
+    if (isButtonPressed(gamepad, controls.secondaryAttackHeavy) && player.stateMachine && !player.stateMachine.isInAttackState()) {
       const buttonName = getButtonName(controls.secondaryAttackHeavy);
-      logAction(playerIndex, 'контролер', buttonName, ACTION_TYPES.SECONDARY_ATTACK_HEAVY);
-      player.startAction(ACTION_TYPES.SECONDARY_ATTACK_HEAVY);
+      logAction(playerIndex, 'контролер', buttonName, 'attack_heavy');
+      player.stateMachine.handleAction('attack_heavy');
     }
   }
 }
@@ -507,10 +492,7 @@ function handleMovement(player, dt) {
   }
 }
 
-// Проверка дали действието е атака
-function isAttackAction(actionType) {
-  return actionType !== ACTION_TYPES.JUMP;
-}
+// FSM handles all action types now - removed isAttackAction function
 
 // Помощна функция за автоматично превключване между клавиатура и контролер
 function getCurrentControls(player) {
@@ -708,39 +690,20 @@ function updateEnemyAI(enemy, dt) {
 
   // Normal AI only runs if enemy is alive and not dying
   if (enemy.health > 0 && !enemy.isDying) {
-    // Simple AI: randomly attack every few seconds
+    // Simple AI: randomly attack every few seconds using FSM
     if (Math.random() < 0.01) { // 1% chance per frame to attack
-      if (!enemy.currentAction) {
-        const attackTypes = [
-          ACTION_TYPES.BASIC_ATTACK_LIGHT,
-          ACTION_TYPES.BASIC_ATTACK_MEDIUM,
-          ACTION_TYPES.BASIC_ATTACK_HEAVY,
-          ACTION_TYPES.SECONDARY_ATTACK_LIGHT,
-          ACTION_TYPES.SECONDARY_ATTACK_MEDIUM,
-          ACTION_TYPES.SECONDARY_ATTACK_HEAVY
-        ];
-        const randomAttack = attackTypes[Math.floor(Math.random() * attackTypes.length)];
-        enemy.currentAction = randomAttack;
-        // Get timing data from skill definition (data-driven approach)
-        const skillData = SKILL_TREE[randomAttack];
-        enemy.executionTimer = skillData ? skillData.executionTime : 0.5;
-        //console.log(`Enemy ${enemy.id} attacks with ${getActionDisplayName(randomAttack)}`);
+      if (enemy.stateMachine && !enemy.stateMachine.isInAttackState()) {
+        // Choose random attack type for FSM
+        const attackActions = ['attack_light', 'attack_medium', 'attack_heavy'];
+        const randomAttack = attackActions[Math.floor(Math.random() * attackActions.length)];
+
+        // Trigger FSM attack
+        enemy.stateMachine.handleAction(randomAttack);
+        console.log(`[ENEMY AI] Enemy attacks with ${randomAttack}`);
       }
     }
 
-    // Update enemy action timer
-    if (enemy.currentAction) {
-      if (enemy.executionTimer > 0) {
-        enemy.executionTimer -= dt;
-        if (enemy.executionTimer <= 0) {
-          enemy.currentAction = null;
-          enemy.executionTimer = 0;
-        }
-      } else {
-        enemy.currentAction = null;
-        enemy.executionTimer = 0;
-      }
-    }
+    // FSM handles timing automatically - no need for manual timers
   }
 
   // Reset hit flag after a short time

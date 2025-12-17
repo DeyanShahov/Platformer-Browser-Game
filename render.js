@@ -46,43 +46,7 @@ function drawEntity(e) {
     ctx.fillText(`${e.w}x${e.h}`, e.x + e.w/2 - 20, e.y - e.h - zOffset - 5);
   }
 
-  if (e.currentAction && isAttackAction(e.currentAction)) {
-    // Основни атаки - вертикални линии вдясно
-    if (e.currentAction === ACTION_TYPES.BASIC_ATTACK_LIGHT) {
-      // Лека основна атака: 1 червена черта вдясно
-      ctx.strokeStyle = "#FF0000";
-      ctx.strokeRect(e.x + e.w + 5, e.y - e.h - zOffset, 1, e.h);
-    } else if (e.currentAction === ACTION_TYPES.BASIC_ATTACK_MEDIUM) {
-      // Средна основна атака: 2 червени черти вдясно
-      ctx.strokeStyle = "#FF0000";
-      ctx.strokeRect(e.x + e.w + 5, e.y - e.h - zOffset, 1, e.h);
-      ctx.strokeRect(e.x + e.w + 15, e.y - e.h - zOffset, 1, e.h);
-    } else if (e.currentAction === ACTION_TYPES.BASIC_ATTACK_HEAVY) {
-      // Тежка основна атака: 3 червени черти вдясно
-      ctx.strokeStyle = "#FF0000";
-      ctx.strokeRect(e.x + e.w + 5, e.y - e.h - zOffset, 1, e.h);
-      ctx.strokeRect(e.x + e.w + 15, e.y - e.h - zOffset, 1, e.h);
-      ctx.strokeRect(e.x + e.w + 25, e.y - e.h - zOffset, 1, e.h);
-    }
-
-    // Допълнителни атаки - очертания около героя
-    else if (e.currentAction === ACTION_TYPES.SECONDARY_ATTACK_LIGHT) {
-      // Лека допълнителна атака: единично жълто очертание
-      ctx.strokeStyle = "#FFFF00";
-      ctx.strokeRect(e.x - 5, e.y - e.h - zOffset - 5, e.w + 10, e.h + 10);
-    } else if (e.currentAction === ACTION_TYPES.SECONDARY_ATTACK_MEDIUM) {
-      // Средна допълнителна атака: двойно жълто очертание
-      ctx.strokeStyle = "#FFFF00";
-      ctx.strokeRect(e.x - 5, e.y - e.h - zOffset - 5, e.w + 10, e.h + 10);
-      ctx.strokeRect(e.x - 10, e.y - e.h - zOffset - 10, e.w + 20, e.h + 20);
-    } else if (e.currentAction === ACTION_TYPES.SECONDARY_ATTACK_HEAVY) {
-      // Тежка допълнителна атака: тройно жълто очертание
-      ctx.strokeStyle = "#FFFF00";
-      ctx.strokeRect(e.x - 5, e.y - e.h - zOffset - 5, e.w + 10, e.h + 10);
-      ctx.strokeRect(e.x - 10, e.y - e.h - zOffset - 10, e.w + 20, e.h + 20);
-      ctx.strokeRect(e.x - 15, e.y - e.h - zOffset - 15, e.w + 30, e.h + 30);
-    }
-  }
+  // Attack visualizations now handled by FSM AnimationRenderer
 
 
 
