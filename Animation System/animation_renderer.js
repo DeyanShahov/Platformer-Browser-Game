@@ -54,16 +54,16 @@ class AnimationRenderer {
                            currentStateName === 'jumping';
 
     // Debug logging for hurt box visibility
-    console.log(`[DEBUG HURTBOX] Entity: ${entity.id} (${entity.entityType}), State: ${currentStateName}, HasAnimation: ${!!entity.animation}, usePerFrameData: ${usePerFrameData}`);
-    if (entity.animation) {
-      console.log(`[DEBUG HURTBOX] Animation currentFrame: ${entity.animation.currentFrame}, animationDef: ${!!entity.animation.animationDefinition}`);
-      if (entity.animation.animationDefinition) {
-        console.log(`[DEBUG HURTBOX] frameData exists: ${!!entity.animation.animationDefinition.frameData}, frameData length: ${entity.animation.animationDefinition.frameData ? entity.animation.animationDefinition.frameData.length : 'N/A'}`);
-        if (entity.animation.animationDefinition.frameData && entity.animation.animationDefinition.frameData[entity.animation.currentFrame]) {
-          console.log(`[DEBUG HURTBOX] Current frame data:`, entity.animation.animationDefinition.frameData[entity.animation.currentFrame]);
-        }
-      }
-    }
+    // console.log(`[DEBUG HURTBOX] Entity: ${entity.id} (${entity.entityType}), State: ${currentStateName}, HasAnimation: ${!!entity.animation}, usePerFrameData: ${usePerFrameData}`);
+    // if (entity.animation) {
+    //   console.log(`[DEBUG HURTBOX] Animation currentFrame: ${entity.animation.currentFrame}, animationDef: ${!!entity.animation.animationDefinition}`);
+    //   if (entity.animation.animationDefinition) {
+    //     console.log(`[DEBUG HURTBOX] frameData exists: ${!!entity.animation.animationDefinition.frameData}, frameData length: ${entity.animation.animationDefinition.frameData ? entity.animation.animationDefinition.frameData.length : 'N/A'}`);
+    //     if (entity.animation.animationDefinition.frameData && entity.animation.animationDefinition.frameData[entity.animation.currentFrame]) {
+    //       console.log(`[DEBUG HURTBOX] Current frame data:`, entity.animation.animationDefinition.frameData[entity.animation.currentFrame]);
+    //     }
+    //   }
+    // }
 
     let hurtBoxPos = null;
 
@@ -124,7 +124,7 @@ class AnimationRenderer {
       if (animationDef.frameData && animationDef.frameData[currentFrame]?.attackBox) {
         const attackBoxPos = this.calculateBoxPosition(entity, animationDef.frameData[currentFrame].attackBox, 'attack');
 
-        console.log(`[RENDER] Drawing attack hitbox: frame=${currentFrame}, pos=${attackBoxPos.x}, ${attackBoxPos.y}, size=${attackBoxPos.width}x${attackBoxPos.height}`);
+        console.log(`[RENDER DEBUG] Attack box for ${entity.id}: x=${attackBoxPos.x.toFixed(1)}, y=${attackBoxPos.y.toFixed(1)}, w=${attackBoxPos.width}, h=${attackBoxPos.height}`);
 
         // Red outline for attack box
         this.ctx.strokeStyle = "#FF0000";

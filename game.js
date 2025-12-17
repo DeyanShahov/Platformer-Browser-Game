@@ -53,25 +53,35 @@ function updatePlayer(player, playerIndex, dt) {
         // Use combat system to calculate and apply damage
         const currentAttackType = player.stateMachine.getCurrentAttackType();
         console.log(`[ATTACK] Current attack type: ${currentAttackType}`);
+        console.log(`[ATTACK] Player health before attack: ${player.health}`);
 
         if (currentAttackType) {
           console.log(`[ATTACK] Resolving attack with combat system...`);
+          console.log(`[ATTACK] Enemy health before attack: ${enemy.health}`);
           const combatEvent = window.combatResolver.resolveAttack(player, enemy, currentAttackType);
           console.log(`[ATTACK] Combat event result:`, combatEvent);
+          console.log(`[ATTACK] Enemy health after attack: ${enemy.health}`);
+          console.log(`[ATTACK] Damage dealt: ${combatEvent?.actualDamage || 0}`);
 
           // Add damage number for visual feedback
           if (combatEvent && combatEvent.actualDamage > 0) {
             console.log(`[ATTACK] Applying ${combatEvent.actualDamage} damage`);
-            const damageX = enemy.x + enemy.w / 2;
-            const damageY = enemy.y - 10;
+            const damageX = enemy.x + enemy.w + 5;
+            const damageY = enemy.y - enemy.h - 15;
             window.damageNumberManager.addDamageNumber(damageX, damageY, combatEvent.actualDamage, combatEvent.damageResult.isCritical);
           } else {
             console.log(`[ATTACK] No damage applied - combat event:`, combatEvent);
           }
 
           // Mark damage as dealt for this attack and set visual hit flag
-          player.damageDealt = true;
-          enemy.hit = true;
+          // Only set damageDealt if we actually applied damage
+          if (combatEvent && combatEvent.actualDamage > 0) {
+            player.damageDealt = true;
+            enemy.hit = true;
+            console.log(`[ATTACK] Damage dealt (${combatEvent.actualDamage}), setting damageDealt flag`);
+          } else {
+            console.log(`[ATTACK] No damage applied, keeping damageDealt false for potential retry`);
+          }
           break; // Само един удар на атака
         } else {
           console.log(`[ATTACK] No current attack type found`);
@@ -534,13 +544,13 @@ function logAction(playerIndex, inputDevice, button, actionType) {
 
 function getActionDisplayName(actionType) {
   const names = {
-    [ACTION_TYPES.JUMP]: 'скок',
-    [ACTION_TYPES.BASIC_ATTACK_LIGHT]: 'основна лека атака',
-    [ACTION_TYPES.BASIC_ATTACK_MEDIUM]: 'основна средна атака',
-    [ACTION_TYPES.BASIC_ATTACK_HEAVY]: 'основна тежка атака',
-    [ACTION_TYPES.SECONDARY_ATTACK_LIGHT]: 'допълнителна лека атака',
-    [ACTION_TYPES.SECONDARY_ATTACK_MEDIUM]: 'допълнителна средна атака',
-    [ACTION_TYPES.SECONDARY_ATTACK_HEAVY]: 'допълнителна тежка атака'
+    [window.SKILL_TYPES?.JUMP]: 'скок',
+    [window.SKILL_TYPES?.BASIC_ATTACK_LIGHT]: 'основна лека атака',
+    [window.SKILL_TYPES?.BASIC_ATTACK_MEDIUM]: 'основна средна атака',
+    [window.SKILL_TYPES?.BASIC_ATTACK_HEAVY]: 'основна тежка атака',
+    [window.SKILL_TYPES?.SECONDARY_ATTACK_LIGHT]: 'допълнителна лека атака',
+    [window.SKILL_TYPES?.SECONDARY_ATTACK_MEDIUM]: 'допълнителна средна атака',
+    [window.SKILL_TYPES?.SECONDARY_ATTACK_HEAVY]: 'допълнителна тежка атака'
   };
   return names[actionType] || actionType;
 }

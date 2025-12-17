@@ -216,25 +216,25 @@ class AnimationSystem {
     // Map action types to animations
     let animationType = null;
     switch (actionType) {
-      case window.ACTION_TYPES?.JUMP:
+      case window.SKILL_TYPES?.JUMP:
         animationType = window.ANIMATION_TYPES?.JUMP;
         break;
-      case window.ACTION_TYPES?.BASIC_ATTACK_LIGHT:
+      case window.SKILL_TYPES?.BASIC_ATTACK_LIGHT:
         animationType = window.ANIMATION_TYPES?.ATTACK_1;
         break;
-      case window.ACTION_TYPES?.BASIC_ATTACK_MEDIUM:
+      case window.SKILL_TYPES?.BASIC_ATTACK_MEDIUM:
         animationType = window.ANIMATION_TYPES?.ATTACK_2;
         break;
-      case window.ACTION_TYPES?.BASIC_ATTACK_HEAVY:
+      case window.SKILL_TYPES?.BASIC_ATTACK_HEAVY:
         animationType = window.ANIMATION_TYPES?.ATTACK_3;
         break;
-      case window.ACTION_TYPES?.SECONDARY_ATTACK_LIGHT:
+      case window.SKILL_TYPES?.SECONDARY_ATTACK_LIGHT:
         animationType = window.ANIMATION_TYPES?.ATTACK_1;
         break;
-      case window.ACTION_TYPES?.SECONDARY_ATTACK_MEDIUM:
+      case window.SKILL_TYPES?.SECONDARY_ATTACK_MEDIUM:
         animationType = window.ANIMATION_TYPES?.ATTACK_2;
         break;
-      case window.ACTION_TYPES?.SECONDARY_ATTACK_HEAVY:
+      case window.SKILL_TYPES?.SECONDARY_ATTACK_HEAVY:
         animationType = window.ANIMATION_TYPES?.ATTACK_3;
         break;
     }

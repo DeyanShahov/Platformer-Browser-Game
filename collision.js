@@ -22,10 +22,12 @@ function checkCollision(ax, ay, az, aw, ah, azThickness, tx, ty, tz, tw, th, tzT
 
 function checkHitboxCollision(attacker, target, params) {
   // Only log when attacker is actually in attack state to reduce spam
-  //const isAttackerAttacking = attacker.stateMachine && attacker.stateMachine.isInAttackState();
-  // if (isAttackerAttacking) {
-  //   console.log(`[COLLISION] checkHitboxCollision: ${attacker?.entityType} attacking ${target?.entityType}`);
-  // }
+  // Only log player attacks, not enemy attacks to avoid console spam
+  const isAttackerAttacking = attacker.stateMachine && attacker.stateMachine.isInAttackState();
+  const isPlayerAttacking = isAttackerAttacking && attacker.entityType !== 'enemy';
+  if (isPlayerAttacking) {
+    console.log(`[COLLISION] checkHitboxCollision: ${attacker?.entityType} attacking ${target?.entityType}`);
+  }
 
   // Check FSM-based attacks first (new system)
   if (attacker.stateMachine && attacker.animation) {
@@ -36,33 +38,46 @@ function checkHitboxCollision(attacker, target, params) {
     if (animationDef && animationDef.frameData && animationDef.frameData[currentFrame]) {
       const frameData = animationDef.frameData[currentFrame];
 
-      // Check if this frame has an attack box
+      // Check if this frame has an attack box (only damage when attack box is active)
       if (frameData.attackBox) {
         // Use centralized box position calculation from AnimationRenderer
         if (window.animationSystem && window.animationSystem.renderer) {
           const attackBoxPos = window.animationSystem.renderer.calculateBoxPosition(attacker, frameData.attackBox, 'attack');
 
           // Get target's hit box position (per-frame if available, otherwise static)
-          let targetHitBox = {
-            x: target.x,
-            y: target.y,
-            width: target.collisionW || target.w,
-            height: target.collisionH || target.h
-          };
+          let targetHitBox;
 
           // Check if target has per-frame hit box data
           if (target.animation && target.animation.animationDefinition) {
             const targetFrame = target.animation.currentFrame;
             const targetAnimationDef = target.animation.animationDefinition;
             if (targetAnimationDef.frameData && targetAnimationDef.frameData[targetFrame] && targetAnimationDef.frameData[targetFrame].hitBox) {
+              // Use per-frame hit box data
               targetHitBox = window.animationSystem.renderer.calculateBoxPosition(target, targetAnimationDef.frameData[targetFrame].hitBox, 'hit');
+            } else {
+              // Use static hit box positioned like animation system
+              const zOffset = target.z * 1.0;
+              const drawX = target.x;
+              const drawY = target.y - target.h - zOffset;
+              targetHitBox = {
+                x: drawX,
+                y: drawY + target.h - (target.collisionH || target.h),
+                width: target.collisionW || target.w,
+                height: target.collisionH || target.h
+              };
             }
+          } else {
+            // Fallback for entities without animation system - use static collision box
+            const zOffset = target.z * 1.0;
+            const drawX = target.x;
+            const drawY = target.y - target.h - zOffset;
+            targetHitBox = {
+              x: drawX,
+              y: drawY + target.h - (target.collisionH || target.h),
+              width: target.collisionW || target.w,
+              height: target.collisionH || target.h
+            };
           }
-
-          // if (isAttackerAttacking) {
-          //   console.log(`[COLLISION] Frame ${currentFrame} attack box:`, attackBoxPos);
-          //   console.log(`[COLLISION] Target hit box:`, targetHitBox);
-          // }
 
           // Check collision between attack box and target's hit box
           const collisionResult = checkCollision(
@@ -73,9 +88,12 @@ function checkHitboxCollision(attacker, target, params) {
             params.zTolerance || 10
           );
 
-          // if (isAttackerAttacking && collisionResult) {
-          //   console.log(`[COLLISION] HIT DETECTED!`);
-          // }
+          // Only log successful hits to reduce spam
+          if (isAttackerAttacking && collisionResult) {
+            console.log(`[COLLISION] HIT DETECTED on frame ${currentFrame}!`);
+            console.log(`[COLLISION] Attack box: x=${attackBoxPos.x.toFixed(1)}, y=${attackBoxPos.y.toFixed(1)}, w=${attackBoxPos.width}, h=${attackBoxPos.height}`);
+            console.log(`[COLLISION] Target hit box: x=${targetHitBox.x.toFixed(1)}, y=${targetHitBox.y.toFixed(1)}, w=${targetHitBox.width}, h=${targetHitBox.height}`);
+          }
 
           return collisionResult;
         }

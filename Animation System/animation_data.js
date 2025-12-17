@@ -198,16 +198,21 @@ const ANIMATION_DEFINITIONS = {
         // Frame 3 - Swing end (body fully shifted)
         {
           hitBox: { x: 160, y: 0, width: 120, height: 260 },
-          attackBox: null
+          attackBox: {
+            x: -218,           // Offset from entity.x + entity.w
+            yRatio: 0.5,     // Y offset as ratio of entity.h - positioned lower to hit enemies
+            width: 218,       // Width of attack area
+            heightRatio: 0.52 // Height as ratio of entity.h - smaller height for better precision
+          }
         },
         // Frame 4 - Impact (character in final pose)
         {
           hitBox: { x: 160, y: 0, width: 120, height: 260 }, // Slightly larger than enemy rectangle
           attackBox: {
-            x: -218,           // Offset from entity.x + entity.w
-            yRatio: 0.5,     // Y offset as ratio of entity.h
-            width: 218,       // Width of attack area
-            heightRatio: 0.5 // Height as ratio of entity.h
+            x: -218,//-218,           // Offset from entity.x + entity.w
+            yRatio: 0.5,     // Y offset as ratio of entity.h - positioned lower to hit enemies
+            width: 218,//218,       // Width of attack area
+            heightRatio: 0.52 // Height as ratio of entity.h - smaller height for better precision
           }
         }
       ],

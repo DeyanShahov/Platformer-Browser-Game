@@ -224,25 +224,25 @@ class EntityAnimation {
     // Check action-based animations first (highest priority)
     if (entity.currentAction) {
       switch (entity.currentAction) {
-        case window.ACTION_TYPES?.JUMP:
+        case window.SKILL_TYPES?.JUMP:
           newAnimation = window.ANIMATION_TYPES?.JUMP;
           break;
-        case window.ACTION_TYPES?.BASIC_ATTACK_LIGHT:
+        case window.SKILL_TYPES?.BASIC_ATTACK_LIGHT:
           newAnimation = window.ANIMATION_TYPES?.ATTACK_1;
           break;
-        case window.ACTION_TYPES?.BASIC_ATTACK_MEDIUM:
+        case window.SKILL_TYPES?.BASIC_ATTACK_MEDIUM:
           newAnimation = window.ANIMATION_TYPES?.ATTACK_2;
           break;
-        case window.ACTION_TYPES?.BASIC_ATTACK_HEAVY:
+        case window.SKILL_TYPES?.BASIC_ATTACK_HEAVY:
           newAnimation = window.ANIMATION_TYPES?.ATTACK_3;
           break;
-        case window.ACTION_TYPES?.SECONDARY_ATTACK_LIGHT:
+        case window.SKILL_TYPES?.SECONDARY_ATTACK_LIGHT:
           newAnimation = window.ANIMATION_TYPES?.ATTACK_1; // Could be different
           break;
-        case window.ACTION_TYPES?.SECONDARY_ATTACK_MEDIUM:
+        case window.SKILL_TYPES?.SECONDARY_ATTACK_MEDIUM:
           newAnimation = window.ANIMATION_TYPES?.ATTACK_2;
           break;
-        case window.ACTION_TYPES?.SECONDARY_ATTACK_HEAVY:
+        case window.SKILL_TYPES?.SECONDARY_ATTACK_HEAVY:
           newAnimation = window.ANIMATION_TYPES?.ATTACK_3;
           break;
       }

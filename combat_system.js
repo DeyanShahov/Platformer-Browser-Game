@@ -67,19 +67,29 @@ class CombatCalculator {
     const skillInfo = window.skillTreeManager ? window.skillTreeManager.getSkillInfo(skillType) : null;
     const skillModifier = skillInfo ? skillInfo.damageModifier || 0 : 0;
 
+    console.log(`[DAMAGE CALC] Attacker: ${attacker.characterInfo?.getDisplayName() || 'Unknown'}, Skill: ${skillType}`);
+    console.log(`[DAMAGE CALC] Attack Power: ${attackPower}, Defense: ${defense}, Skill Modifier: ${skillModifier}`);
+
     // Base damage = attack - defense (minimum 0)
     let damage = Math.max(0, attackPower - defense);
+    console.log(`[DAMAGE CALC] Base damage (attack-defense): ${damage}`);
 
     // Apply skill modifier as damage multiplier (not added to attack power)
     if (skillModifier > 0) {
+      const originalDamage = damage;
       damage *= (1 + skillModifier); // skillModifier is percentage (e.g., 0.2 = +20%)
+      console.log(`[DAMAGE CALC] After skill modifier ${(skillModifier*100).toFixed(1)}%: ${originalDamage} → ${damage}`);
     }
 
     // Critical hit check
     const isCritical = this.checkCriticalHit(attacker);
     if (isCritical) {
+      const originalDamage = damage;
       damage *= 2; // Double damage on crit
+      console.log(`[DAMAGE CALC] CRITICAL HIT: ${originalDamage} → ${damage}`);
     }
+
+    console.log(`[DAMAGE CALC] Final damage: ${damage}`);
 
     return {
       damage: damage,
@@ -712,7 +722,7 @@ class DamageNumberManager {
         ctx.lineWidth = 1;
       }
 
-      ctx.font = `${16 * number.scale}px Arial`;
+      ctx.font = `${32 * number.scale}px Arial`;
       ctx.textAlign = 'center';
       ctx.textBaseline = 'middle';
 

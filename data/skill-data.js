@@ -126,7 +126,7 @@ const SKILL_TREE = {
     name: 'Лека основна атака',
     description: 'Бърза лека атака без ресурсни изисквания',
     usageType: SKILL_USAGE_TYPES.ACTIVE,   // Active skill - manually activated
-    damageModifier: 1,           // Сила на атаката - модифицира се от микро скилове
+    damageModifier: 0,           // Сила на атаката - модифицира се от микро скилове
     damageType: DAMAGE_TYPES.PHYSICAL,      // physical/magical/special
     rangeType: RANGE_TYPES.MELEE,          // melee/range
     targetType: TARGET_TYPES.SINGLE_TARGET, // singletarget/aoe
@@ -184,7 +184,7 @@ const SKILL_TREE = {
     name: 'Средна основна атака',
     description: 'Средна атака, изисква 10 мана',
     usageType: SKILL_USAGE_TYPES.ACTIVE,
-    damageModifier: 3,           // Сила на атаката
+    damageModifier: 0,           // Сила на атаката
     damageType: DAMAGE_TYPES.PHYSICAL,      // physical/magical/special
     rangeType: RANGE_TYPES.MELEE,          // melee/range
     targetType: TARGET_TYPES.SINGLE_TARGET, // singletarget/aoe
@@ -222,7 +222,7 @@ const SKILL_TREE = {
     name: 'Тежка основна атака',
     description: 'Мощна тежка атака, изисква 20 енергия',
     usageType: SKILL_USAGE_TYPES.ACTIVE,
-    damageModifier: 5,           // Сила на атаката
+    damageModifier: 0,           // Сила на атаката
     damageType: DAMAGE_TYPES.PHYSICAL,      // physical/magical/special
     rangeType: RANGE_TYPES.MELEE,          // melee/range
     targetType: TARGET_TYPES.SINGLE_TARGET, // singletarget/aoe
@@ -260,7 +260,7 @@ const SKILL_TREE = {
     name: 'Лека допълнителна атака',
     description: 'Бърза допълнителна атака без ресурсни изисквания',
     usageType: SKILL_USAGE_TYPES.ACTIVE,
-    damageModifier: 3,           // Сила на атаката
+    damageModifier: 0,           // Сила на атаката
     damageType: DAMAGE_TYPES.PHYSICAL,      // physical/magical/special
     rangeType: RANGE_TYPES.MELEE,          // melee/range
     targetType: TARGET_TYPES.SINGLE_TARGET, // singletarget/aoe
@@ -287,7 +287,7 @@ const SKILL_TREE = {
     name: 'Средна допълнителна атака',
     description: 'Средна допълнителна атака, изисква 10 мана',
     usageType: SKILL_USAGE_TYPES.ACTIVE,
-    damageModifier: 6,           // Сила на атаката
+    damageModifier: 0,           // Сила на атаката
     damageType: DAMAGE_TYPES.PHYSICAL,      // physical/magical/special
     rangeType: RANGE_TYPES.MELEE,          // melee/range
     targetType: TARGET_TYPES.SINGLE_TARGET, // singletarget/aoe
@@ -325,7 +325,7 @@ const SKILL_TREE = {
     name: 'Тежка допълнителна атака',
     description: 'Мощна тежка допълнителна атака, изисква 20 енергия',
     usageType: SKILL_USAGE_TYPES.ACTIVE,
-    damageModifier: 9,           // Сила на атаката
+    damageModifier: 0,           // Сила на атаката
     damageType: DAMAGE_TYPES.PHYSICAL,      // physical/magical/special
     rangeType: RANGE_TYPES.MELEE,          // melee/range
     targetType: TARGET_TYPES.SINGLE_TARGET, // singletarget/aoe

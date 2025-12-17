@@ -654,27 +654,27 @@ class AnimationStateMachine {
     );
   }
 
-  // Get current attack type from FSM state (automatic parsing)
+  // Get current attack type from FSM state (automatic parsing) - now uses SKILL_TYPES
   getCurrentAttackType() {
     const stateName = this.currentState?.name || '';
 
     // Basic attacks
     if (stateName.startsWith('attack_')) {
       const attackLevel = stateName.split('_')[1]; // 'light', 'medium', 'heavy'
-      const actionTypeKey = `BASIC_ATTACK_${attackLevel.toUpperCase()}`;
-      return window.ACTION_TYPES?.[actionTypeKey] || null;
+      const skillTypeKey = `BASIC_ATTACK_${attackLevel.toUpperCase()}`;
+      return window.SKILL_TYPES?.[skillTypeKey] || null;
     }
 
     // Secondary attacks
     if (stateName.startsWith('secondary_attack_')) {
       const attackLevel = stateName.split('_')[2]; // 'light', 'medium', 'heavy'
-      const actionTypeKey = `SECONDARY_ATTACK_${attackLevel.toUpperCase()}`;
-      return window.ACTION_TYPES?.[actionTypeKey] || null;
+      const skillTypeKey = `SECONDARY_ATTACK_${attackLevel.toUpperCase()}`;
+      return window.SKILL_TYPES?.[skillTypeKey] || null;
     }
 
     // Run attack
     if (stateName === 'run_attack') {
-      return window.ACTION_TYPES?.RUN_ATTACK || null;
+      return window.SKILL_TYPES?.RUN_ATTACK || null;
     }
 
     return null;
