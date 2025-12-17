@@ -44,8 +44,7 @@ function updatePlayer(player, playerIndex, dt) {
 
       console.log(`[ATTACK] Checking collision with enemy at (${enemy.x}, ${enemy.y})`);
       const hit = checkHitboxCollision(player, enemy, {
-        zTolerance: 10,
-        zThickness: 0
+        zTolerance: 10
       });
 
       console.log(`[ATTACK] Collision result: ${hit}`);
@@ -90,8 +89,7 @@ function updatePlayer(player, playerIndex, dt) {
 
     // Check collision for enemy attack
     const hit = checkHitboxCollision(enemy, player, {
-      zTolerance: 10,
-      zThickness: 0
+      zTolerance: 10
     });
 
     if (hit) {

@@ -24,13 +24,13 @@ class SpriteManager {
     const loadPromise = new Promise((resolve, reject) => {
       const img = new Image();
       img.onload = () => {
-        console.log(`[SpriteManager] Loaded sprite: ${path}`);
+        //console.log(`[SpriteManager] Loaded sprite: ${path}`);
         this.sprites.set(path, img);
         this.loadingPromises.delete(path);
         resolve(img);
       };
       img.onerror = () => {
-        console.error(`[SpriteManager] Failed to load sprite: ${path}`);
+        //console.error(`[SpriteManager] Failed to load sprite: ${path}`);
         this.loadingPromises.delete(path);
         reject(new Error(`Failed to load sprite: ${path}`));
       };
@@ -50,32 +50,32 @@ class SpriteManager {
   // Preload all sprites for a specific entity type
   async preloadEntitySprites(entityType) {
     const spritePaths = this.getEntitySpritePaths(entityType);
-    console.log(`[SpriteManager] Preloading ${spritePaths.length} sprites for ${entityType}`);
+    //console.log(`[SpriteManager] Preloading ${spritePaths.length} sprites for ${entityType}`);
     await this.loadSprites(spritePaths);
-    console.log(`[SpriteManager] Finished preloading sprites for ${entityType}`);
+    //console.log(`[SpriteManager] Finished preloading sprites for ${entityType}`);
   }
 
   // Get all sprite paths for an entity type
   getEntitySpritePaths(entityType) {
-    console.log(`[SpriteManager] Getting sprite paths for ${entityType}`);
-    console.log(`[SpriteManager] ANIMATION_DEFINITIONS available:`, !!window.ANIMATION_DEFINITIONS);
-    console.log(`[SpriteManager] ANIMATION_DEFINITIONS:`, window.ANIMATION_DEFINITIONS);
+    //console.log(`[SpriteManager] Getting sprite paths for ${entityType}`);
+    //console.log(`[SpriteManager] ANIMATION_DEFINITIONS available:`, !!window.ANIMATION_DEFINITIONS);
+    //console.log(`[SpriteManager] ANIMATION_DEFINITIONS:`, window.ANIMATION_DEFINITIONS);
 
     const paths = [];
     const definitions = window.ANIMATION_DEFINITIONS?.[entityType];
 
-    console.log(`[SpriteManager] Definitions for ${entityType}:`, definitions);
+    //console.log(`[SpriteManager] Definitions for ${entityType}:`, definitions);
 
     if (definitions) {
       Object.values(definitions).forEach(animation => {
         if (animation.spriteSheet && !paths.includes(animation.spriteSheet)) {
-          console.log(`[SpriteManager] Found sprite: ${animation.spriteSheet}`);
+          //console.log(`[SpriteManager] Found sprite: ${animation.spriteSheet}`);
           paths.push(animation.spriteSheet);
         }
       });
     }
 
-    console.log(`[SpriteManager] Returning ${paths.length} sprite paths:`, paths);
+    //console.log(`[SpriteManager] Returning ${paths.length} sprite paths:`, paths);
     return paths;
   }
 
@@ -120,7 +120,7 @@ class SpriteManager {
     this.loadCallbacks.forEach(callback => callback());
     this.loadCallbacks = [];
 
-    console.log(`[SpriteManager] All sprites preloaded successfully`);
+    //console.log(`[SpriteManager] All sprites preloaded successfully`);
   }
 
   // Create a sprite sheet info object

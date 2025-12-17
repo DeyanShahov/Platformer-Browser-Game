@@ -8,13 +8,13 @@ function initializeAnimationSystem() {
     // Wait for animation system to be available
     const checkSystemReady = () => {
       if (window.animationSystem && window.spriteManager) {
-        console.log('[MAIN] Animation system ready, initializing...');
+        //console.log('[MAIN] Animation system ready, initializing...');
 
         // Initialize animation system
         const canvas = document.getElementById("game");
         if (canvas) {
           window.animationSystem.initialize(canvas).then(() => {
-            console.log('[MAIN] Animation system initialized successfully');
+            //console.log('[MAIN] Animation system initialized successfully');
             resolve();
           }).catch(error => {
             console.error('[MAIN] Failed to initialize animation system:', error);
@@ -507,23 +507,23 @@ async function initGameWithSelections() {
 
   // Инициализация на game state система
   window.gameState = new GameState();
-  console.log('[MAIN] Game state initialized');
+  //console.log('[MAIN] Game state initialized');
 
   // Clear global arrays for backwards compatibility
   window.players = [];
-  console.log('[MAIN] window.players cleared and set to:', window.players);
+  //console.log('[MAIN] window.players cleared and set to:', window.players);
 
   // Create players based on confirmed selections (sorted by player ID for consistent ordering)
   const selectedChars = Object.keys(confirmedSelections).sort((a, b) =>
     confirmedSelections[a] - confirmedSelections[b]
   );
-  console.log('[MAIN] Creating players for selectedChars:', selectedChars);
+  //console.log('[MAIN] Creating players for selectedChars:', selectedChars);
   selectedChars.forEach((charId, index) => {
     const char = characters.find(c => c.id === charId);
     const playerId = confirmedSelections[charId];
     const playerKey = `player${playerId}`;
 
-    console.log(`[MAIN] Creating player ${playerId} with key ${playerKey}, controls exist:`, !!window.controls[playerKey]);
+    //console.log(`[MAIN] Creating player ${playerId} with key ${playerKey}, controls exist:`, !!window.controls[playerKey]);
 
     if (window.controls[playerKey]) {
       // Scale X positions for new canvas size (from 900 to 1920)
@@ -541,16 +541,16 @@ async function initGameWithSelections() {
       // Играчите започват без начални skill points
       // player.skillPoints = 0; // вече е 0 по подразбиране
 
-      console.log(`[MAIN] Player ${playerId} created:`, player);
+      //console.log(`[MAIN] Player ${playerId} created:`, player);
 
       // Добавяне в game state вместо директно в players
       window.gameState.addEntity(player, 'player');
-      console.log(`[MAIN] Player ${playerId} added to game state`);
+      //console.log(`[MAIN] Player ${playerId} added to game state`);
 
       // Register player with animation system
       if (window.animationSystem && window.animationSystem.isInitialized) {
         const animation = window.animationSystem.registerEntity(player, 'knight');
-        console.log(`[MAIN] Player ${playerId} registered with animation system:`, animation ? 'SUCCESS' : 'FAILED');
+        //console.log(`[MAIN] Player ${playerId} registered with animation system:`, animation ? 'SUCCESS' : 'FAILED');
         if (animation) {
           console.log(`[MAIN] Player ${playerId} animation state:`, animation.getDebugInfo());
         }
@@ -564,7 +564,7 @@ async function initGameWithSelections() {
       // Initialize State Machine for player
       if (window.AnimationStateMachine) {
         player.stateMachine = new window.AnimationStateMachine(player);
-        console.log(`[MAIN] Player ${playerId} state machine initialized:`, player.stateMachine.getCurrentStateName());
+        //console.log(`[MAIN] Player ${playerId} state machine initialized:`, player.stateMachine.getCurrentStateName());
       } else {
         console.warn(`[MAIN] AnimationStateMachine not available for player ${playerId}`);
       }
@@ -572,7 +572,7 @@ async function initGameWithSelections() {
       console.warn(`No controls found for player ${playerId} (${playerKey})`);
     }
   });
-  console.log('[MAIN] Final game state debug:', window.gameState.getDebugInfo());
+  //console.log('[MAIN] Final game state debug:', window.gameState.getDebugInfo());
 
   // Create NPCs using the new enemy data system
   const enemy = createEnemyWithData('basic', 1); // Basic enemy, level 1
@@ -582,12 +582,14 @@ async function initGameWithSelections() {
   // Register enemy with animation system
   if (window.animationSystem && window.animationSystem.isInitialized) {
     const enemyAnimation = window.animationSystem.registerEntity(enemy, 'enemy');
-    console.log(`[MAIN] Enemy 1 registered with animation system:`, enemyAnimation ? 'SUCCESS' : 'FAILED');
+    //console.log(`[MAIN] Enemy 1 registered with animation system:`, enemyAnimation ? 'SUCCESS' : 'FAILED');
 
     // Initialize FSM after animation is registered
     if (window.AnimationStateMachine) {
       enemy.stateMachine = new window.AnimationStateMachine(enemy);
       console.log(`[MAIN] Enemy 1 FSM initialized:`, enemy.stateMachine.getCurrentStateName());
+      console.log(`[MAIN] Enemy 1 animation object:`, enemy.animation);
+      console.log(`[MAIN] Enemy 1 animation definition:`, enemy.animation?.animationDefinition);
     }
   }
 
@@ -612,6 +614,8 @@ async function initGameWithSelections() {
 
   // Добавяне на съюзник
   const ally = createEntity(520 * (CANVAS_WIDTH / 900), Math.max(200, CANVAS_HEIGHT - 600), 90, 50, 50, "#00FF00");
+  // Add Z thickness for 2.5D collision
+  ally.zThickness = 5;  // Ally thickness (least presence)
   window.gameState.addEntity(ally, 'ally');
   //console.log('Ally added to game state:', ally.id);
 

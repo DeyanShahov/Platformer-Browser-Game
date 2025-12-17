@@ -8,6 +8,7 @@ class Player {
     this.h = 500;  // Visual height (for sprite rendering) - DOUBLED from 250
     this.collisionW = 240;  // Collision width (smaller than visual) - DOUBLED from 120
     this.collisionH = 260;  // Collision height - DOUBLED from 130
+    this.zThickness = 5;   // Z thickness for 2.5D collision (hero has most presence)
     this.vx = 0;
     this.vy = 0;
     this.vz = 0;

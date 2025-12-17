@@ -1,9 +1,10 @@
 // Collision detection logic
-function checkCollision(ax, ay, az, aw, ah, tx, ty, tz, tw, th, params) {
-  const { zTolerance, zThickness } = params;
+function checkCollision(ax, ay, az, aw, ah, azThickness, tx, ty, tz, tw, th, tzThickness, zTolerance) {
+  // Calculate effective Z thickness (sum of both objects' thicknesses)
+  const effectiveZThickness = azThickness + tzThickness;
 
   const dz = Math.abs(az - tz);
-  if (dz > zThickness + zTolerance) return false;
+  if (dz > effectiveZThickness + zTolerance) return false;
 
   const ax1 = ax;
   const ay1 = ay;
@@ -21,10 +22,10 @@ function checkCollision(ax, ay, az, aw, ah, tx, ty, tz, tw, th, params) {
 
 function checkHitboxCollision(attacker, target, params) {
   // Only log when attacker is actually in attack state to reduce spam
-  const isAttackerAttacking = attacker.stateMachine && attacker.stateMachine.isInAttackState();
-  if (isAttackerAttacking) {
-    console.log(`[COLLISION] checkHitboxCollision: ${attacker?.entityType} attacking ${target?.entityType}`);
-  }
+  //const isAttackerAttacking = attacker.stateMachine && attacker.stateMachine.isInAttackState();
+  // if (isAttackerAttacking) {
+  //   console.log(`[COLLISION] checkHitboxCollision: ${attacker?.entityType} attacking ${target?.entityType}`);
+  // }
 
   // Check FSM-based attacks first (new system)
   if (attacker.stateMachine && attacker.animation) {
@@ -58,23 +59,23 @@ function checkHitboxCollision(attacker, target, params) {
             }
           }
 
-          if (isAttackerAttacking) {
-            console.log(`[COLLISION] Frame ${currentFrame} attack box:`, attackBoxPos);
-            console.log(`[COLLISION] Target hit box:`, targetHitBox);
-          }
+          // if (isAttackerAttacking) {
+          //   console.log(`[COLLISION] Frame ${currentFrame} attack box:`, attackBoxPos);
+          //   console.log(`[COLLISION] Target hit box:`, targetHitBox);
+          // }
 
           // Check collision between attack box and target's hit box
           const collisionResult = checkCollision(
             attackBoxPos.x, attackBoxPos.y, attacker.z,
-            attackBoxPos.width, attackBoxPos.height,
+            attackBoxPos.width, attackBoxPos.height, attacker.zThickness || 0,
             targetHitBox.x, targetHitBox.y, target.z,
-            targetHitBox.width, targetHitBox.height,
-            params
+            targetHitBox.width, targetHitBox.height, target.zThickness || 0,
+            params.zTolerance || 10
           );
 
-          if (isAttackerAttacking && collisionResult) {
-            console.log(`[COLLISION] HIT DETECTED!`);
-          }
+          // if (isAttackerAttacking && collisionResult) {
+          //   console.log(`[COLLISION] HIT DETECTED!`);
+          // }
 
           return collisionResult;
         }
@@ -103,9 +104,9 @@ function canMoveTo(entity, proposedX, proposedY, proposedZ) {
     const otherW = other.collisionW || other.w;
     const otherH = other.collisionH || other.h;
 
-    if (checkCollision(proposedX, proposedY, proposedZ, entityW, entityH,
-                      other.x, other.y, other.z, otherW, otherH,
-                      { zTolerance: 30, zThickness: 0 })) {
+    if (checkCollision(proposedX, proposedY, proposedZ, entityW, entityH, entity.zThickness || 0,
+                      other.x, other.y, other.z, otherW, otherH, other.zThickness || 0,
+                      30)) {  // zTolerance for movement
       return false; // Има колизия - не може да се движи
     }
   }

@@ -121,6 +121,9 @@ function createEnemyWithData(enemyType = 'basic', level = 1) {
 
     const enemy = window.createEntity(enemyX, enemyY, 0, 60, 60, "#FF3020");
 
+    // Add Z thickness for 2.5D collision
+    enemy.zThickness = 5;// 25;  // Enemy thickness (slightly less than player)
+
     // Apply stats from enemy data
     enemy.maxHealth = stats.maxHealth;
     enemy.health = stats.maxHealth;
