@@ -222,6 +222,16 @@ function checkEntityCollision(entity1, entity2, collisionType, params = {}) {
     console.log(`[COLLISION] ${entity2.entityType} at (${e2X.toFixed(1)}, ${e2Y.toFixed(1)}) ${e2W}x${e2H}`);
   }
 
+  // Special logging for ally collisions to debug the issue
+  if ((entity1.entityType === 'player' && entity2.entityType === 'ally') ||
+      (entity1.entityType === 'ally' && entity2.entityType === 'player')) {
+    console.log(`[ALLY COLLISION DEBUG] Player-Ally collision check:`);
+    console.log(`[ALLY COLLISION DEBUG] Player: pos(${entity1.x.toFixed(1)}, ${entity1.y.toFixed(1)}, ${entity1.z.toFixed(1)}) collision(${entity1.collisionW || entity1.w}x${entity1.collisionH || entity1.h})`);
+    console.log(`[ALLY COLLISION DEBUG] Ally: pos(${entity2.x.toFixed(1)}, ${entity2.y.toFixed(1)}, ${entity2.z.toFixed(1)}) size(${entity2.w}x${entity2.h})`);
+    console.log(`[ALLY COLLISION DEBUG] Collision result: ${hasCollision}`);
+    console.log(`[ALLY COLLISION DEBUG] Z difference: ${Math.abs(entity1.z - entity2.z)}, Z tolerance: 30`);
+  }
+
   return hasCollision;
 }
 

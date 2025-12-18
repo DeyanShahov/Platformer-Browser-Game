@@ -619,6 +619,18 @@ async function initGameWithSelections() {
   window.gameState.addEntity(ally, 'ally');
   //console.log('Ally added to game state:', ally.id);
 
+  // Register ally with animation system
+  if (window.animationSystem && window.animationSystem.isInitialized) {
+    const allyAnimation = window.animationSystem.registerEntity(ally, 'ally');
+    console.log(`[MAIN] Ally registered with animation system:`, allyAnimation ? 'SUCCESS' : 'FAILED');
+
+    // Initialize FSM after animation is registered
+    if (window.AnimationStateMachine) {
+      ally.stateMachine = new window.AnimationStateMachine(ally);
+      console.log(`[MAIN] Ally FSM initialized:`, ally.stateMachine.getCurrentStateName());
+    }
+  }
+
   // За backwards compatibility - players array се поддържа автоматично от game state
   // Обновява се след създаването на всички играчи
   window.players = window.gameState.players;

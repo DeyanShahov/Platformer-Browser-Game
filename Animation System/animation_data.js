@@ -469,6 +469,26 @@ const ANIMATION_DEFINITIONS = {
       loop: false,
       keyframe: 'static-1-frame'
     }
+  },
+
+  // Ally animations (static colored rectangle)
+  ally: {
+    [ANIMATION_TYPES.IDLE]: {
+      spriteSheet: null, // No sprite - render as colored rectangle
+      frames: 1,
+      frameWidth: 50,
+      frameHeight: 50,
+      duration: 999, // Static - never changes
+      // Per-frame collision data for constant hit box display
+      frameData: [
+        // Frame 0 - Idle frame
+        {
+          hitBox: { x: 0, y: 0, width: 50, height: 50 } // Same size as ally rectangle
+        }
+      ],
+      loop: true,
+      keyframe: 'static-1-frame'
+    }
   }
 };
 

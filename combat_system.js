@@ -395,6 +395,26 @@ class CombatResolver {
       // Create new enemy
       const newEnemy = window.createEnemyWithData('basic', 1);
 
+      // Register enemy with animation system (same as in main.js)
+      if (window.animationSystem && window.animationSystem.isInitialized) {
+        const enemyAnimation = window.animationSystem.registerEntity(newEnemy, 'enemy');
+        console.log(`[COMBAT RESPAWN] Enemy registered with animation system:`, enemyAnimation ? 'SUCCESS' : 'FAILED');
+
+        // Initialize FSM after animation is registered
+        if (window.AnimationStateMachine) {
+          newEnemy.stateMachine = new window.AnimationStateMachine(newEnemy);
+          console.log(`[COMBAT RESPAWN] Enemy FSM initialized:`, newEnemy.stateMachine.getCurrentStateName());
+        }
+      } else {
+        console.warn(`[COMBAT RESPAWN] Animation system not ready for respawned enemy`);
+      }
+
+      // Register with enemy combat manager
+      if (window.enemyCombatManager) {
+        window.enemyCombatManager.registerEnemy(newEnemy);
+        console.log(`[COMBAT RESPAWN] Enemy registered with combat manager`);
+      }
+
       // Add to game state if available
       if (window.gameState) {
         window.gameState.addEntity(newEnemy, 'enemy');
