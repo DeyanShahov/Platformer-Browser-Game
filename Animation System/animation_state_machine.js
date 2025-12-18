@@ -395,7 +395,8 @@ class SecondaryAttackLightState extends AnimationState {
 
   enter(entity) {
     super.enter(entity);
-    entity.animation.setAnimation(window.ANIMATION_TYPES.ATTACK_1, true);
+    entity.animation.setAnimation(window.ANIMATION_TYPES.ATTACK_2, true);
+    entity.damageDealt = false; // Reset damage flag when starting attack
   }
 
   update(entity, dt) {
