@@ -20,16 +20,16 @@ function checkCollision(ax, ay, az, aw, ah, azThickness, tx, ty, tz, tw, th, tzT
   return overlap;
 }
 
+// Unified attack collision function (now uses unified system)
 function checkHitboxCollision(attacker, target, params) {
   // Only log when attacker is actually in attack state to reduce spam
-  // Only log player attacks, not enemy attacks to avoid console spam
   const isAttackerAttacking = attacker.stateMachine && attacker.stateMachine.isInAttackState();
   const isPlayerAttacking = isAttackerAttacking && attacker.entityType !== 'enemy';
   if (isPlayerAttacking) {
     console.log(`[COLLISION] checkHitboxCollision: ${attacker?.entityType} attacking ${target?.entityType}`);
   }
 
-  // Check FSM-based attacks first (new system)
+  // Check FSM-based attacks using unified collision system
   if (attacker.stateMachine && attacker.animation) {
     const currentFrame = attacker.animation.currentFrame;
     const animationDef = attacker.animation.animationDefinition;
@@ -40,93 +40,295 @@ function checkHitboxCollision(attacker, target, params) {
 
       // Check if this frame has an attack box (only damage when attack box is active)
       if (frameData.attackBox) {
-        // Use centralized box position calculation from AnimationRenderer
+        // Calculate attack box position accounting for facing direction
+        let attackBoxPos;
         if (window.animationSystem && window.animationSystem.renderer) {
-          const attackBoxPos = window.animationSystem.renderer.calculateBoxPosition(attacker, frameData.attackBox, 'attack');
+          attackBoxPos = window.animationSystem.renderer.calculateBoxPosition(attacker, frameData.attackBox, 'attack');
 
-          // Get target's hit box position (per-frame if available, otherwise static)
-          let targetHitBox;
+          // Adjust attack box position based on facing direction
+          // When facing left, the attack box needs to be mirrored
+          if (attacker.animation && attacker.animation.facingDirection === 'left') {
+            // Calculate the center of the entity for mirroring
+            const entityCenterX = attacker.x + attacker.collisionW / 2;
 
-          // Check if target has per-frame hit box data
-          if (target.animation && target.animation.animationDefinition) {
-            const targetFrame = target.animation.currentFrame;
-            const targetAnimationDef = target.animation.animationDefinition;
-            if (targetAnimationDef.frameData && targetAnimationDef.frameData[targetFrame] && targetAnimationDef.frameData[targetFrame].hitBox) {
-              // Use per-frame hit box data
-              targetHitBox = window.animationSystem.renderer.calculateBoxPosition(target, targetAnimationDef.frameData[targetFrame].hitBox, 'hit');
-            } else {
-              // Use static hit box positioned like animation system
-              const zOffset = target.z * 1.0;
-              const drawX = target.x;
-              const drawY = target.y - target.h - zOffset;
-              targetHitBox = {
-                x: drawX,
-                y: drawY + target.h - (target.collisionH || target.h),
-                width: target.collisionW || target.w,
-                height: target.collisionH || target.h
-              };
-            }
-          } else {
-            // Fallback for entities without animation system - use static collision box
-            const zOffset = target.z * 1.0;
-            const drawX = target.x;
-            const drawY = target.y - target.h - zOffset;
-            targetHitBox = {
-              x: drawX,
-              y: drawY + target.h - (target.collisionH || target.h),
-              width: target.collisionW || target.w,
-              height: target.collisionH || target.h
+            // Mirror the attack box around the entity center
+            const distanceFromCenter = attackBoxPos.x + attackBoxPos.width / 2 - entityCenterX;
+            const mirroredCenterX = entityCenterX - distanceFromCenter;
+
+            attackBoxPos = {
+              x: mirroredCenterX - attackBoxPos.width / 2,
+              y: attackBoxPos.y,
+              width: attackBoxPos.width,
+              height: attackBoxPos.height
             };
           }
-
-          // Check collision between attack box and target's hit box
-          const collisionResult = checkCollision(
-            attackBoxPos.x, attackBoxPos.y, attacker.z,
-            attackBoxPos.width, attackBoxPos.height, attacker.zThickness || 0,
-            targetHitBox.x, targetHitBox.y, target.z,
-            targetHitBox.width, targetHitBox.height, target.zThickness || 0,
-            params.zTolerance || 10
-          );
-
-          // Only log successful hits to reduce spam
-          if (isAttackerAttacking && collisionResult) {
-            console.log(`[COLLISION] HIT DETECTED on frame ${currentFrame}!`);
-            console.log(`[COLLISION] Attack box: x=${attackBoxPos.x.toFixed(1)}, y=${attackBoxPos.y.toFixed(1)}, w=${attackBoxPos.width}, h=${attackBoxPos.height}`);
-            console.log(`[COLLISION] Target hit box: x=${targetHitBox.x.toFixed(1)}, y=${targetHitBox.y.toFixed(1)}, w=${targetHitBox.width}, h=${targetHitBox.height}`);
-          }
-
-          return collisionResult;
         }
+
+        // Get target's hit box position and dimensions (prioritize per-frame data)
+        let targetHitBox;
+        const targetHitBoxData = getCurrentHitBoxDimensions(target);
+
+        if (targetHitBoxData) {
+          // Use per-frame hit box data from animation system
+          targetHitBox = window.animationSystem.renderer.calculateBoxPosition(target, targetHitBoxData, 'hit');
+        } else {
+          // Fallback for entities without per-frame data
+          const zOffset = target.z * 1.0;
+          const drawX = target.x;
+          const drawY = target.y - target.h - zOffset;
+          targetHitBox = {
+            x: drawX,
+            y: drawY + target.h - (target.collisionH || target.h),
+            width: target.collisionW || target.w,
+            height: target.collisionH || target.h
+          };
+        }
+
+        // Use unified collision system for attack collision (no buffer, precise collision)
+        const collisionResult = checkCollisionWithBuffer(
+          attackBoxPos.x, attackBoxPos.y, attacker.z,
+          attackBoxPos.width, attackBoxPos.height, attacker.zThickness || 0,
+          targetHitBox.x, targetHitBox.y, target.z,
+          targetHitBox.width, targetHitBox.height, target.zThickness || 0,
+          params.zTolerance || 10, 0 // No buffer for attacks
+        );
+
+        // Only log successful hits to reduce spam
+        if (isAttackerAttacking && collisionResult) {
+          console.log(`[COLLISION] HIT DETECTED on frame ${currentFrame}!`);
+          console.log(`[COLLISION] Attack box: x=${attackBoxPos.x.toFixed(1)}, y=${attackBoxPos.y.toFixed(1)}, w=${attackBoxPos.width}, h=${attackBoxPos.height}`);
+          console.log(`[COLLISION] Target hit box: x=${targetHitBox.x.toFixed(1)}, y=${targetHitBox.y.toFixed(1)}, w=${targetHitBox.width}, h=${targetHitBox.height}`);
+        }
+
+        return collisionResult;
       }
     }
   }
 
-  // No collision detected
   return false;
 }
 
-function canMoveTo(entity, proposedX, proposedY, proposedZ) {
-  // Използвай game state система или fallback към старата за backwards compatibility
+// ===========================================
+// UNIFIED COLLISION SYSTEM
+// ===========================================
+
+// Helper function to get current per-frame hit box dimensions (for calculateBoxPosition)
+function getCurrentHitBoxDimensions(entity) {
+  if (!entity.animation || !entity.animation.animationDefinition) {
+    return null; // No animation system - use static dimensions
+  }
+
+  const currentFrame = entity.animation.currentFrame;
+  const animationDef = entity.animation.animationDefinition;
+
+  // Check if current animation frame has hit box data
+  if (animationDef.frameData && animationDef.frameData[currentFrame] && animationDef.frameData[currentFrame].hitBox) {
+    return animationDef.frameData[currentFrame].hitBox;
+  }
+
+  return null; // No per-frame data - use static dimensions
+}
+
+// Helper function to get current per-frame hit box position and dimensions (for unified collision)
+function getCurrentHitBoxPosition(entity) {
+  const hitBoxData = getCurrentHitBoxDimensions(entity);
+  if (!hitBoxData) return null;
+
+  // Calculate hit box position the same way as AnimationRenderer
+  const zOffset = entity.z * 1.0;
+  const drawX = entity.x;
+  const drawY = entity.y - entity.h - zOffset;
+
+  let boxX, boxY;
+
+  // Position relative to sprite coordinates (same as AnimationRenderer)
+  boxX = drawX + hitBoxData.x;
+  boxY = drawY + entity.h/2 - hitBoxData.y;
+
+  return {
+    x: boxX,
+    y: boxY,
+    width: hitBoxData.width,
+    height: hitBoxData.height
+  };
+}
+
+// Main unified collision function
+function checkEntityCollision(entity1, entity2, collisionType, params = {}) {
+  const defaults = {
+    zTolerance: collisionType === 'movement' ? 30 : 10,
+    buffer: collisionType === 'movement' ? 5 : 0, // Allow small overlap for movement
+    entity1Pos: { x: entity1.x, y: entity1.y, z: entity1.z }, // Allow custom position for entity1
+    logCollisions: collisionType === 'movement' // Log movement collisions, not attacks
+  };
+
+  const config = { ...defaults, ...params };
+
+  // Get collision dimensions and positions - prioritize per-frame hit boxes over static dimensions
+  const e1HitBox = getCurrentHitBoxPosition(entity1);
+  const e2HitBox = getCurrentHitBoxPosition(entity2);
+
+  // Calculate positions for collision check
+  let e1X, e1Y, e1Z, e1W, e1H;
+  let e2X, e2Y, e2Z, e2W, e2H;
+
+  if (e1HitBox) {
+    // Use per-frame hit box position and dimensions
+    // Adjust hit box position for proposed movement
+    const xOffset = config.entity1Pos.x - entity1.x; // Movement offset
+    const yOffset = config.entity1Pos.y - entity1.y;
+    const zOffset = config.entity1Pos.z - entity1.z;
+
+    e1X = e1HitBox.x + xOffset;
+    e1Y = e1HitBox.y + yOffset;
+    e1Z = config.entity1Pos.z;
+    e1W = e1HitBox.width;
+    e1H = e1HitBox.height;
+  } else {
+    // Use static dimensions
+    e1X = config.entity1Pos.x;
+    e1Y = config.entity1Pos.y;
+    e1Z = config.entity1Pos.z;
+    e1W = entity1.collisionW || entity1.w;
+    e1H = entity1.collisionH || entity1.h;
+  }
+
+  if (e2HitBox) {
+    // Use per-frame hit box for entity2
+    e2X = e2HitBox.x;
+    e2Y = e2HitBox.y;
+    e2Z = entity2.z;
+    e2W = e2HitBox.width;
+    e2H = e2HitBox.height;
+  } else {
+    // Use static dimensions for entity2
+    e2X = entity2.x;
+    e2Y = entity2.y;
+    e2Z = entity2.z;
+    e2W = entity2.collisionW || entity2.w;
+    e2H = entity2.collisionH || entity2.h;
+  }
+
+  // Check collision with buffer for movement
+  const hasCollision = checkCollisionWithBuffer(
+    e1X, e1Y, e1Z, e1W, e1H, entity1.zThickness || 0,
+    e2X, e2Y, e2Z, e2W, e2H, entity2.zThickness || 0,
+    config.zTolerance, config.buffer
+  );
+
+  if (hasCollision && config.logCollisions) {
+    console.log(`[COLLISION] ${collisionType.toUpperCase()} blocked: ${entity1.entityType} vs ${entity2.entityType}`);
+    console.log(`[COLLISION] ${entity1.entityType} at (${e1X.toFixed(1)}, ${e1Y.toFixed(1)}) ${e1W}x${e1H}`);
+    console.log(`[COLLISION] ${entity2.entityType} at (${e2X.toFixed(1)}, ${e2Y.toFixed(1)}) ${e2W}x${e2H}`);
+  }
+
+  return hasCollision;
+}
+
+// Enhanced collision check with buffer support
+function checkCollisionWithBuffer(ax, ay, az, aw, ah, azThickness, tx, ty, tz, tw, th, tzThickness, zTolerance, buffer = 0) {
+  // Z collision check (unchanged)
+  const effectiveZThickness = azThickness + tzThickness;
+  const dz = Math.abs(az - tz);
+  if (dz > effectiveZThickness + zTolerance) return false;
+
+  // X/Y collision with buffer
+  const ax1 = ax + buffer; // Shrink entity1 box by buffer
+  const ay1 = ay + buffer;
+  const ax2 = ax + aw - buffer;
+  const ay2 = ay + ah - buffer;
+
+  const bx1 = tx;
+  const by1 = ty;
+  const bx2 = tx + tw;
+  const by2 = ty + th;
+
+  const overlap = ax1 < bx2 && ax2 > bx1 && ay1 < by2 && ay2 > by1;
+  return overlap;
+}
+
+// Collision correction function - allows animations but corrects position
+function applyCollisionCorrection(entity, proposedX, proposedY, proposedZ, axis) {
+  // Get all other entities
   const allEntities = window.gameState ? window.gameState.getAllEntities() :
                      [...players, window.enemy, window.ally].filter(e => e !== null && e !== undefined);
-
-  // Филтрирай само други елементи (не текущия)
   const others = allEntities.filter(e => e !== entity && e !== null && e !== undefined);
 
-  // Use collision dimensions for player, visual dimensions for others
-  const entityW = entity.collisionW || entity.w;
-  const entityH = entity.collisionH || entity.h;
-
+  // Check collision with each other entity
   for (const other of others) {
-    // Use collision dimensions for other player entities too
-    const otherW = other.collisionW || other.w;
-    const otherH = other.collisionH || other.h;
+    const hasCollision = checkEntityCollision(
+      entity, other, 'movement',
+      {
+        entity1Pos: { x: proposedX, y: proposedY, z: proposedZ },
+        buffer: 0 // No buffer for precise collision correction
+      }
+    );
 
-    if (checkCollision(proposedX, proposedY, proposedZ, entityW, entityH, entity.zThickness || 0,
-                      other.x, other.y, other.z, otherW, otherH, other.zThickness || 0,
-                      30)) {  // zTolerance for movement
-      return false; // Има колизия - не може да се движи
+    if (hasCollision) {
+      console.log(`[COLLISION CORRECTION] ${entity.entityType} correcting position on ${axis}-axis`);
+
+      // Calculate correction based on collision direction
+      if (axis === 'x') {
+        // For X-axis collision, find the closest valid position
+        const entityHitBox = getCurrentHitBoxPosition(entity);
+        const otherHitBox = getCurrentHitBoxPosition(other);
+
+        if (entityHitBox && otherHitBox) {
+          // Calculate the proposed hit box position
+          const proposedOffset = proposedX - entity.x;
+          const proposedHitBoxX = entityHitBox.x + proposedOffset;
+
+          // Determine which side of the collision we should correct to
+          const proposedCenter = proposedHitBoxX + entityHitBox.width / 2;
+          const otherCenter = otherHitBox.x + otherHitBox.width / 2;
+
+          if (proposedCenter < otherCenter) {
+            // Proposed position is to the left, correct to the left edge of other
+            const correctedHitBoxX = otherHitBox.x - entityHitBox.width;
+            const correctedEntityX = entity.x + (correctedHitBoxX - entityHitBox.x);
+            console.log(`[COLLISION CORRECTION] Left collision: correcting X from ${proposedX.toFixed(1)} to ${correctedEntityX.toFixed(1)}`);
+            return correctedEntityX;
+          } else {
+            // Proposed position is to the right, correct to the right edge of other
+            const correctedHitBoxX = otherHitBox.x + otherHitBox.width;
+            const correctedEntityX = entity.x + (correctedHitBoxX - entityHitBox.x);
+            console.log(`[COLLISION CORRECTION] Right collision: correcting X from ${proposedX.toFixed(1)} to ${correctedEntityX.toFixed(1)}`);
+            return correctedEntityX;
+          }
+        }
+      }
+
+      // For now, return current position if we can't determine correction
+      console.log(`[COLLISION CORRECTION] Returning current position (correction failed)`);
+      return entity.x;
     }
   }
-  return true; // Няма колизия - може да се движи
+
+  // No collision, return proposed position
+  return proposedX;
+}
+
+// Legacy movement collision function (now uses unified system)
+function canMoveTo(entity, proposedX, proposedY, proposedZ) {
+  // Get all other entities
+  const allEntities = window.gameState ? window.gameState.getAllEntities() :
+                     [...players, window.enemy, window.ally].filter(e => e !== null && e !== undefined);
+  const others = allEntities.filter(e => e !== entity && e !== null && e !== undefined);
+
+  // Check collision with each other entity using unified system
+  for (const other of others) {
+    const hasCollision = checkEntityCollision(
+      entity, other, 'movement',
+      {
+        entity1Pos: { x: proposedX, y: proposedY, z: proposedZ },
+        buffer: 2 // Small buffer for smoother movement
+      }
+    );
+
+    if (hasCollision) {
+      return false; // Movement blocked
+    }
+  }
+
+  return true; // Movement allowed
 }

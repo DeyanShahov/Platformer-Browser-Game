@@ -436,11 +436,10 @@ function handleMovement(player, dt) {
     return; // Skip movement processing during attacks
   }
 
-  // Check X movement collision
+  // Check X movement collision with correction instead of blocking
   const proposedX = player.x + player.vx * dt;
-  if (!canMoveTo(player, proposedX, player.y, player.z)) {
-    player.vx = 0;
-  }
+  const correctedX = applyCollisionCorrection(player, proposedX, player.y, player.z, 'x');
+  player.x = correctedX;
 
   // Опит за движение по Z
   const proposedZ = player.z + player.vz * dt;
