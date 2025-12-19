@@ -263,6 +263,50 @@ const ANIMATION_DEFINITIONS = {
       loop: false,
       keyframe: 'static-1-frame'
     },
+    [ANIMATION_TYPES.ATTACK_3]: {
+      spriteSheet: './Knight_1/Attack 3.png',
+      frames: 4,
+      frameWidth: 120,    // How much to take from each frame start (collision box width)
+      frameHeight: 128,
+      frameStarts: [0, 128, 256, 384], // Original frame start positions (4 frames)
+      duration: 0.8,     // Sum of frameDurations
+      frameDurations: [0.15, 0.15, 0.15, 0.35], // Frame 4 shows for 0.35 seconds
+      // Per-frame collision data
+      frameData: [
+        // Frame 0 - Wind up (body centered)
+        {
+          hitBox: { x: 140, y: 0, width: 120, height: 260 }, // Character body from ground up
+          attackBox: null
+        },
+        // Frame 1 - Swing start (body shifted slightly)
+        {
+          hitBox: { x: 140, y: 0, width: 120, height: 260 },
+          attackBox: null
+        },
+        // Frame 2 - Swing middle (body more shifted) - Attack frame
+        {
+          hitBox: { x: 140, y: 0, width: 120, height: 260 },
+          attackBox: {
+            x: -240,           // Offset from entity.x + entity.w
+            yRatio: 0.5,     // Y offset as ratio of entity.h - positioned lower to hit enemies
+            width: 240,       // Width of attack area
+            heightRatio: 0.52 // Height as ratio of entity.h - smaller height for better precision
+          }
+        },
+        // Frame 3 - Impact (character in final pose) - Attack frame
+        {
+          hitBox: { x: 140, y: 0, width: 120, height: 260 }, // Slightly larger than enemy rectangle
+          attackBox: {
+            x: -240,           // Offset from entity.x + entity.w
+            yRatio: 0.5,     // Y offset as ratio of entity.h - positioned lower to hit enemies
+            width: 240,       // Width of attack area
+            heightRatio: 0.52 // Height as ratio of entity.h - smaller height for better precision
+          }
+        }
+      ],
+      loop: false,
+      keyframe: 'static-1-frame'
+    },
     [ANIMATION_TYPES.RUN_ATTACK]: {
       spriteSheet: null,
       frames: 1,

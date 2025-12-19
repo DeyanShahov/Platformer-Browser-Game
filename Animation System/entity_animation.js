@@ -231,7 +231,7 @@ class EntityAnimation {
           newAnimation = window.ANIMATION_TYPES?.ATTACK_1;
           break;
         case window.SKILL_TYPES?.BASIC_ATTACK_MEDIUM:
-          //newAnimation = window.ANIMATION_TYPES?.ATTACK_2;
+          newAnimation = window.ANIMATION_TYPES?.ATTACK_3;
           break;
         case window.SKILL_TYPES?.BASIC_ATTACK_HEAVY:
           //newAnimation = window.ANIMATION_TYPES?.ATTACK_3;

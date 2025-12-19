@@ -304,7 +304,7 @@ class AttackMediumState extends AnimationState {
 
   enter(entity) {
     super.enter(entity);
-    entity.animation.setAnimation(window.ANIMATION_TYPES.ATTACK_2, true);
+    entity.animation.setAnimation(window.ANIMATION_TYPES.ATTACK_3, true);
     // Reset damage flag when starting attack
     entity.damageDealt = false;
   }

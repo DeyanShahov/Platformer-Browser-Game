@@ -223,7 +223,7 @@ class AnimationSystem {
         animationType = window.ANIMATION_TYPES?.ATTACK_1;
         break;
       case window.SKILL_TYPES?.BASIC_ATTACK_MEDIUM:
-        //animationType = window.ANIMATION_TYPES?.ATTACK_2;
+        animationType = window.ANIMATION_TYPES?.ATTACK_3;
         break;
       case window.SKILL_TYPES?.BASIC_ATTACK_HEAVY:
         //animationType = window.ANIMATION_TYPES?.ATTACK_3;

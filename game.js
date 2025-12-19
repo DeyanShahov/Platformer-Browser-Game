@@ -151,10 +151,10 @@ function handleKeyboardInput(player) {
     logAction(0, 'клавиатура', controls.basicAttackMedium.toUpperCase(), 'attack_medium');
     player.stateMachine.handleAction('attack_medium');
   }
-  if (keys[controls.basicAttackHeavy] && player.stateMachine && !player.stateMachine.isInAttackState()) {
-    logAction(0, 'клавиатура', controls.basicAttackHeavy.toUpperCase(), 'attack_heavy');
-    player.stateMachine.handleAction('attack_heavy');
-  }
+  // if (keys[controls.basicAttackHeavy] && player.stateMachine && !player.stateMachine.isInAttackState()) {
+  //   logAction(0, 'клавиатура', controls.basicAttackHeavy.toUpperCase(), 'attack_heavy');
+  //   player.stateMachine.handleAction('attack_heavy');
+  // }
 
   // Допълнителни атаки - FSM-based (when implemented)
   // For now, secondary attacks use the same as primary
@@ -162,14 +162,14 @@ function handleKeyboardInput(player) {
     logAction(0, 'клавиатура', controls.secondaryAttackLight.toUpperCase(), 'attack_light');
     player.stateMachine.handleAction('secondary_attack_light');
   }
-  if (keys[controls.secondaryAttackMedium] && player.stateMachine && !player.stateMachine.isInAttackState()) {
-    logAction(0, 'клавиатура', controls.secondaryAttackMedium.toUpperCase(), 'attack_medium');
-    player.stateMachine.handleAction('secondary_attack_medium');
-  }
-  if (keys[controls.secondaryAttackHeavy] && player.stateMachine && !player.stateMachine.isInAttackState()) {
-    logAction(0, 'клавиатура', controls.secondaryAttackHeavy.toUpperCase(), 'attack_heavy');
-    player.stateMachine.handleAction('secondary_attack_heavy');
-  }
+  // if (keys[controls.secondaryAttackMedium] && player.stateMachine && !player.stateMachine.isInAttackState()) {
+  //   logAction(0, 'клавиатура', controls.secondaryAttackMedium.toUpperCase(), 'attack_medium');
+  //   player.stateMachine.handleAction('secondary_attack_medium');
+  // }
+  // if (keys[controls.secondaryAttackHeavy] && player.stateMachine && !player.stateMachine.isInAttackState()) {
+  //   logAction(0, 'клавиатура', controls.secondaryAttackHeavy.toUpperCase(), 'attack_heavy');
+  //   player.stateMachine.handleAction('secondary_attack_heavy');
+  // }
 }
 
   // MOVED TO update() function below
