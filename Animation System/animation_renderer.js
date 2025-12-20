@@ -124,7 +124,7 @@ class AnimationRenderer {
       if (animationDef.frameData && animationDef.frameData[currentFrame]?.attackBox) {
         const attackBoxPos = this.calculateBoxPosition(entity, animationDef.frameData[currentFrame].attackBox, 'attack');
 
-        console.log(`[RENDER DEBUG] Attack box for ${entity.id}: x=${attackBoxPos.x.toFixed(1)}, y=${attackBoxPos.y.toFixed(1)}, w=${attackBoxPos.width}, h=${attackBoxPos.height}`);
+        //console.log(`[RENDER DEBUG] Attack box for ${entity.id}: x=${attackBoxPos.x.toFixed(1)}, y=${attackBoxPos.y.toFixed(1)}, w=${attackBoxPos.width}, h=${attackBoxPos.height}`);
 
         // Red outline for attack box
         this.ctx.strokeStyle = "#FF0000";

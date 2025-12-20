@@ -74,7 +74,9 @@ class IdleState extends AnimationState {
 
   enter(entity) {
     super.enter(entity);
-    entity.animation.setAnimation(window.ANIMATION_TYPES.IDLE, true); // Force animation
+    entity.animation.setAnimation(window.ANIMATION_TYPES.IDLE, true);
+    // Always reset damage dealt flag when entering idle (finished attacking)
+    entity.damageDealt = false;
   }
 
   update(entity, dt) {
@@ -180,29 +182,28 @@ class RunningState extends AnimationState {
       return null;
     }
 
-    // Transition to walking if speed drops
-    const speed = this.getMovementSpeed(entity);
-    const runThreshold = window.SPEED * 0.7;
+    // Check if animation has completed
+    if (entity.animation && entity.animation.animationTime >= entity.animation.animationDefinition.duration) {
+      console.log(`[DEBUG FREEZE] Animation completed for ATTACK_3!`);
+      console.log(`[DEBUG FREEZE] damageDealt was: ${entity.damageDealt}, setting to false`);
 
-    if (speed < runThreshold) {
-      if (this.hasMovementInput(entity)) {
-        return 'walking';
-      } else {
-        return 'idle';
+      // Reset damage dealt flag for next attacks
+      entity.damageDealt = false;
+
+      const hasMovement = this.hasMovementInput(entity);
+      console.log(`[DEBUG FREEZE] hasMovementInput: ${hasMovement}, vx: ${entity.vx}, vz: ${entity.vz}`);
+
+      const nextState = hasMovement ? 'walking' : 'idle';
+      console.log(`[DEBUG FREEZE] Attempting transition to: ${nextState}`);
+
+      return nextState; // This should transition FSM out of attack state
+    } else {
+      // Debug animation progress (only log occasionally to avoid spam)
+      if (Math.random() < 0.1) { // 10% chance to log
+        const progress = entity.animation ? (entity.animation.animationTime / entity.animation.animationDefinition.duration * 100).toFixed(1) : 0;
+        console.log(`[DEBUG ATTACK_3] Animation progress: ${progress}%`);
       }
     }
-  }
-
-  handleAction(entity, actionType) {
-    switch (actionType) {
-      case 'jump':
-        return 'jumping';
-      case 'attack_light':
-      case 'attack_medium':
-      case 'attack_heavy':
-        return 'run_attack'; // Running attacks are special
-    }
-    return null;
   }
 }
 
@@ -263,6 +264,8 @@ class AttackLightState extends AnimationState {
 
     // Check if animation has completed (played full duration)
     if (entity.animation && entity.animation.animationTime >= entity.animation.animationDefinition.duration) {
+      // Reset damage dealt flag for next attacks
+      entity.damageDealt = false;
       console.log(`[FSM] Attack light completed (duration: ${entity.animation.animationDefinition.duration}s), returning to movement`);
       // Return to appropriate movement state
       if (this.hasMovementInput(entity)) {
@@ -304,9 +307,26 @@ class AttackMediumState extends AnimationState {
 
   enter(entity) {
     super.enter(entity);
-    entity.animation.setAnimation(window.ANIMATION_TYPES.ATTACK_3, true);
-    // Reset damage flag when starting attack
-    entity.damageDealt = false;
+    try {
+      console.log(`[DEBUG ATTACK_3] AttackMediumState enter - setting ATTACK_3 animation`);
+      entity.animation.setAnimation(window.ANIMATION_TYPES.ATTACK_3, true);
+
+      console.log(`[DEBUG ATTACK_3] AttackMediumState enter - damageDealt was: ${entity.damageDealt}`);
+      entity.damageDealt = false;
+      console.log(`[DEBUG ATTACK_3] AttackMediumState enter - damageDealt set to: false`);
+
+      console.log(`[DEBUG ATTACK_3] AttackMediumState enter - consuming resources`);
+      if (entity.entityType !== 'enemy') {
+        const resourceManager = window.getResourceManager(entity);
+        resourceManager.consumeSkillResources('basic_attack_medium');
+        console.log(`[DEBUG ATTACK_3] AttackMediumState enter - resources consumed successfully`);
+      }
+
+      console.log(`[DEBUG ATTACK_3] AttackMediumState enter completed successfully`);
+    } catch (error) {
+      console.error(`[DEBUG ATTACK_3] Error in AttackMediumState.enter:`, error);
+      console.error(`[DEBUG ATTACK_3] Error stack:`, error.stack);
+    }
   }
 
   update(entity, dt) {
@@ -316,13 +336,36 @@ class AttackMediumState extends AnimationState {
       return null;
     }
 
-    // Check if animation has completed
-    if (entity.animation && entity.animation.animationTime >= entity.animation.animationDefinition.duration) {
-      if (this.hasMovementInput(entity)) {
-        return 'walking';
+    console.log(`[DEBUG UPDATE] AttackMediumState.update called`);
+    console.log(`[DEBUG UPDATE] entity.animation exists: ${!!entity.animation}`);
+
+    if (entity.animation) {
+      console.log(`[DEBUG UPDATE] animationTime: ${entity.animation.animationTime}`);
+      console.log(`[DEBUG UPDATE] duration: ${entity.animation.animationDefinition?.duration}`);
+      const completed = entity.animation.animationTime >= entity.animation.animationDefinition.duration;
+      console.log(`[DEBUG UPDATE] animation completed: ${completed}`);
+
+      // Check if animation has completed
+      if (completed) {
+        console.log(`[DEBUG ATTACK_3] Animation completed! damageDealt reset to false`);
+        // Reset damage dealt flag for next attacks
+        entity.damageDealt = false;
+
+        const hasMovement = this.hasMovementInput(entity);
+        console.log(`[DEBUG ATTACK_3] hasMovementInput: ${hasMovement}, vx: ${entity.vx}, vz: ${entity.vz}`);
+
+        if (hasMovement) {
+          console.log(`[DEBUG ATTACK_3] Transitioning to: walking`);
+          return 'walking';
+        } else {
+          console.log(`[DEBUG ATTACK_3] Transitioning to: idle`);
+          return 'idle';
+        }
       } else {
-        return 'idle';
+        console.log(`[DEBUG UPDATE] Animation not completed yet`);
       }
+    } else {
+      console.log(`[DEBUG UPDATE] No entity.animation - cannot check completion`);
     }
   }
 
@@ -363,6 +406,9 @@ class AttackHeavyState extends AnimationState {
 
     // Check if animation has completed
     if (entity.animation && entity.animation.animationTime >= entity.animation.animationDefinition.duration) {
+      // Reset damage dealt flag for next attacks
+      entity.damageDealt = false;
+
       if (this.hasMovementInput(entity)) {
         return 'walking';
       } else {
@@ -406,6 +452,9 @@ class SecondaryAttackLightState extends AnimationState {
     }
 
     if (entity.animation && entity.animation.animationTime >= entity.animation.animationDefinition.duration) {
+      // Reset damage dealt flag for next attacks
+      entity.damageDealt = false;
+
       if (this.hasMovementInput(entity)) {
         return 'walking';
       } else {
@@ -446,6 +495,9 @@ class SecondaryAttackMediumState extends AnimationState {
     }
 
     if (entity.animation && entity.animation.animationTime >= entity.animation.animationDefinition.duration) {
+      // Reset damage dealt flag for next attacks
+      entity.damageDealt = false;
+
       if (this.hasMovementInput(entity)) {
         return 'walking';
       } else {
@@ -486,6 +538,9 @@ class SecondaryAttackHeavyState extends AnimationState {
     }
 
     if (entity.animation && entity.animation.animationTime >= entity.animation.animationDefinition.duration) {
+      // Reset damage dealt flag for next attacks
+      entity.damageDealt = false;
+
       if (this.hasMovementInput(entity)) {
         return 'walking';
       } else {
@@ -526,6 +581,9 @@ class RunAttackState extends AnimationState {
     }
 
     if (entity.animation && entity.animation.animationTime >= entity.animation.animationDefinition.duration) {
+      // Reset damage dealt flag for next attacks
+      entity.damageDealt = false;
+
       const speed = this.getMovementSpeed(entity);
       const runThreshold = window.SPEED * 0.7;
 

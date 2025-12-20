@@ -4,6 +4,97 @@
 
 Този документ описва стъпка по стъпка процедурата за добавяне на нова анимация към съществуващ skill в играта. Процедурата е създадена въз основа на опита с добавянето на ATTACK_2 анимацията към SECONDARY_ATTACK_LIGHT skill.
 
+## Animation Completion Systems
+
+Играта използва две системи за определяне кога анимация е завършила и FSM трябва да transition-ва към следващо състояние. Изборът на система зависи от типа анимация.
+
+### Frame-Based Completion (За Attack Анимации)
+
+**Използва се за:** Всички attack анимации (ATTACK_1, ATTACK_2, ATTACK_3, RUN_ATTACK)
+
+**Принцип:** Анимацията завършва когато текущият кадър достигне последния кадър от анимацията.
+
+**Предимства:**
+- Надеждно - няма floating point precision проблеми
+- Консистентно с визуалната анимация
+- Лесно за debug и тестване
+
+**Имплементация:**
+```javascript
+update(entity, dt) {
+  // ... skip justEntered check
+
+  // Check if animation has completed (frame-based)
+  const currentFrame = entity.animation ? entity.animation.currentFrame : 0;
+  const totalFrames = entity.animation?.animationDefinition?.frames || 0;
+
+  if (currentFrame >= totalFrames - 1) { // Последен кадър (0-indexed)
+    // Reset damage dealt flag
+    entity.damageDealt = false;
+
+    // Transition to movement state
+    if (this.hasMovementInput(entity)) {
+      return 'walking';
+    } else {
+      return 'idle';
+    }
+  }
+}
+```
+
+**Пример:** ATTACK_3 има 4 кадъра, completion се случва на `currentFrame >= 3` (кадър 3 е последен).
+
+### Physics-Based Completion (За Movement Анимации)
+
+**Използва се за:** Jumping анимации и други physics-driven анимации
+
+**Принцип:** Анимацията завършва когато physics условие е изпълнено (незавимо от време или кадри).
+
+**Предимства:**
+- Physics-driven логика
+- Може да продължи по-дълго от анимацията ако е необходимо
+- Реалистично поведение
+
+**Имплементация:**
+```javascript
+update(entity, dt) {
+  // Check physics condition
+  if (entity.onGround) { // Landing detection
+    // Transition to movement state
+    if (this.hasMovementInput(entity)) {
+      return 'walking';
+    } else {
+      return 'idle';
+    }
+  }
+}
+```
+
+**Пример:** Jumping анимация продължава докато `entity.onGround` стане `true`, дори ако анимацията е свършила визуално.
+
+### ❌ Time-Based Completion (Deprecated)
+
+**НЕ ИЗПОЛЗВАЙТЕ!**
+
+**Принцип:** Анимацията завършва когато `animationTime >= duration`
+
+**Проблеми:**
+- Floating point precision errors (0.799999999 >= 0.8 → false)
+- Играта може да замръзне на последния кадър
+- Ненадеждно поведение
+
+```javascript
+// НЕ ИЗПОЛЗВАЙТЕ ТОВА!
+if (entity.animation.animationTime >= entity.animation.animationDefinition.duration) {
+  // Risk of floating point precision bugs
+}
+```
+
+**Кога коя система да използвате:**
+- **Frame-Based:** За attack анимации с фиксиран брой кадри
+- **Physics-Based:** За movement анимации зависещи от physics състояние
+- **Time-Based:** Никога (deprecated поради floating point проблеми)
+
 ## Предварителни Изисквания
 
 ### 1. Анимационни файлове
@@ -326,13 +417,13 @@ window.animationSystem.toggleDebug(); // Show animation info
 
 ## Примери
 
-### Добавяне на ATTACK_3 анимация към BASIC_ATTACK_HEAVY:
+### Добавяне на ATTACK_3 анимация към BASIC_ATTACK_MEDIUM:
 
 1. **animation_data.js**: Добавете `ATTACK_3` дефиниция
-2. **FSM**: `AttackHeavyState` вече съществува и използва `ATTACK_3`
-3. **Animation System**: Добавете case за `BASIC_ATTACK_HEAVY`
-4. **Entity Animation**: Добавете case за `BASIC_ATTACK_HEAVY`
-5. **Game.js**: W бутонът вече е map-нат към `attack_heavy`
+2. **FSM**: `AttackMediumState` вече съществува и използва `ATTACK_3`
+3. **Animation System**: Добавете case за `BASIC_ATTACK_MEDIUM`
+4. **Entity Animation**: Добавете case за `BASIC_ATTACK_MEDIUM`
+5. **Game.js**: W бутонът вече е map-нат към `attack_medium`
 
 ### Добавяне на нова анимация към нов skill:
 

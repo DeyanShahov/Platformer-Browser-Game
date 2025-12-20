@@ -58,7 +58,7 @@ function updatePlayer(player, playerIndex, dt) {
         if (currentAttackType) {
           console.log(`[ATTACK] Resolving attack with combat system...`);
           console.log(`[ATTACK] Enemy health before attack: ${enemy.health}`);
-          const combatEvent = window.combatResolver.resolveAttack(player, enemy, currentAttackType);
+          const combatEvent = window.combatResolver.resolveAttackNoResourceCheck(player, enemy, currentAttackType);
           console.log(`[ATTACK] Combat event result:`, combatEvent);
           console.log(`[ATTACK] Enemy health after attack: ${enemy.health}`);
           console.log(`[ATTACK] Damage dealt: ${combatEvent?.actualDamage || 0}`);
@@ -148,8 +148,14 @@ function handleKeyboardInput(player) {
     player.stateMachine.handleAction('attack_light');
   }
   if (keys[controls.basicAttackMedium] && player.stateMachine && !player.stateMachine.isInAttackState()) {
-    logAction(0, 'клавиатура', controls.basicAttackMedium.toUpperCase(), 'attack_medium');
-    player.stateMachine.handleAction('attack_medium');
+    // Check if player can perform skill (resources, etc.) - centralized in combat_system.js
+    if (window.combatResolver.canPlayerPerformSkill(player, 'basic_attack_medium')) {
+      logAction(0, 'клавиатура', controls.basicAttackMedium.toUpperCase(), 'attack_medium');
+      player.stateMachine.handleAction('attack_medium');
+    } else {
+      console.log('[INPUT] Cannot perform basic_attack_medium (not enough resources?)');
+      // TODO: Show "not enough mana" feedback to player
+    }
   }
   // if (keys[controls.basicAttackHeavy] && player.stateMachine && !player.stateMachine.isInAttackState()) {
   //   logAction(0, 'клавиатура', controls.basicAttackHeavy.toUpperCase(), 'attack_heavy');
@@ -758,6 +764,13 @@ function loop(ts) {
   // Update enemy combat manager (attack cooldowns)
   if (window.enemyCombatManager) {
     window.enemyCombatManager.updateCooldowns(dt);
+  }
+
+  // Update resource regeneration for all entities
+  if (window.resourceManagers) {
+    for (const [entity, resourceManager] of window.resourceManagers) {
+      resourceManager.updateRegeneration(dt);
+    }
   }
 
   requestAnimationFrame(loop);

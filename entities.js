@@ -26,8 +26,12 @@ class Player {
     this.health = this.maxHealth;
     this.maxEnergy = 50;
     this.energy = this.maxEnergy;
-    this.maxMana = 30;
-    this.mana = this.maxMana;
+    this.maxMana = 300;
+    this.mana = this.maxMana; // ← Вече е добавено
+
+    // Initialize characterInfo resources to match player resources
+    this.characterInfo.mana = this.mana;
+    this.characterInfo.energy = this.energy;
 
     // Combat stats (synchronized with characterInfo, can be modified by passive skills)
     this.baseAttack = this.characterInfo.baseAttack;

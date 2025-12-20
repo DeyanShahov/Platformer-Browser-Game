@@ -131,7 +131,7 @@ const SKILL_TREE = {
     rangeType: RANGE_TYPES.MELEE,          // melee/range
     targetType: TARGET_TYPES.SINGLE_TARGET, // singletarget/aoe
     // Timing properties (data-driven instead of constants)
-    executionTime: 0.15,         // ⏱️ Време за изпълнение в секунди
+    executionTime: 0.8,         // ⏱️ Време за изпълнение в секунди
     cooldownTime: 0.5,           // 🔄 Време за презареждане в секунди
     // Additional properties for micro skill modifications
     executionTimeModifier: 1.0,   // Модифицира се от микро скилове за скорост
@@ -189,7 +189,7 @@ const SKILL_TREE = {
     rangeType: RANGE_TYPES.MELEE,          // melee/range
     targetType: TARGET_TYPES.SINGLE_TARGET, // singletarget/aoe
     // Timing properties (data-driven instead of constants)
-    executionTime: 0.3,          // ⏱️ Време за изпълнение в секунди
+    executionTime: 0.8,          // ⏱️ Време за изпълнение в секунди
     cooldownTime: 1.0,           // 🔄 Време за презареждане в секунди
     unlocked: false,
     prerequisites: [
@@ -205,8 +205,8 @@ const SKILL_TREE = {
     levelEffects: [
       { description: 'Отключва средна основна атака' } // Effect when unlocked
     ],
-    resourceType: RESOURCE_TYPES.MANA,
-    resourceCost: 10,
+    resourceType: RESOURCE_TYPES.NONE,
+    resourceCost: 0,
     iconRow: 5,
     iconCol: 5,
     // Micro skill tree for specializations
@@ -265,7 +265,7 @@ const SKILL_TREE = {
     rangeType: RANGE_TYPES.MELEE,          // melee/range
     targetType: TARGET_TYPES.SINGLE_TARGET, // singletarget/aoe
     // Timing properties (data-driven instead of constants)
-    executionTime: 0.2,          // ⏱️ Време за изпълнение в секунди
+    executionTime: 0.6,          // ⏱️ Време за изпълнение в секунди
     cooldownTime: 0.8,           // 🔄 Време за презареждане в секунди
     unlocked: true, // Always available
     prerequisites: [],

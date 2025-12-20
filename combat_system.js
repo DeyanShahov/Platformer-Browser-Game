@@ -63,22 +63,26 @@ class CombatCalculator {
     const attackPower = this.calculateAttackPower(attacker, skillType);
     const defense = this.calculateDefense(defender);
 
-    // Get skill info for damage modifier
-    const skillInfo = window.skillTreeManager ? window.skillTreeManager.getSkillInfo(skillType) : null;
-    const skillModifier = skillInfo ? skillInfo.damageModifier || 0 : 0;
+      // Get skill info for damage modifier
+      const skillInfo = window.skillTreeManager ? window.skillTreeManager.getSkillInfo(skillType) : null;
+      if (skillType === 'basic_attack_medium') {
+        console.log(`[DEBUG ATTACK_3] Skill tree manager lookup for ${skillType}:`, window.skillTreeManager ? 'EXISTS' : 'NULL');
+        console.log(`[DEBUG ATTACK_3] Skill info for ${skillType}:`, skillInfo);
+      }
+      const skillModifier = skillInfo ? skillInfo.damageModifier || 0 : 0;
 
-    console.log(`[DAMAGE CALC] Attacker: ${attacker.characterInfo?.getDisplayName() || 'Unknown'}, Skill: ${skillType}`);
-    console.log(`[DAMAGE CALC] Attack Power: ${attackPower}, Defense: ${defense}, Skill Modifier: ${skillModifier}`);
+    // console.log(`[DAMAGE CALC] Attacker: ${attacker.characterInfo?.getDisplayName() || 'Unknown'}, Skill: ${skillType}`);
+    // console.log(`[DAMAGE CALC] Attack Power: ${attackPower}, Defense: ${defense}, Skill Modifier: ${skillModifier}`);
 
     // Base damage = attack - defense (minimum 0)
     let damage = Math.max(0, attackPower - defense);
-    console.log(`[DAMAGE CALC] Base damage (attack-defense): ${damage}`);
+    // console.log(`[DAMAGE CALC] Base damage (attack-defense): ${damage}`);
 
     // Apply skill modifier as damage multiplier (not added to attack power)
     if (skillModifier > 0) {
       const originalDamage = damage;
       damage *= (1 + skillModifier); // skillModifier is percentage (e.g., 0.2 = +20%)
-      console.log(`[DAMAGE CALC] After skill modifier ${(skillModifier*100).toFixed(1)}%: ${originalDamage} → ${damage}`);
+      // console.log(`[DAMAGE CALC] After skill modifier ${(skillModifier*100).toFixed(1)}%: ${originalDamage} → ${damage}`);
     }
 
     // Critical hit check
@@ -86,10 +90,10 @@ class CombatCalculator {
     if (isCritical) {
       const originalDamage = damage;
       damage *= 2; // Double damage on crit
-      console.log(`[DAMAGE CALC] CRITICAL HIT: ${originalDamage} → ${damage}`);
+      // console.log(`[DAMAGE CALC] CRITICAL HIT: ${originalDamage} → ${damage}`);
     }
 
-    console.log(`[DAMAGE CALC] Final damage: ${damage}`);
+    // console.log(`[DAMAGE CALC] Final damage: ${damage}`);
 
     return {
       damage: damage,
@@ -219,17 +223,44 @@ class CombatResolver {
     this.maxLogEntries = 50;
   }
 
-  // Resolve an attack from attacker to defender
+  // Check if player can perform a skill (resources, cooldowns, etc.) - without consuming
+  canPlayerPerformSkill(player, skillType) {
+    // Skip for enemies
+    if (player.entityType === 'enemy') return true;
+
+    // Check resources
+    return this.canAffordSkill(player, skillType);
+  }
+
+  // Resolve an attack from attacker to defender (with resource consumption)
   resolveAttack(attacker, defender, skillType) {
+    return this.resolveAttackInternal(attacker, defender, skillType, true);
+  }
+
+  // Resolve an attack without resource consumption (for cases where resources were already checked)
+  resolveAttackNoResourceCheck(attacker, defender, skillType) {
+    return this.resolveAttackInternal(attacker, defender, skillType, false);
+  }
+
+  // Internal attack resolution
+  resolveAttackInternal(attacker, defender, skillType, consumeResources = true) {
     if (!defender) {
       console.warn('No defender for attack resolution');
       return null;
     }
 
-    // Check and consume resources for the skill
-    if (!this.checkAndConsumeSkillResources(attacker, skillType)) {
-      console.log(`[COMBAT] ${attacker.characterInfo?.getDisplayName() || 'Attacker'} doesn't have enough resources for ${skillType}`);
-      return null; // Attack failed due to insufficient resources
+    // For player attacks, consume resources at the start (not just when hitting)
+    // For enemy attacks, consume resources only when hitting (consumeResources = true)
+    if (consumeResources && attacker.entityType !== 'enemy') {
+      // Player attacks consume resources at the start of the attack animation
+      if (!this.checkAndConsumeSkillResources(attacker, skillType)) {
+        return null; // Attack failed due to insufficient resources
+      }
+    } else if (consumeResources && attacker.entityType === 'enemy') {
+      // Enemy attacks consume resources when hitting (legacy behavior)
+      if (!this.checkAndConsumeSkillResources(attacker, skillType)) {
+        return null; // Attack failed due to insufficient resources
+      }
     }
 
     // Check accuracy and dodge
@@ -474,67 +505,49 @@ class CombatResolver {
     return false; // Enemy still dying
   }
 
-  // Check and consume skill resources
-  checkAndConsumeSkillResources(attacker, skillType) {
-    // Skip resource check for enemies or basic attacks
-    if (attacker.entityType === 'enemy' || skillType === 'enemy_attack') {
-      return true;
-    }
-
-    // Get skill info
+  // Check if attacker can afford skill (without consuming)
+  canAffordSkill(attacker, skillType) {
+    const resourceManager = window.getResourceManager(attacker);
     const skillInfo = window.skillTreeManager ? window.skillTreeManager.getSkillInfo(skillType) : null;
     if (!skillInfo) {
-      console.warn(`[COMBAT] No skill info found for ${skillType}`);
-      return true; // Allow attack if skill not found (for backwards compatibility)
+      console.warn(`[COMBAT] No skill info for ${skillType}`);
+      return true; // Allow if skill not found
     }
 
-    // Check resource requirements
     const resourceType = skillInfo.resourceType;
     const resourceCost = skillInfo.resourceCost || 0;
 
-    // Skip if no resource cost
     if (!resourceType || resourceCost <= 0) {
-      return true;
+      return true; // No cost required
     }
 
-    // Check if attacker has character info (players have resources)
-    if (!attacker.characterInfo) {
-      console.warn(`[COMBAT] Attacker has no characterInfo for resource check:`, attacker);
-      return false;
-    }
-
-    // Get current resource amount
-    let currentResource = 0;
+    // Convert resource type to ResourceManager constants
+    let rmResourceType;
     switch (resourceType) {
-      case RESOURCE_TYPES.MANA:
-        currentResource = attacker.characterInfo.mana || 0;
+      case 'mana':
+        rmResourceType = resourceManager.RESOURCE_TYPES.MANA;
         break;
-      case RESOURCE_TYPES.ENERGY:
-        currentResource = attacker.characterInfo.energy || 0;
+      case 'energy':
+        rmResourceType = resourceManager.RESOURCE_TYPES.ENERGY;
         break;
       default:
         console.warn(`[COMBAT] Unknown resource type: ${resourceType}`);
         return false;
     }
 
-    // Check if enough resources
-    if (currentResource < resourceCost) {
-      console.log(`[COMBAT] Insufficient ${resourceType}: ${currentResource}/${resourceCost} for ${skillType}`);
-      return false;
-    }
+    return resourceManager.canAfford(rmResourceType, resourceCost);
+  }
 
-    // Consume resources
-    switch (resourceType) {
-      case RESOURCE_TYPES.MANA:
-        attacker.characterInfo.mana -= resourceCost;
-        break;
-      case RESOURCE_TYPES.ENERGY:
-        attacker.characterInfo.energy -= resourceCost;
-        break;
-    }
+  // Consume skill resources using ResourceManager
+  consumeSkillResources(attacker, skillType) {
+    const resourceManager = window.getResourceManager(attacker);
+    return resourceManager.consumeSkillResources(skillType);
+  }
 
-    console.log(`[COMBAT] Consumed ${resourceCost} ${resourceType} for ${skillType} (${attacker.characterInfo.mana || attacker.characterInfo.energy || 0} remaining)`);
-    return true;
+  // Check and consume skill resources (legacy method - now uses ResourceManager)
+  checkAndConsumeSkillResources(attacker, skillType) {
+    const resourceManager = window.getResourceManager(attacker);
+    return resourceManager.consumeSkillResources(skillType);
   }
 
   // Check accuracy and dodge for an attack

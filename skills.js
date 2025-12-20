@@ -213,26 +213,10 @@ class SkillTreeManager {
     return false;
   }
 
-  // Consume resources for action
+  // Consume resources for action (now uses ResourceManager)
   consumeResources(player, actionType) {
-    const skill = this.skillTree[actionType];
-    if (skill.resourceType === RESOURCE_TYPES.NONE) return true;
-
-    if (skill.resourceType === RESOURCE_TYPES.MANA) {
-      if (player.mana >= skill.resourceCost) {
-        player.mana -= skill.resourceCost;
-        return true;
-      }
-    }
-
-    if (skill.resourceType === RESOURCE_TYPES.ENERGY) {
-      if (player.energy >= skill.resourceCost) {
-        player.energy -= skill.resourceCost;
-        return true;
-      }
-    }
-
-    return false;
+    const resourceManager = window.getResourceManager(player);
+    return resourceManager.consumeSkillResources(actionType);
   }
 
   // Add skill points to player
