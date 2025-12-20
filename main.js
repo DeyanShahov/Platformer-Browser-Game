@@ -612,6 +612,23 @@ async function initGameWithSelections() {
     }
   }
 
+  // Добавяне на Blue Slime за тест на новия enemy system
+  const blueSlime = createBlueSlime(650 * (CANVAS_WIDTH / 900), Math.max(200, CANVAS_HEIGHT - 600), 0, 1);
+  window.gameState.addEntity(blueSlime, 'enemy');
+  console.log('[MAIN] Blue Slime added to game state');
+
+  // Register Blue Slime with animation system
+  if (window.animationSystem && window.animationSystem.isInitialized) {
+    const blueSlimeAnimation = window.animationSystem.registerEntity(blueSlime, 'blue_slime');
+    console.log(`[MAIN] Blue Slime registered with animation system:`, blueSlimeAnimation ? 'SUCCESS' : 'FAILED');
+
+    // Create FSM after animation registration
+    if (window.EnemyAnimationStateMachine) {
+      blueSlime.stateMachine = new window.EnemyAnimationStateMachine(blueSlime);
+      console.log(`[MAIN] Blue Slime FSM initialized:`, blueSlime.stateMachine.getCurrentStateName());
+    }
+  }
+
   // Добавяне на съюзник
   const ally = createEntity(520 * (CANVAS_WIDTH / 900), Math.max(200, CANVAS_HEIGHT - 600), 90, 50, 50, "#00FF00");
   // Add Z thickness for 2.5D collision

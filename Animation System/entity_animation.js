@@ -107,7 +107,7 @@ class EntityAnimation {
       if (this.animationTime < accumulatedTime) {
         this.currentFrame = frame;
         if (this.currentFrame !== prevFrame) {
-          console.log(`[ANIMATION] Variable timing: Frame ${prevFrame} → ${this.currentFrame}, time: ${this.animationTime.toFixed(3)}s`);
+          // console.log(`[ANIMATION] Variable timing: Frame ${prevFrame} → ${this.currentFrame}, time: ${this.animationTime.toFixed(3)}s`);
         }
         return; // Still on this frame
       }
@@ -116,7 +116,7 @@ class EntityAnimation {
     // Animation has ended
     this.currentFrame = frameDurations.length - 1;
     if (prevFrame !== this.currentFrame) {
-      console.log(`[ANIMATION] Variable timing: Reached final frame ${this.currentFrame}, time: ${this.animationTime.toFixed(3)}s`);
+      // console.log(`[ANIMATION] Variable timing: Reached final frame ${this.currentFrame}, time: ${this.animationTime.toFixed(3)}s`);
     }
     if (!this.isLooping) {
       console.log(`[ANIMATION] Animation completed, calling onAnimationComplete`);

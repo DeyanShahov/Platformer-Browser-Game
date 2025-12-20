@@ -27,11 +27,12 @@ class AnimationRenderer {
       boxX = drawX + boxData.x;
 
       // Differentiate between sprite entities and rectangle entities
-      if (entity.animation?.animationDefinition?.spriteSheet) {
+      // Blue Slime has sprite but object is at bottom, so treat as rectangle
+      if (entity.animation?.animationDefinition?.spriteSheet && entity.animationEntityType !== 'blue_slime') {
         // SPRITE ENTITIES (players) - position relative to sprite coordinates
         boxY = drawY + entity.h/2 - boxData.y;
       } else {
-        // RECTANGLE ENTITIES (current enemies) - position at bottom like collision box
+        // RECTANGLE ENTITIES (enemies, Blue Slime) - position at bottom like collision box
         boxY = drawY + entity.h - boxData.height;
       }
 
@@ -51,7 +52,15 @@ class AnimationRenderer {
     const usePerFrameData = entity.stateMachine && entity.stateMachine.isInAttackState() ||
                            currentStateName === 'idle' ||
                            currentStateName === 'walking' ||
-                           currentStateName === 'jumping';
+                           currentStateName === 'jumping' ||
+                           currentStateName === 'enemy_idle' ||
+                           currentStateName === 'enemy_walking' ||
+                           currentStateName === 'enemy_jumping';
+
+    // Debug logging for Blue Slime hit box issues
+    if (entity.animationEntityType === 'blue_slime') {
+      console.log(`[DEBUG BLUE SLIME] Entity type: ${entity.animationEntityType}, State: ${currentStateName}, usePerFrameData: ${usePerFrameData}`);
+    }
 
     // Debug logging for hurt box visibility
     // console.log(`[DEBUG HURTBOX] Entity: ${entity.id} (${entity.entityType}), State: ${currentStateName}, HasAnimation: ${!!entity.animation}, usePerFrameData: ${usePerFrameData}`);
@@ -72,9 +81,30 @@ class AnimationRenderer {
       const currentFrame = entity.animation.currentFrame;
       const animationDef = entity.animation.animationDefinition;
 
+      // Debug logging for Blue Slime
+      if (entity.animationEntityType === 'blue_slime') {
+        console.log(`[DEBUG BLUE SLIME] currentFrame: ${currentFrame}, animationDef exists: ${!!animationDef}`);
+        if (animationDef) {
+          console.log(`[DEBUG BLUE SLIME] frameData exists: ${!!animationDef.frameData}`);
+          if (animationDef.frameData) {
+            console.log(`[DEBUG BLUE SLIME] frameData length: ${animationDef.frameData.length}`);
+            if (animationDef.frameData[currentFrame]) {
+              console.log(`[DEBUG BLUE SLIME] frameData[${currentFrame}] hitBox:`, animationDef.frameData[currentFrame].hitBox);
+            } else {
+              console.log(`[DEBUG BLUE SLIME] frameData[${currentFrame}] is undefined`);
+            }
+          }
+        }
+      }
+
       if (animationDef && animationDef.frameData && animationDef.frameData[currentFrame] && animationDef.frameData[currentFrame].hitBox) {
         // Use per-frame hit box data
         hurtBoxPos = this.calculateBoxPosition(entity, animationDef.frameData[currentFrame].hitBox, 'hit');
+
+        // Debug final position for Blue Slime
+        if (entity.animationEntityType === 'blue_slime') {
+          console.log(`[DEBUG BLUE SLIME] Using per-frame hitBox, final position:`, hurtBoxPos);
+        }
       } else {
         // Fall back to static dimensions if no per-frame data
         hurtBoxPos = {
@@ -83,6 +113,11 @@ class AnimationRenderer {
           width: entity.collisionW || entity.w,
           height: entity.collisionH || entity.h
         };
+
+        // Debug fallback for Blue Slime
+        if (entity.animationEntityType === 'blue_slime') {
+          console.log(`[DEBUG BLUE SLIME] Using fallback hitBox, position:`, hurtBoxPos);
+        }
       }
     } else {
       // During other normal states: use constant hurt box

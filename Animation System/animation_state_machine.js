@@ -336,33 +336,31 @@ class AttackMediumState extends AnimationState {
       return null;
     }
 
-    console.log(`[DEBUG UPDATE] AttackMediumState.update called`);
-    console.log(`[DEBUG UPDATE] entity.animation exists: ${!!entity.animation}`);
+    //console.log(`[DEBUG UPDATE] AttackMediumState.update called`);
+    //console.log(`[DEBUG UPDATE] entity.animation exists: ${!!entity.animation}`);
 
     if (entity.animation) {
-      console.log(`[DEBUG UPDATE] animationTime: ${entity.animation.animationTime}`);
-      console.log(`[DEBUG UPDATE] duration: ${entity.animation.animationDefinition?.duration}`);
-      const completed = entity.animation.animationTime >= entity.animation.animationDefinition.duration;
-      console.log(`[DEBUG UPDATE] animation completed: ${completed}`);
+      // Check if animation has completed (frame-based, not time-based)
+      const currentFrame = entity.animation.currentFrame;
+      const totalFrames = entity.animation.animationDefinition?.frames || 0;
 
-      // Check if animation has completed
-      if (completed) {
-        console.log(`[DEBUG ATTACK_3] Animation completed! damageDealt reset to false`);
+      if (currentFrame >= totalFrames - 1) {
+        //console.log(`[DEBUG ATTACK_3] Animation completed! damageDealt reset to false`);
         // Reset damage dealt flag for next attacks
         entity.damageDealt = false;
 
         const hasMovement = this.hasMovementInput(entity);
-        console.log(`[DEBUG ATTACK_3] hasMovementInput: ${hasMovement}, vx: ${entity.vx}, vz: ${entity.vz}`);
+        //console.log(`[DEBUG ATTACK_3] hasMovementInput: ${hasMovement}, vx: ${entity.vx}, vz: ${entity.vz}`);
 
         if (hasMovement) {
-          console.log(`[DEBUG ATTACK_3] Transitioning to: walking`);
+          //console.log(`[DEBUG ATTACK_3] Transitioning to: walking`);
           return 'walking';
         } else {
-          console.log(`[DEBUG ATTACK_3] Transitioning to: idle`);
+          //console.log(`[DEBUG ATTACK_3] Transitioning to: idle`);
           return 'idle';
         }
       } else {
-        console.log(`[DEBUG UPDATE] Animation not completed yet`);
+        // console.log(`[DEBUG UPDATE] Animation not completed yet`);
       }
     } else {
       console.log(`[DEBUG UPDATE] No entity.animation - cannot check completion`);
@@ -768,6 +766,341 @@ class AnimationStateMachine {
 }
 
 // ===========================================
+// ENEMY STATE CLASSES
+// ===========================================
+
+// Generic enemy states that work with any enemy type
+class EnemyIdleState extends AnimationState {
+  constructor() {
+    super('enemy_idle');
+  }
+
+  enter(entity) {
+    super.enter(entity);
+    // Use entity's animation type dynamically
+    const idleType = this.getEntityAnimationType(entity, 'IDLE');
+    if (entity.animation && idleType) {
+      entity.animation.setAnimation(idleType, true);
+    }
+    entity.damageDealt = false;
+  }
+
+  update(entity, dt) {
+    if (this.justEntered) {
+      this.justEntered = false;
+      return null;
+    }
+
+    // Check for movement transitions
+    if (this.hasMovementInput(entity) && performance.now() - this.lastTransitionTime > 100) {
+      return 'enemy_walking';
+    }
+  }
+
+  // Helper to get animation type for entity
+  getEntityAnimationType(entity, baseType) {
+    const entityType = entity.animationEntityType || 'enemy';
+
+    // Use the entity's animation definitions
+    const animDefinitions = window.ANIMATION_DEFINITIONS[entityType];
+    if (!animDefinitions) return null;
+
+    // For entities with custom animation types (like BlueSlime)
+    if (entityType === 'blue_slime') {
+      return window.BLUE_SLIME_ANIMATION_TYPES?.[baseType] || null;
+    }
+
+    // For standard entities, return the animation type directly
+    return window.ANIMATION_TYPES?.[baseType.toLowerCase()] || null;
+  }
+}
+
+class EnemyWalkingState extends AnimationState {
+  constructor() {
+    super('enemy_walking');
+  }
+
+  enter(entity) {
+    super.enter(entity);
+    const walkType = this.getEntityAnimationType(entity, 'WALK');
+    if (entity.animation && walkType) {
+      entity.animation.setAnimation(walkType, true);
+    }
+  }
+
+  update(entity, dt) {
+    if (this.justEntered) {
+      this.justEntered = false;
+      return null;
+    }
+
+    // Transition to idle if no movement
+    if (!this.hasMovementInput(entity) && performance.now() - this.lastTransitionTime > 100) {
+      return 'enemy_idle';
+    }
+
+    // Check for running (higher speed)
+    const speed = this.getMovementSpeed(entity);
+    const runThreshold = 30; // Lower threshold for enemies
+    if (speed >= runThreshold && performance.now() - this.lastTransitionTime > 100) {
+      return 'enemy_running';
+    }
+  }
+
+  getEntityAnimationType(entity, baseType) {
+    if (entity.constructor.name === 'BlueSlime') {
+      return window.BLUE_SLIME_ANIMATION_TYPES?.[baseType] || null;
+    }
+    return window.ANIMATION_TYPES?.[baseType.toLowerCase()] || null;
+  }
+}
+
+class EnemyRunningState extends AnimationState {
+  constructor() {
+    super('enemy_running');
+  }
+
+  enter(entity) {
+    super.enter(entity);
+    const runType = this.getEntityAnimationType(entity, 'RUN');
+    if (entity.animation && runType) {
+      entity.animation.setAnimation(runType, true);
+    }
+  }
+
+  update(entity, dt) {
+    if (this.justEntered) {
+      this.justEntered = false;
+      return null;
+    }
+
+    // Transition to walking if speed drops
+    const speed = this.getMovementSpeed(entity);
+    const runThreshold = 30;
+    if (speed < runThreshold && performance.now() - this.lastTransitionTime > 100) {
+      if (this.hasMovementInput(entity)) {
+        return 'enemy_walking';
+      } else {
+        return 'enemy_idle';
+      }
+    }
+  }
+
+  getEntityAnimationType(entity, baseType) {
+    if (entity.constructor.name === 'BlueSlime') {
+      return window.BLUE_SLIME_ANIMATION_TYPES?.[baseType] || null;
+    }
+    return window.ANIMATION_TYPES?.[baseType.toLowerCase()] || null;
+  }
+}
+
+class EnemyAttackState extends AnimationState {
+  constructor(attackType = 'ATTACK_1') {
+    super('enemy_attack');
+    this.attackType = attackType; // 'ATTACK_1', 'ATTACK_2', 'ATTACK_3', 'RUN_ATTACK'
+  }
+
+  enter(entity) {
+    super.enter(entity);
+    const animType = this.getEntityAnimationType(entity, this.attackType);
+    if (entity.animation && animType) {
+      entity.animation.setAnimation(animType, true);
+    }
+    entity.damageDealt = false;
+  }
+
+  update(entity, dt) {
+    if (this.justEntered) {
+      this.justEntered = false;
+      return null;
+    }
+
+    // Check if animation has completed (frame-based)
+    if (entity.animation) {
+      const currentFrame = entity.animation.currentFrame;
+      const totalFrames = entity.animation.animationDefinition?.frames || 0;
+
+      if (currentFrame >= totalFrames - 1) {
+        // Animation completed, reset damage flag
+        entity.damageDealt = false;
+
+        // Return to appropriate movement state
+        if (this.hasMovementInput(entity)) {
+          return 'enemy_walking';
+        } else {
+          return 'enemy_idle';
+        }
+      }
+    }
+  }
+
+  getEntityAnimationType(entity, baseType) {
+    if (entity.constructor.name === 'BlueSlime') {
+      return window.BLUE_SLIME_ANIMATION_TYPES?.[baseType] || null;
+    }
+    return window.ANIMATION_TYPES?.[baseType.toLowerCase()] || null;
+  }
+}
+
+class EnemyHurtState extends AnimationState {
+  constructor() {
+    super('enemy_hurt');
+  }
+
+  enter(entity) {
+    super.enter(entity);
+    const hurtType = this.getEntityAnimationType(entity, 'HURT');
+    if (entity.animation && hurtType) {
+      entity.animation.setAnimation(hurtType, true);
+    }
+  }
+
+  update(entity, dt) {
+    if (this.justEntered) {
+      this.justEntered = false;
+      return null;
+    }
+
+    // Hurt animation is usually short, transition back quickly
+    if (entity.animation) {
+      const currentFrame = entity.animation.currentFrame;
+      const totalFrames = entity.animation.animationDefinition?.frames || 0;
+
+      if (currentFrame >= totalFrames - 1) {
+        // Hurt animation completed
+        if (this.hasMovementInput(entity)) {
+          return 'enemy_walking';
+        } else {
+          return 'enemy_idle';
+        }
+      }
+    }
+  }
+
+  getEntityAnimationType(entity, baseType) {
+    if (entity.constructor.name === 'BlueSlime') {
+      return window.BLUE_SLIME_ANIMATION_TYPES?.[baseType] || null;
+    }
+    return window.ANIMATION_TYPES?.[baseType.toLowerCase()] || null;
+  }
+}
+
+class EnemyDeadState extends AnimationState {
+  constructor() {
+    super('enemy_dead');
+  }
+
+  enter(entity) {
+    super.enter(entity);
+    const deadType = this.getEntityAnimationType(entity, 'DEAD');
+    if (entity.animation && deadType) {
+      entity.animation.setAnimation(deadType, true);
+    }
+  }
+
+  update(entity, dt) {
+    // Dead state doesn't transition - entity will be removed
+    return null;
+  }
+
+  getEntityAnimationType(entity, baseType) {
+    if (entity.constructor.name === 'BlueSlime') {
+      return window.BLUE_SLIME_ANIMATION_TYPES?.[baseType] || null;
+    }
+    return window.ANIMATION_TYPES?.[baseType.toLowerCase()] || null;
+  }
+}
+
+// ===========================================
+// ENEMY FSM CLASS
+// ===========================================
+
+class EnemyAnimationStateMachine extends AnimationStateMachine {
+  constructor(entity) {
+    super(entity);
+
+    // Clear player states and add enemy states
+    this.states.clear();
+
+    // Add enemy states
+    this.addState('enemy_idle', EnemyIdleState);
+    this.addState('enemy_walking', EnemyWalkingState);
+    this.addState('enemy_running', EnemyRunningState);
+    this.addState('enemy_attack', EnemyAttackState);
+    this.addState('enemy_hurt', EnemyHurtState);
+    this.addState('enemy_dead', EnemyDeadState);
+
+    // Start in idle state
+    this.changeState('enemy_idle');
+  }
+
+  // Override to handle enemy-specific attack types
+  handleAction(actionType) {
+    if (!this.currentState) return;
+
+    let transitionResult = null;
+
+    switch (actionType) {
+      case 'attack_1':
+        transitionResult = 'enemy_attack';
+        // Set attack type for the attack state
+        this.pendingAttackType = 'ATTACK_1';
+        break;
+      case 'attack_2':
+        transitionResult = 'enemy_attack';
+        this.pendingAttackType = 'ATTACK_2';
+        break;
+      case 'attack_3':
+        transitionResult = 'enemy_attack';
+        this.pendingAttackType = 'ATTACK_3';
+        break;
+      case 'run_attack':
+        transitionResult = 'enemy_attack';
+        this.pendingAttackType = 'RUN_ATTACK';
+        break;
+      case 'hurt':
+        transitionResult = 'enemy_hurt';
+        break;
+      case 'die':
+        transitionResult = 'enemy_dead';
+        break;
+    }
+
+    if (transitionResult) {
+      this.changeState(transitionResult);
+    }
+  }
+
+  // Override changeState to handle attack type setting
+  changeState(newStateName) {
+    // If transitioning to attack state, update the attack type
+    if (newStateName === 'enemy_attack' && this.pendingAttackType) {
+      const attackState = this.states.get('enemy_attack');
+      if (attackState) {
+        attackState.attackType = this.pendingAttackType;
+      }
+      this.pendingAttackType = null;
+    }
+
+    // Call parent changeState
+    return super.changeState(newStateName);
+  }
+
+  // Check if enemy is in attack state
+  isInAttackState() {
+    return this.currentState && this.currentState.name === 'enemy_attack';
+  }
+
+  // Get current attack type
+  getCurrentAttackType() {
+    if (this.currentState && this.currentState.name === 'enemy_attack') {
+      return this.currentState.attackType;
+    }
+    return null;
+  }
+}
+
+// ===========================================
 // INPUT HELPER
 // ===========================================
 
@@ -788,6 +1121,7 @@ class AnimationInput {
 
 // Global instances
 window.AnimationStateMachine = AnimationStateMachine;
+window.EnemyAnimationStateMachine = EnemyAnimationStateMachine;
 window.AnimationInput = AnimationInput;
 
 // Export for module use

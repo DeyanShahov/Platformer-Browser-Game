@@ -35,6 +35,9 @@ class AnimationSystem {
     // Preload Knight sprites
     await window.spriteManager.preloadEntitySprites('knight');
 
+    // Preload Blue Slime sprites
+    await window.spriteManager.preloadEntitySprites('blue_slime');
+
     // Add callbacks for other entity types as they are added
     console.log('[AnimationSystem] All sprites preloaded');
   }
@@ -51,16 +54,23 @@ class AnimationSystem {
       return this.entities.get(entity);
     }
 
+    // Use entity's animationEntityType if available, otherwise use provided entityType
+    const finalEntityType = entity.animationEntityType || entityType;
+
     // Create animation instance for this entity
-    const animation = new EntityAnimation(entityType, entity);
+    const animation = new EntityAnimation(finalEntityType, entity);
     entity.animation = animation; // Attach to entity for easy access
 
     this.entities.set(entity, animation);
 
-    // Set initial animation
-    animation.setAnimation(window.ANIMATION_TYPES.IDLE);
+    // Set initial animation based on entity type
+    if (finalEntityType === 'blue_slime') {
+      animation.setAnimation(window.BLUE_SLIME_ANIMATION_TYPES.IDLE);
+    } else {
+      animation.setAnimation(window.ANIMATION_TYPES.IDLE);
+    }
 
-    console.log(`[AnimationSystem] Registered entity of type: ${entityType}`);
+    console.log(`[AnimationSystem] Registered entity of type: ${finalEntityType}`);
     return animation;
   }
 

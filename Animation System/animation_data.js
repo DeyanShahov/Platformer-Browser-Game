@@ -23,7 +23,439 @@ const SPRITE_CONFIGS = {
     frameHeight: 128,
     scale: 3, // 384x384 final size
     imageRendering: 'pixelated'
+  },
+  blue_slime: {
+    frameWidth: 120,
+    frameHeight: 128,
+    scale: 2, // 240x256 final size
+    imageRendering: 'pixelated'
+  },
+  default: {
+    frameWidth: 120,
+    frameHeight: 128,
+    scale: 2,
+    imageRendering: 'pixelated'
   }
+};
+
+// Blue Slime Animation Types
+const BLUE_SLIME_ANIMATION_TYPES = {
+  IDLE: 'blue_slime_idle',
+  WALK: 'blue_slime_walk',
+  RUN: 'blue_slime_run',
+  JUMP: 'blue_slime_jump',
+  ATTACK_1: 'blue_slime_attack_1',
+  ATTACK_2: 'blue_slime_attack_2',
+  ATTACK_3: 'blue_slime_attack_3',
+  RUN_ATTACK: 'blue_slime_run_attack',
+  HURT: 'blue_slime_hurt',
+  DEAD: 'blue_slime_dead'
+};
+
+// Blue Slime Animation Definitions
+const BLUE_SLIME_ANIMATION_DEFINITIONS = {
+  [BLUE_SLIME_ANIMATION_TYPES.IDLE]: {
+    spriteSheet: './Enemies/Blue_Slime/Idle.png',
+    frames: 8,
+    frameWidth: 120,
+    frameHeight: 128,
+    frameStarts: [0, 128, 256, 384, 512, 640, 768, 896],
+    duration: 1,
+    frameDurations: [0.125, 0.125, 0.125, 0.125, 0.125, 0.125, 0.125, 0.125],
+    frameData: [
+      {
+        hitBox: { x: 80, y: 0, width: 87, height: 60 },
+        attackBox: null
+      },
+      {
+        hitBox: { x: 80, y: 0, width: 87, height: 60 },
+        attackBox: null
+      },
+      {
+        hitBox: { x: 80, y: 0, width: 87, height: 60 },
+        attackBox: null
+      },
+      {
+        hitBox: { x: 80, y: 0, width: 87, height: 60 },
+        attackBox: null
+      },
+      {
+        hitBox: { x: 80, y: 0, width: 87, height: 60 },
+        attackBox: null
+      },
+      {
+        hitBox: { x: 80, y: 0, width: 87, height: 60 },
+        attackBox: null
+      },
+      {
+        hitBox: { x: 80, y: 0, width: 87, height: 60 },
+        attackBox: null
+      },
+      {
+        hitBox: { x: 80, y: 0, width: 87, height: 60 },
+        attackBox: null
+      }
+    ],
+    loop: true,
+    keyframe: 'static-1-frame'
+  },
+  [BLUE_SLIME_ANIMATION_TYPES.WALK]: {
+    spriteSheet: './Enemies/Blue_Slime/walk.png',
+    frames: 8,
+    frameWidth: 120,
+    frameHeight: 128,
+    frameStarts: [0, 128, 256, 384, 512, 640, 768, 896],
+    duration: 1,
+    frameDurations: [0.125, 0.125, 0.125, 0.125, 0.125, 0.125, 0.125, 0.125],
+    frameData: [
+      {
+        hitBox: { x: 20, y: 0, width: 80, height: 80 },
+        attackBox: null
+      },
+      {
+        hitBox: { x: 20, y: 0, width: 80, height: 80 },
+        attackBox: null
+      },
+      {
+        hitBox: { x: 20, y: 0, width: 80, height: 80 },
+        attackBox: null
+      },
+      {
+        hitBox: { x: 20, y: 0, width: 80, height: 80 },
+        attackBox: null
+      },
+      {
+        hitBox: { x: 20, y: 0, width: 80, height: 80 },
+        attackBox: null
+      },
+      {
+        hitBox: { x: 20, y: 0, width: 80, height: 80 },
+        attackBox: null
+      },
+      {
+        hitBox: { x: 20, y: 0, width: 80, height: 80 },
+        attackBox: null
+      },
+      {
+        hitBox: { x: 20, y: 0, width: 80, height: 80 },
+        attackBox: null
+      }
+    ],
+    loop: true,
+    keyframe: 'static-1-frame'
+  },
+  [BLUE_SLIME_ANIMATION_TYPES.RUN]: {
+    spriteSheet: './Enemies/Blue_Slime/Run.png',
+    frames: 7,
+    frameWidth: 120,
+    frameHeight: 128,
+    frameStarts: [0, 128, 256, 384, 512, 640, 768],
+    duration: 1,
+    frameDurations: [0.143, 0.143, 0.143, 0.143, 0.143, 0.143, 0.143],
+    frameData: [
+      {
+        hitBox: { x: 20, y: 0, width: 80, height: 80 },
+        attackBox: null
+      },
+      {
+        hitBox: { x: 20, y: 0, width: 80, height: 80 },
+        attackBox: null
+      },
+      {
+        hitBox: { x: 20, y: 0, width: 80, height: 80 },
+        attackBox: null
+      },
+      {
+        hitBox: { x: 20, y: 0, width: 80, height: 80 },
+        attackBox: null
+      },
+      {
+        hitBox: { x: 20, y: 0, width: 80, height: 80 },
+        attackBox: null
+      },
+      {
+        hitBox: { x: 20, y: 0, width: 80, height: 80 },
+        attackBox: null
+      },
+      {
+        hitBox: { x: 20, y: 0, width: 80, height: 80 },
+        attackBox: null
+      }
+    ],
+    loop: true,
+    keyframe: 'static-1-frame'
+  },
+  [BLUE_SLIME_ANIMATION_TYPES.JUMP]: {
+    spriteSheet: './Enemies/Blue_Slime/Jump.png',
+    frames: 13,
+    frameWidth: 120,
+    frameHeight: 128,
+    frameStarts: [0, 128, 256, 384, 512, 640, 768, 896, 1024, 1152, 1280, 1408, 1536],
+    duration: 1.2,
+    frameDurations: [0.092, 0.092, 0.092, 0.092, 0.092, 0.092, 0.092, 0.092, 0.092, 0.092, 0.092, 0.092, 0.092],
+    frameData: [
+      {
+        hitBox: { x: 20, y: 0, width: 80, height: 80 },
+        attackBox: null
+      },
+      {
+        hitBox: { x: 20, y: 0, width: 80, height: 80 },
+        attackBox: null
+      },
+      {
+        hitBox: { x: 20, y: 0, width: 80, height: 80 },
+        attackBox: null
+      },
+      {
+        hitBox: { x: 20, y: 0, width: 80, height: 80 },
+        attackBox: null
+      },
+      {
+        hitBox: { x: 20, y: 0, width: 80, height: 80 },
+        attackBox: null
+      },
+      {
+        hitBox: { x: 20, y: 0, width: 80, height: 80 },
+        attackBox: null
+      },
+      {
+        hitBox: { x: 20, y: 0, width: 80, height: 80 },
+        attackBox: null
+      },
+      {
+        hitBox: { x: 20, y: 0, width: 80, height: 80 },
+        attackBox: null
+      },
+      {
+        hitBox: { x: 20, y: 0, width: 80, height: 80 },
+        attackBox: null
+      },
+      {
+        hitBox: { x: 20, y: 0, width: 80, height: 80 },
+        attackBox: null
+      },
+      {
+        hitBox: { x: 20, y: 0, width: 80, height: 80 },
+        attackBox: null
+      },
+      {
+        hitBox: { x: 20, y: 0, width: 80, height: 80 },
+        attackBox: null
+      },
+      {
+        hitBox: { x: 20, y: 0, width: 80, height: 80 },
+        attackBox: null
+      }
+    ],
+    loop: true,
+    keyframe: 'static-1-frame'
+  },
+  [BLUE_SLIME_ANIMATION_TYPES.ATTACK_1]: {
+    spriteSheet: './Enemies/Blue_Slime/Attack_1.png',
+    frames: 4,
+    frameWidth: 120,
+    frameHeight: 128,
+    frameStarts: [0, 128, 256, 384],
+    duration: 0.8,
+    frameDurations: [0.200, 0.200, 0.200, 0.200],
+    frameData: [
+      {
+        hitBox: { x: 20, y: 0, width: 80, height: 80 },
+        attackBox: null
+      },
+      {
+        hitBox: { x: 20, y: 0, width: 80, height: 80 },
+        attackBox: null
+      },
+      {
+        hitBox: { x: 20, y: 0, width: 80, height: 80 },
+        attackBox: { x: 25, yRatio: 0.5, width: 30, heightRatio: 0.6 }
+      },
+      {
+        hitBox: { x: 20, y: 0, width: 80, height: 80 },
+        attackBox: { x: 25, yRatio: 0.5, width: 30, heightRatio: 0.6 }
+      }
+    ],
+    loop: false,
+    keyframe: 'static-1-frame'
+  },
+  [BLUE_SLIME_ANIMATION_TYPES.ATTACK_2]: {
+    spriteSheet: './Enemies/Blue_Slime/Attack_2.png',
+    frames: 4,
+    frameWidth: 120,
+    frameHeight: 128,
+    frameStarts: [0, 128, 256, 384],
+    duration: 0.8,
+    frameDurations: [0.200, 0.200, 0.200, 0.200],
+    frameData: [
+      {
+        hitBox: { x: 20, y: 0, width: 80, height: 80 },
+        attackBox: null
+      },
+      {
+        hitBox: { x: 20, y: 0, width: 80, height: 80 },
+        attackBox: null
+      },
+      {
+        hitBox: { x: 20, y: 0, width: 80, height: 80 },
+        attackBox: { x: 25, yRatio: 0.5, width: 30, heightRatio: 0.6 }
+      },
+      {
+        hitBox: { x: 20, y: 0, width: 80, height: 80 },
+        attackBox: { x: 25, yRatio: 0.5, width: 30, heightRatio: 0.6 }
+      }
+    ],
+    loop: false,
+    keyframe: 'static-1-frame'
+  },
+  [BLUE_SLIME_ANIMATION_TYPES.ATTACK_3]: {
+    spriteSheet: './Enemies/Blue_Slime/Attack_3.png',
+    frames: 5,
+    frameWidth: 120,
+    frameHeight: 128,
+    frameStarts: [0, 128, 256, 384, 512],
+    duration: 0.8,
+    frameDurations: [0.160, 0.160, 0.160, 0.160, 0.160],
+    frameData: [
+      {
+        hitBox: { x: 20, y: 0, width: 80, height: 80 },
+        attackBox: null
+      },
+      {
+        hitBox: { x: 20, y: 0, width: 80, height: 80 },
+        attackBox: null
+      },
+      {
+        hitBox: { x: 20, y: 0, width: 80, height: 80 },
+        attackBox: null
+      },
+      {
+        hitBox: { x: 20, y: 0, width: 80, height: 80 },
+        attackBox: { x: 25, yRatio: 0.5, width: 30, heightRatio: 0.6 }
+      },
+      {
+        hitBox: { x: 20, y: 0, width: 80, height: 80 },
+        attackBox: { x: 25, yRatio: 0.5, width: 30, heightRatio: 0.6 }
+      }
+    ],
+    loop: false,
+    keyframe: 'static-1-frame'
+  },
+  [BLUE_SLIME_ANIMATION_TYPES.RUN_ATTACK]: {
+    spriteSheet: './Enemies/Blue_Slime/Run+Attack.png',
+    frames: 10,
+    frameWidth: 120,
+    frameHeight: 128,
+    frameStarts: [0, 128, 256, 384, 512, 640, 768, 896, 1024, 1152],
+    duration: 0.8,
+    frameDurations: [0.080, 0.080, 0.080, 0.080, 0.080, 0.080, 0.080, 0.080, 0.080, 0.080],
+    frameData: [
+      {
+        hitBox: { x: 20, y: 0, width: 80, height: 80 },
+        attackBox: null
+      },
+      {
+        hitBox: { x: 20, y: 0, width: 80, height: 80 },
+        attackBox: null
+      },
+      {
+        hitBox: { x: 20, y: 0, width: 80, height: 80 },
+        attackBox: null
+      },
+      {
+        hitBox: { x: 20, y: 0, width: 80, height: 80 },
+        attackBox: null
+      },
+      {
+        hitBox: { x: 20, y: 0, width: 80, height: 80 },
+        attackBox: null
+      },
+      {
+        hitBox: { x: 20, y: 0, width: 80, height: 80 },
+        attackBox: null
+      },
+      {
+        hitBox: { x: 20, y: 0, width: 80, height: 80 },
+        attackBox: { x: 25, yRatio: 0.5, width: 30, heightRatio: 0.6 }
+      },
+      {
+        hitBox: { x: 20, y: 0, width: 80, height: 80 },
+        attackBox: { x: 25, yRatio: 0.5, width: 30, heightRatio: 0.6 }
+      },
+      {
+        hitBox: { x: 20, y: 0, width: 80, height: 80 },
+        attackBox: { x: 25, yRatio: 0.5, width: 30, heightRatio: 0.6 }
+      },
+      {
+        hitBox: { x: 20, y: 0, width: 80, height: 80 },
+        attackBox: { x: 25, yRatio: 0.5, width: 30, heightRatio: 0.6 }
+      }
+    ],
+    loop: false,
+    keyframe: 'static-1-frame'
+  },
+  [BLUE_SLIME_ANIMATION_TYPES.HURT]: {
+    spriteSheet: './Enemies/Blue_Slime/Hurt.png',
+    frames: 6,
+    frameWidth: 120,
+    frameHeight: 128,
+    frameStarts: [0, 128, 256, 384, 512, 640],
+    duration: 1,
+    frameDurations: [0.167, 0.167, 0.167, 0.167, 0.167, 0.167],
+    frameData: [
+      {
+        hitBox: { x: 20, y: 0, width: 80, height: 80 },
+        attackBox: null
+      },
+      {
+        hitBox: { x: 20, y: 0, width: 80, height: 80 },
+        attackBox: null
+      },
+      {
+        hitBox: { x: 20, y: 0, width: 80, height: 80 },
+        attackBox: null
+      },
+      {
+        hitBox: { x: 20, y: 0, width: 80, height: 80 },
+        attackBox: null
+      },
+      {
+        hitBox: { x: 20, y: 0, width: 80, height: 80 },
+        attackBox: null
+      },
+      {
+        hitBox: { x: 20, y: 0, width: 80, height: 80 },
+        attackBox: null
+      }
+    ],
+    loop: false,
+    keyframe: 'static-1-frame'
+  },
+  [BLUE_SLIME_ANIMATION_TYPES.DEAD]: {
+    spriteSheet: './Enemies/Blue_Slime/Dead.png',
+    frames: 3,
+    frameWidth: 120,
+    frameHeight: 128,
+    frameStarts: [0, 128, 256],
+    duration: 1,
+    frameDurations: [0.333, 0.333, 0.333],
+    frameData: [
+      {
+        hitBox: { x: 20, y: 0, width: 80, height: 80 },
+        attackBox: null
+      },
+      {
+        hitBox: { x: 20, y: 0, width: 80, height: 80 },
+        attackBox: null
+      },
+      {
+        hitBox: { x: 20, y: 0, width: 80, height: 80 },
+        attackBox: null
+      }
+    ],
+    loop: false,
+    keyframe: 'static-1-frame'
+  },
 };
 
 // Animation Definitions
@@ -289,7 +721,7 @@ const ANIMATION_DEFINITIONS = {
           attackBox: {
             x: -240,           // Offset from entity.x + entity.w
             yRatio: 0.5,     // Y offset as ratio of entity.h - positioned lower to hit enemies
-            width: 240,       // Width of attack area
+            width: 180,       // Width of attack area
             heightRatio: 0.52 // Height as ratio of entity.h - smaller height for better precision
           }
         },
@@ -299,7 +731,7 @@ const ANIMATION_DEFINITIONS = {
           attackBox: {
             x: -240,           // Offset from entity.x + entity.w
             yRatio: 0.5,     // Y offset as ratio of entity.h - positioned lower to hit enemies
-            width: 240,       // Width of attack area
+            width: 180,       // Width of attack area
             heightRatio: 0.52 // Height as ratio of entity.h - smaller height for better precision
           }
         }
@@ -622,6 +1054,28 @@ const ANIMATION_PRIORITIES = {
   [ANIMATION_TYPES.WALK]: 40,
   [ANIMATION_TYPES.IDLE]: 10
 };
+
+// Add to global ANIMATION_DEFINITIONS
+Object.assign(ANIMATION_DEFINITIONS, {
+  blue_slime: BLUE_SLIME_ANIMATION_DEFINITIONS
+});
+
+// Expose Blue Slime animation types separately (don't overwrite main ANIMATION_TYPES)
+window.BLUE_SLIME_ANIMATION_TYPES = BLUE_SLIME_ANIMATION_TYPES;
+
+// Add Blue Slime to animation priorities
+Object.assign(ANIMATION_PRIORITIES, {
+  [BLUE_SLIME_ANIMATION_TYPES.IDLE]: 10,
+  [BLUE_SLIME_ANIMATION_TYPES.WALK]: 20,
+  [BLUE_SLIME_ANIMATION_TYPES.RUN]: 30,
+  [BLUE_SLIME_ANIMATION_TYPES.JUMP]: 40,
+  [BLUE_SLIME_ANIMATION_TYPES.ATTACK_1]: 50,
+  [BLUE_SLIME_ANIMATION_TYPES.ATTACK_2]: 50,
+  [BLUE_SLIME_ANIMATION_TYPES.ATTACK_3]: 50,
+  [BLUE_SLIME_ANIMATION_TYPES.RUN_ATTACK]: 50,
+  [BLUE_SLIME_ANIMATION_TYPES.HURT]: 60,
+  [BLUE_SLIME_ANIMATION_TYPES.DEAD]: 100
+});
 
 // Helper function to get animation priority
 function getAnimationPriority(animationType) {

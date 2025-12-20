@@ -205,8 +205,8 @@ const SKILL_TREE = {
     levelEffects: [
       { description: 'Отключва средна основна атака' } // Effect when unlocked
     ],
-    resourceType: RESOURCE_TYPES.NONE,
-    resourceCost: 0,
+    resourceType: RESOURCE_TYPES.MANA,
+    resourceCost: 10,
     iconRow: 5,
     iconCol: 5,
     // Micro skill tree for specializations
