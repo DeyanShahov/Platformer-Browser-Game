@@ -217,7 +217,7 @@ class BlueSlime {
     this.characterInfo.strength = 5 + level;
     this.characterInfo.criticalChance = 0.03; // 3% crit chance
 
-    // AI behavior
+    // AI behavior - legacy system (for fallback)
     this.aiState = 'idle'; // idle, patrol, chase, attack, flee
     this.aiTimer = 0;
     this.detectionRange = 300; // Distance to detect player
@@ -226,12 +226,19 @@ class BlueSlime {
     this.patrolDistance = 200; // How far to patrol
     this.startX = x;           // Original spawn position
 
+    // BT AI Properties (following example_use_of_BT.js pattern)
+    this.rarity = 'common';        // BT rarity level
+    this.intelligence = 'basic';   // BT intelligence level
+
     // Animation entity type for animation system
     this.animationEntityType = 'blue_slime';
 
     // Animation system - will be set by animation system after registration
     this.animation = null;
     this.stateMachine = null; // Will be created after animation registration
+
+    // Initialize BT AI System (following example pattern)
+    this.initializeBT();
 
     // Register with combat system
     if (window.enemyCombatManager) {
@@ -241,10 +248,408 @@ class BlueSlime {
     console.log(`[BLUE SLIME] Created Blue Slime (Level ${level}) at (${x}, ${y}) with ${this.maxHealth} HP`);
   }
 
-  // AI Update - called every frame
-  updateAI(player, dt) {
+  // Initialize Behavior Tree AI System (following example_use_of_BT.js pattern)
+  initializeBT() {
+    if (!window.createEnemyBehaviorTree || !window.tickEnemyAI || !window.createAttackProfile) {
+      console.warn('[BLUE SLIME] BT system not loaded, using fallback AI');
+      return;
+    }
+
+    // Create BT context following example pattern exactly
+    this.aiContext = {
+      name: `BlueSlime_${this.level}`,
+      rarity: this.rarity,
+      intelligence: this.intelligence,
+      self: { hp: this.health, maxHp: this.maxHealth, x: this.x, y: this.y },
+      targets: [], // Will be updated in updateAI
+      capabilities: { canBlock: false, canEvade: false },
+      attackProfile: window.createAttackProfile(["light"]), // Blue Slime uses only light attacks
+      intelligence: { blockChance: 0, evadeChance: 0.1, aggression: 0.3 },
+      behaviors: window.ENEMY_BEHAVIORS?.[this.rarity]?.[this.intelligence],
+      phaseSpecialAvailable: false, // Blue Slime is not a boss
+      command: null,
+    };
+
+    // Create BT tree (following example pattern)
+    this.aiContext.behaviorTree = window.createEnemyBehaviorTree();
+
+    console.log(`[BLUE SLIME] BT AI system initialized: ${this.rarity}/${this.intelligence}`);
+  }
+
+  // AI Update - FSM controls execution, BT provides strategic decisions
+  updateAI(players, dt) {
     if (this.isDying) return;
 
+    // Update BT context with current game state (for when BT is consulted)
+    this.updateBTContext(players);
+
+    // FSM handles all movement and animation logic
+    // BT is consulted only for strategic decisions (behavior transitions)
+    this.updateFSMBehavior(players, dt);
+  }
+
+  // FSM-based behavior control - consults BT for strategic decisions
+  updateFSMBehavior(players, dt) {
+    if (!this.stateMachine) {
+      console.log('[BLUE SLIME FSM] No stateMachine available');
+      return;
+    }
+
+    const currentState = this.stateMachine.getCurrentStateName();
+    const behaviors = this.aiContext?.behaviors || {};
+
+    console.log(`[BLUE SLIME FSM] Current state: ${currentState}, aiTimer: ${this.aiTimer}, vx: ${this.vx}`);
+
+    // State-specific behavior logic
+    switch(currentState) {
+      case 'enemy_idle':
+        this.updateIdleBehavior(players, dt, behaviors);
+        break;
+
+      case 'enemy_walking':
+        this.updateWalkingBehavior(players, dt, behaviors);
+        break;
+
+      case 'enemy_running':
+        this.updateRunningBehavior(players, dt, behaviors);
+        break;
+
+      case 'enemy_attack':
+      case 'enemy_attack_light':
+      case 'enemy_attack_medium':
+      case 'enemy_attack_heavy':
+        this.updateAttackBehavior(players, dt, behaviors);
+        break;
+
+      default:
+        // Unknown state, go to idle
+        console.log(`[BLUE SLIME FSM] Unknown state ${currentState}, going to enemy_idle`);
+        this.stateMachine.changeState('enemy_idle');
+        break;
+    }
+  }
+
+  // Idle behavior: wait for duration, then consult BT for next action
+  updateIdleBehavior(players, dt, behaviors) {
+    this.aiTimer += dt;
+    this.vx = 0; // No movement
+
+    const idleDuration = behaviors.idle?.duration || 2000;
+    console.log(`[BLUE SLIME IDLE] Timer: ${this.aiTimer}/${idleDuration}, vx: ${this.vx}`);
+
+    if (this.aiTimer >= idleDuration) {
+      console.log(`[BLUE SLIME IDLE] Timer expired, consulting BT for next behavior`);
+      // Idle duration expired - consult BT for next behavior
+      const nextBehavior = this.consultBTForBehavior(players);
+      console.log(`[BLUE SLIME IDLE] BT returned:`, nextBehavior);
+      this.transitionToBehavior(nextBehavior, behaviors);
+      this.aiTimer = 0;
+    }
+  }
+
+  // Walking behavior: patrol movement, check boundaries and player detection
+  updateWalkingBehavior(players, dt, behaviors) {
+    // Patrol movement logic
+    const patrolSpeed = behaviors.patrol?.speed || 50;
+    const patrolRadius = behaviors.patrol?.radiusX || 200;
+
+    // Initialize patrol if needed
+    if (this.patrolDirection === undefined) {
+      this.patrolDirection = 1; // Start right
+      this.startX = this.x; // Patrol center
+    }
+
+    // Check patrol boundaries
+    if (Math.abs(this.x - this.startX) >= patrolRadius) {
+      // Reached boundary - consult BT for next behavior (might reverse or change)
+      const nextBehavior = this.consultBTForBehavior(players);
+      if (nextBehavior.type === 'patrol') {
+        // Continue patrolling but reverse direction
+        this.patrolDirection *= -1;
+      } else {
+        // Transition to different behavior
+        this.transitionToBehavior(nextBehavior, behaviors);
+        return;
+      }
+    }
+
+    // Check for player detection during patrol
+    const closestPlayer = this.getClosestPlayer(players);
+    if (closestPlayer && closestPlayer.distance <= (behaviors.chase?.radiusX || 300)) {
+      // Player detected - consult BT for chase decision
+      const nextBehavior = this.consultBTForBehavior(players);
+      if (nextBehavior.type === 'chase') {
+        this.transitionToBehavior(nextBehavior, behaviors);
+        return;
+      }
+    }
+
+    // Continue patrol movement
+    this.vx = this.patrolDirection * patrolSpeed;
+  }
+
+  // Running behavior: chase player, check distance and attack range
+  updateRunningBehavior(players, dt, behaviors) {
+    const closestPlayer = this.getClosestPlayer(players);
+
+    if (!closestPlayer) {
+      // No players - consult BT for next behavior
+      const nextBehavior = this.consultBTForBehavior(players);
+      this.transitionToBehavior(nextBehavior, behaviors);
+      return;
+    }
+
+    const chaseSpeed = behaviors.chase?.speed || 80;
+    const attackRange = behaviors.attack ? 100 : 100; // Use attack range from BT config
+
+    if (closestPlayer.distance <= attackRange) {
+      // In attack range - consult BT for attack decision
+      const nextBehavior = this.consultBTForBehavior(players);
+      if (nextBehavior.type === 'attack') {
+        this.transitionToBehavior(nextBehavior, behaviors);
+        return;
+      }
+    }
+
+    if (closestPlayer.distance > (behaviors.chase?.radiusX || 300) * 1.5) {
+      // Player too far - consult BT for next behavior
+      const nextBehavior = this.consultBTForBehavior(players);
+      this.transitionToBehavior(nextBehavior, behaviors);
+      return;
+    }
+
+    // Continue chasing
+    const direction = this.x < closestPlayer.x ? 1 : -1;
+    this.vx = direction * chaseSpeed;
+  }
+
+  // Attack behavior: handled by FSM animation timing
+  updateAttackBehavior(players, dt, behaviors) {
+    // Attack animation is handled by FSM
+    // When attack completes, FSM will automatically transition
+    // No additional logic needed here
+  }
+
+  // Consult BT for strategic behavior decision
+  consultBTForBehavior(players) {
+    console.log('[BLUE SLIME BT] consultBTForBehavior called, aiContext:', !!this.aiContext, 'behaviorTree:', !!this.aiContext?.behaviorTree, 'tickEnemyAI:', !!window.tickEnemyAI);
+
+    if (!this.aiContext || !this.aiContext.behaviorTree) {
+      console.log('[BLUE SLIME BT] BT not available, using fallback');
+      // BT not available - fallback decisions
+      return this.fallbackBehaviorDecision(players);
+    }
+
+    console.log('[BLUE SLIME BT] Consulting BT for decision...');
+    console.log('[BLUE SLIME BT] Context targets:', this.aiContext.targets);
+
+    // Update boss phase if needed
+    if (this.aiContext.rarity === "boss" && this.aiContext.bossPhaseManager) {
+      this.aiContext.bossPhaseManager.update(this.aiContext);
+    }
+
+    // Tick BT for decision
+    const command = window.tickEnemyAI(this.aiContext.behaviorTree, this.aiContext);
+    console.log('[BLUE SLIME BT] BT returned command:', command);
+    return command;
+  }
+
+  // Transition to new behavior based on BT command
+  transitionToBehavior(command, behaviors) {
+    if (!command) return;
+
+    switch(command.type) {
+      case 'idle':
+        this.stateMachine.changeState('enemy_idle');
+        this.vx = 0;
+        break;
+
+      case 'patrol':
+        this.stateMachine.changeState('enemy_walking');
+        // vx will be set in updateWalkingBehavior
+        break;
+
+      case 'chase':
+        this.stateMachine.changeState('enemy_running');
+        // vx will be set in updateRunningBehavior
+        break;
+
+      case 'attack':
+        // Map attack type to enemy FSM action
+        const attackNumber = command.attackType === 'light' ? '1' :
+                            command.attackType === 'medium' ? '2' :
+                            command.attackType === 'heavy' ? '3' : '1';
+        this.stateMachine.handleAction(`attack_${attackNumber}`);
+        this.vx = 0; // Stop moving during attack
+        break;
+
+      default:
+        this.stateMachine.changeState('enemy_idle');
+        this.vx = 0;
+        break;
+    }
+  }
+
+  // Fallback behavior decision when BT is not available
+  fallbackBehaviorDecision(players) {
+    const closestPlayer = this.getClosestPlayer(players);
+
+    if (closestPlayer && closestPlayer.distance <= 100) {
+      return { type: 'attack', attackType: 'light' };
+    } else if (closestPlayer && closestPlayer.distance <= 300) {
+      return { type: 'chase' };
+    } else {
+      return { type: 'patrol' };
+    }
+  }
+
+  // Helper: Get closest player
+  getClosestPlayer(players) {
+    if (!players || players.length === 0) return null;
+
+    return players.reduce((closest, player) => {
+      const distance = Math.abs(this.x - player.x);
+      if (!closest || distance < closest.distance) {
+        return { ...player, distance };
+      }
+      return closest;
+    }, null);
+  }
+
+  // Update BT context with current game state
+  updateBTContext(players) {
+    if (!this.aiContext) return;
+
+    // Update self state
+    this.aiContext.self.hp = this.health;
+    this.aiContext.self.maxHp = this.maxHealth;
+    this.aiContext.self.x = this.x;
+    this.aiContext.self.y = this.y;
+
+    // Update targets (players)
+    this.aiContext.targets = players.map(player => ({
+      distance: Math.abs(this.x - player.x),
+      hpPercent: (player.health / player.maxHealth) * 100,
+      damageDone: 0 // Could track damage dealt to each player
+    }));
+  }
+
+  // Execute BT command
+  executeBTCommand(dt) {
+    if (!this.currentBTCommand) return;
+
+    const command = this.currentBTCommand;
+
+    switch(command.type) {
+      case 'idle':
+        this.executeIdle();
+        break;
+
+      case 'patrol':
+        this.executePatrol(dt);
+        break;
+
+      case 'chase':
+        this.executeChase(this.aiContext.targets);
+        break;
+
+      case 'attack':
+        this.executeAttack(command.attackType);
+        break;
+
+      default:
+        this.executeIdle();
+        break;
+    }
+  }
+
+  // Execute idle behavior
+  executeIdle() {
+    this.vx = 0;
+    this.vy = 0;
+    if (this.stateMachine) {
+      this.stateMachine.changeState('enemy_idle');
+    }
+  }
+
+  // Execute patrol behavior
+  executePatrol(dt) {
+    const behaviors = this.aiContext.behaviors;
+    const patrolSpeed = behaviors.patrol?.speed || 50;
+    const patrolRadius = behaviors.patrol?.radiusX || 200;
+
+    // Simple left-right patrol
+    if (!this.patrolDirection) {
+      this.patrolDirection = 1; // Start moving right
+      this.startX = this.x; // Set patrol center
+      console.log(`[BLUE SLIME PATROL] Initialized patrol at x=${this.startX}, direction=${this.patrolDirection}`);
+    }
+
+    // Check if reached patrol boundary
+    if (Math.abs(this.x - this.startX) >= patrolRadius) {
+      this.patrolDirection *= -1; // Reverse direction
+      console.log(`[BLUE SLIME PATROL] Reversed direction at x=${this.x}, new direction=${this.patrolDirection}`);
+    }
+
+    this.vx = this.patrolDirection * patrolSpeed;
+    console.log(`[BLUE SLIME PATROL] Set vx=${this.vx} (direction=${this.patrolDirection} * speed=${patrolSpeed})`);
+
+    // Update animation
+    if (this.stateMachine) {
+      this.stateMachine.changeState('enemy_walking');
+      console.log(`[BLUE SLIME PATROL] Changed animation to enemy_walking`);
+    }
+  }
+
+  // Execute chase behavior
+  executeChase(targets) {
+    if (!targets || targets.length === 0) {
+      this.executeIdle();
+      return;
+    }
+
+    // Find closest target
+    const closestTarget = targets.reduce((closest, target) =>
+      target.distance < closest.distance ? target : closest
+    );
+
+    const behaviors = this.aiContext.behaviors;
+    const chaseSpeed = behaviors.chase?.speed || 80;
+    const direction = this.x < closestTarget.x ? 1 : -1;
+
+    this.vx = direction * chaseSpeed;
+
+    // Update animation
+    if (this.stateMachine) {
+      this.stateMachine.changeState('enemy_running');
+    }
+  }
+
+  // Execute attack behavior
+  executeAttack(attackType) {
+    this.vx = 0; // Stop moving during attack
+
+    if (this.stateMachine && !this.stateMachine.isInAttackState()) {
+      // Map BT attack type to enemy FSM action (attack_1, attack_2, attack_3)
+      const attackNumber = attackType === 'light' ? '1' :
+                          attackType === 'medium' ? '2' :
+                          attackType === 'heavy' ? '3' : '1';
+
+      this.stateMachine.handleAction(`attack_${attackNumber}`);
+    }
+  }
+
+  // Fallback AI for when BT is not available
+  fallbackAI(players, dt) {
+    // Use the old AI system as backup
+    if (players.length > 0) {
+      const player = players[0]; // Use first player for simplicity
+      this.legacyAIUpdate(player, dt);
+    }
+  }
+
+  // Legacy AI update (old system)
+  legacyAIUpdate(player, dt) {
     const distanceToPlayer = Math.abs(this.x - player.x);
     const directionToPlayer = this.x < player.x ? 1 : -1;
 
@@ -252,12 +657,10 @@ class BlueSlime {
 
     switch (this.aiState) {
       case 'idle':
-        // Stand still and look around
-        if (this.aiTimer > 2.0) { // After 2 seconds, start patrolling
+        if (this.aiTimer > 2.0) {
           this.aiState = 'patrol';
           this.aiTimer = 0;
         }
-        // Check if player is close
         if (distanceToPlayer < this.detectionRange) {
           this.aiState = 'chase';
           this.aiTimer = 0;
@@ -265,20 +668,12 @@ class BlueSlime {
         break;
 
       case 'patrol':
-        // Move back and forth
-        this.vx = this.patrolDirection * this.speed * 0.5; // Slower patrol speed
-
-        // Check patrol boundaries
+        this.vx = this.patrolDirection * this.speed * 0.5;
         if (Math.abs(this.x - this.startX) > this.patrolDistance) {
-          this.patrolDirection *= -1; // Reverse direction
+          this.patrolDirection *= -1;
           this.vx = 0;
-          // Short pause before continuing
-          if (this.aiTimer > 0.5) {
-            this.aiTimer = 0;
-          }
+          if (this.aiTimer > 0.5) this.aiTimer = 0;
         }
-
-        // Check if player is detected
         if (distanceToPlayer < this.detectionRange) {
           this.aiState = 'chase';
           this.aiTimer = 0;
@@ -287,17 +682,12 @@ class BlueSlime {
         break;
 
       case 'chase':
-        // Move towards player
         this.vx = directionToPlayer * this.speed;
-
-        // If player gets too far, go back to patrol
         if (distanceToPlayer > this.detectionRange * 1.5) {
           this.aiState = 'patrol';
           this.aiTimer = 0;
           this.vx = 0;
-        }
-        // If close enough, attack
-        else if (distanceToPlayer < this.attackRange) {
+        } else if (distanceToPlayer < this.attackRange) {
           this.aiState = 'attack';
           this.aiTimer = 0;
           this.vx = 0;
@@ -305,37 +695,27 @@ class BlueSlime {
         break;
 
       case 'attack':
-        // Perform attack if FSM is available
         if (this.stateMachine && !this.stateMachine.isInAttackState()) {
-          // Choose random attack
           const attacks = ['attack_1', 'attack_2', 'attack_3'];
           const randomAttack = attacks[Math.floor(Math.random() * attacks.length)];
-          this.stateMachine.handleAction(randomAttack);
+          this.stateMachine.handleAction(`attack_${randomAttack.split('_')[1]}`);
         }
-
-        // After attack, decide what to do next
-        if (this.aiTimer > 1.5) { // Wait after attack
+        if (this.aiTimer > 1.5) {
           if (distanceToPlayer < this.attackRange) {
-            // Player still close, attack again
             this.aiTimer = 0;
           } else if (distanceToPlayer < this.detectionRange) {
-            // Player moved away but still in range, chase
             this.aiState = 'chase';
             this.aiTimer = 0;
           } else {
-            // Player too far, go back to patrol
             this.aiState = 'patrol';
             this.aiTimer = 0;
           }
         }
         break;
     }
-
-    // Update animation based on AI state
-    this.updateAnimationFromAI();
   }
 
-  // Update animation to match AI state
+  // Update animation to match BT command (not legacy AI state)
   updateAnimationFromAI() {
     if (!this.stateMachine) return;
 
@@ -346,17 +726,28 @@ class BlueSlime {
       return;
     }
 
-    // Update animation based on movement and AI state
-    if (Math.abs(this.vx) > 5) {
-      // Moving
-      if (this.aiState === 'chase') {
-        this.stateMachine.changeState('run');
-      } else {
-        this.stateMachine.changeState('walk');
+    // Update animation based on current BT command
+    if (this.currentBTCommand) {
+      switch(this.currentBTCommand.type) {
+        case 'idle':
+          this.stateMachine.changeState('enemy_idle');
+          break;
+        case 'patrol':
+          this.stateMachine.changeState('enemy_walking');
+          break;
+        case 'chase':
+          this.stateMachine.changeState('enemy_running');
+          break;
+        case 'attack':
+          // Attack animation is handled in executeAttack method
+          break;
+        default:
+          this.stateMachine.changeState('enemy_idle');
+          break;
       }
     } else {
-      // Standing still
-      this.stateMachine.changeState('idle');
+      // Fallback if no BT command
+      this.stateMachine.changeState('enemy_idle');
     }
   }
 

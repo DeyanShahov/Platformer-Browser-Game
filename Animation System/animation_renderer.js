@@ -82,29 +82,29 @@ class AnimationRenderer {
       const animationDef = entity.animation.animationDefinition;
 
       // Debug logging for Blue Slime
-      if (entity.animationEntityType === 'blue_slime') {
-        console.log(`[DEBUG BLUE SLIME] currentFrame: ${currentFrame}, animationDef exists: ${!!animationDef}`);
-        if (animationDef) {
-          console.log(`[DEBUG BLUE SLIME] frameData exists: ${!!animationDef.frameData}`);
-          if (animationDef.frameData) {
-            console.log(`[DEBUG BLUE SLIME] frameData length: ${animationDef.frameData.length}`);
-            if (animationDef.frameData[currentFrame]) {
-              console.log(`[DEBUG BLUE SLIME] frameData[${currentFrame}] hitBox:`, animationDef.frameData[currentFrame].hitBox);
-            } else {
-              console.log(`[DEBUG BLUE SLIME] frameData[${currentFrame}] is undefined`);
-            }
-          }
-        }
-      }
+      // if (entity.animationEntityType === 'blue_slime') {
+      //   console.log(`[DEBUG BLUE SLIME] currentFrame: ${currentFrame}, animationDef exists: ${!!animationDef}`);
+      //   if (animationDef) {
+      //     console.log(`[DEBUG BLUE SLIME] frameData exists: ${!!animationDef.frameData}`);
+      //     if (animationDef.frameData) {
+      //       console.log(`[DEBUG BLUE SLIME] frameData length: ${animationDef.frameData.length}`);
+      //       if (animationDef.frameData[currentFrame]) {
+      //         console.log(`[DEBUG BLUE SLIME] frameData[${currentFrame}] hitBox:`, animationDef.frameData[currentFrame].hitBox);
+      //       } else {
+      //         console.log(`[DEBUG BLUE SLIME] frameData[${currentFrame}] is undefined`);
+      //       }
+      //     }
+      //   }
+      // }
 
       if (animationDef && animationDef.frameData && animationDef.frameData[currentFrame] && animationDef.frameData[currentFrame].hitBox) {
         // Use per-frame hit box data
         hurtBoxPos = this.calculateBoxPosition(entity, animationDef.frameData[currentFrame].hitBox, 'hit');
 
         // Debug final position for Blue Slime
-        if (entity.animationEntityType === 'blue_slime') {
-          console.log(`[DEBUG BLUE SLIME] Using per-frame hitBox, final position:`, hurtBoxPos);
-        }
+        // if (entity.animationEntityType === 'blue_slime') {
+        //   console.log(`[DEBUG BLUE SLIME] Using per-frame hitBox, final position:`, hurtBoxPos);
+        // }
       } else {
         // Fall back to static dimensions if no per-frame data
         hurtBoxPos = {
@@ -115,9 +115,9 @@ class AnimationRenderer {
         };
 
         // Debug fallback for Blue Slime
-        if (entity.animationEntityType === 'blue_slime') {
-          console.log(`[DEBUG BLUE SLIME] Using fallback hitBox, position:`, hurtBoxPos);
-        }
+        // if (entity.animationEntityType === 'blue_slime') {
+        //   console.log(`[DEBUG BLUE SLIME] Using fallback hitBox, position:`, hurtBoxPos);
+        // }
       }
     } else {
       // During other normal states: use constant hurt box

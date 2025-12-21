@@ -682,6 +682,8 @@ function update(dt) {
       enemies.forEach(enemy => {
         if (!enemy.isDying) { // Не обновяваме AI за умиращи противници
           updateEnemyAI(enemy, dt);
+          // Apply enemy physics (similar to player movement)
+          handleEnemyMovement(enemy, dt);
         }
       });
 
@@ -703,20 +705,27 @@ function updateEnemyAI(enemy, dt) {
 
   // Normal AI only runs if enemy is alive and not dying
   if (enemy.health > 0 && !enemy.isDying) {
-    // Simple AI: randomly attack every few seconds using FSM
-    if (Math.random() < 0.01) { // 1% chance per frame to attack
-      if (enemy.stateMachine && !enemy.stateMachine.isInAttackState()) {
-        // Choose random attack type for FSM
-        const attackActions = ['attack_light', 'attack_medium', 'attack_heavy'];
-        const randomAttack = attackActions[Math.floor(Math.random() * attackActions.length)];
+    // Get players array for AI decision making
+    const players = window.gameState ? window.gameState.players : window.players || [];
 
-        // Trigger FSM attack
-        enemy.stateMachine.handleAction(randomAttack);
-        console.log(`[ENEMY AI] Enemy attacks with ${randomAttack}`);
+    // Use BT-based AI if available, otherwise fallback to simple AI
+    if (enemy.updateAI && typeof enemy.updateAI === 'function') {
+      // BT-based AI (Blue Slime uses this)
+      enemy.updateAI(players, dt);
+    } else {
+      // Simple fallback AI for other enemies
+      if (Math.random() < 0.01) { // 1% chance per frame to attack
+        if (enemy.stateMachine && !enemy.stateMachine.isInAttackState()) {
+          // Choose random attack type for FSM
+          const attackActions = ['attack_light', 'attack_medium', 'attack_heavy'];
+          const randomAttack = attackActions[Math.floor(Math.random() * attackActions.length)];
+
+          // Trigger FSM attack
+          enemy.stateMachine.handleAction(randomAttack);
+          console.log(`[ENEMY AI] Enemy attacks with ${randomAttack}`);
+        }
       }
     }
-
-    // FSM handles timing automatically - no need for manual timers
   }
 
   // Reset hit flag after a short time
@@ -726,6 +735,38 @@ function updateEnemyAI(enemy, dt) {
 }
 
 // Централизирана обработка на смърт за всички умиращи елементи
+// Handle enemy physics and movement (similar to player handleMovement)
+function handleEnemyMovement(enemy, dt) {
+  // Prevent movement during attack animations (like players)
+  if (enemy.stateMachine && enemy.stateMachine.isInAttackState()) {
+    enemy.vx = 0;
+    enemy.vz = 0;
+    return;
+  }
+
+  // Apply velocity to position (basic physics)
+  enemy.x += enemy.vx * dt;
+  enemy.y += enemy.vy * dt;
+  enemy.z += enemy.vz * dt;
+
+  // Basic gravity for enemies (if they can fall)
+  enemy.vy += GRAVITY * dt;
+
+  // Ground collision (similar to players)
+  const groundY = CANVAS_HEIGHT - 600; // Same ground level as players
+  if (enemy.y >= groundY) {
+    enemy.y = groundY;
+    enemy.vy = 0;
+    enemy.onGround = true;
+  } else {
+    enemy.onGround = false;
+  }
+
+  // Reset velocity after movement (AI will set it again next frame)
+  // Keep vx for continuous movement, reset vz
+  enemy.vz = 0;
+}
+
 function updateDeathSequences(dt) {
   if (window.gameState) {
     const allEntities = window.gameState.getAllEntities();

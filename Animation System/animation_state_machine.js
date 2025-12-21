@@ -834,17 +834,9 @@ class EnemyWalkingState extends AnimationState {
       return null;
     }
 
-    // Transition to idle if no movement
-    if (!this.hasMovementInput(entity) && performance.now() - this.lastTransitionTime > 100) {
-      return 'enemy_idle';
-    }
-
-    // Check for running (higher speed)
-    const speed = this.getMovementSpeed(entity);
-    const runThreshold = 30; // Lower threshold for enemies
-    if (speed >= runThreshold && performance.now() - this.lastTransitionTime > 100) {
-      return 'enemy_running';
-    }
+    // For AI enemies, transitions are handled by BT system
+    // Don't do speed-based transitions - let BT decide
+    return null;
   }
 
   getEntityAnimationType(entity, baseType) {
@@ -1017,12 +1009,26 @@ class EnemyDeadState extends AnimationState {
 
 class EnemyAnimationStateMachine extends AnimationStateMachine {
   constructor(entity) {
+    // Call super but prevent the unwanted changeState('idle') call
+    const originalChangeState = AnimationStateMachine.prototype.changeState;
+    let skipBaseInit = true;
+
+    AnimationStateMachine.prototype.changeState = function(stateName) {
+      if (skipBaseInit && stateName === 'idle') {
+        // Skip the base constructor's changeState('idle') call
+        return true;
+      }
+      return originalChangeState.call(this, stateName);
+    };
+
     super(entity);
+    skipBaseInit = false;
+
+    // Restore original method
+    AnimationStateMachine.prototype.changeState = originalChangeState;
 
     // Clear player states and add enemy states
     this.states.clear();
-
-    // Add enemy states
     this.addState('enemy_idle', EnemyIdleState);
     this.addState('enemy_walking', EnemyWalkingState);
     this.addState('enemy_running', EnemyRunningState);
@@ -1030,7 +1036,7 @@ class EnemyAnimationStateMachine extends AnimationStateMachine {
     this.addState('enemy_hurt', EnemyHurtState);
     this.addState('enemy_dead', EnemyDeadState);
 
-    // Start in idle state
+    // Start in enemy_idle state
     this.changeState('enemy_idle');
   }
 

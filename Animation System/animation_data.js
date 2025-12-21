@@ -109,35 +109,35 @@ const BLUE_SLIME_ANIMATION_DEFINITIONS = {
     frameDurations: [0.125, 0.125, 0.125, 0.125, 0.125, 0.125, 0.125, 0.125],
     frameData: [
       {
-        hitBox: { x: 20, y: 0, width: 80, height: 80 },
+        hitBox: { x: 80, y: 0, width: 90, height: 65 },
         attackBox: null
       },
       {
-        hitBox: { x: 20, y: 0, width: 80, height: 80 },
+        hitBox: { x: 80, y: 0, width: 90, height: 65 },
         attackBox: null
       },
       {
-        hitBox: { x: 20, y: 0, width: 80, height: 80 },
+        hitBox: { x: 80, y: 0, width: 90, height: 65 },
         attackBox: null
       },
       {
-        hitBox: { x: 20, y: 0, width: 80, height: 80 },
+        hitBox: { x: 80, y: 0, width: 90, height: 65 },
         attackBox: null
       },
       {
-        hitBox: { x: 20, y: 0, width: 80, height: 80 },
+        hitBox: { x: 80, y: 0, width: 90, height: 65 },
         attackBox: null
       },
       {
-        hitBox: { x: 20, y: 0, width: 80, height: 80 },
+        hitBox: { x: 80, y: 0, width: 90, height: 65 },
         attackBox: null
       },
       {
-        hitBox: { x: 20, y: 0, width: 80, height: 80 },
+        hitBox: { x: 80, y: 0, width: 90, height: 65 },
         attackBox: null
       },
       {
-        hitBox: { x: 20, y: 0, width: 80, height: 80 },
+        hitBox: { x: 80, y: 0, width: 90, height: 65 },
         attackBox: null
       }
     ],
