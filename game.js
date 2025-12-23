@@ -444,6 +444,8 @@ function handleMovement(player, dt) {
 
   // Check X movement collision with correction instead of blocking
   const proposedX = player.x + player.vx * dt;
+
+  // Apply collision correction - simple boundary correction like the old system
   const correctedX = applyCollisionCorrection(player, proposedX, player.y, player.z, 'x');
   player.x = correctedX;
 
@@ -456,8 +458,8 @@ function handleMovement(player, dt) {
     player.z = clampedZ;
   }
 
-  // Реално движение X
-  player.x += player.vx * dt;
+  // X movement is now handled entirely by collision correction above
+  // No additional player.x += player.vx * dt; needed
 
   // Гравитация
   player.vy += GRAVITY * dt;
@@ -815,4 +817,30 @@ function loop(ts) {
   }
 
   requestAnimationFrame(loop);
+}
+
+// Helper function to check if an entity is currently in collision with other entities
+function checkIfEntityIsInCollision(entity) {
+  // Get all other entities
+  const allEntities = window.gameState ? window.gameState.getAllEntities() :
+                     [...players, window.enemy, window.ally].filter(e => e !== null && e !== undefined);
+  const others = allEntities.filter(e => e !== entity && e !== null && e !== undefined);
+
+  // Check collision with each other entity at current position
+  for (const other of others) {
+    const hasCollision = checkEntityCollision(
+      entity, other, 'movement',
+      {
+        entity1Pos: { x: entity.x, y: entity.y, z: entity.z }, // Current position
+        buffer: 0 // No buffer for precise collision check
+      }
+    );
+
+    if (hasCollision) {
+      console.log(`[COLLISION_CHECK] Entity ${entity.entityType} is currently colliding with ${other.entityType}`);
+      return true;
+    }
+  }
+
+  return false;
 }

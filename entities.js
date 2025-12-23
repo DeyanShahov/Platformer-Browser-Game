@@ -331,6 +331,27 @@ class BlueSlime {
 
   // Idle behavior: wait for duration, then consult BT for next action
   updateIdleBehavior(players, dt, behaviors) {
+    // Handle negative timer (custom duration from command)
+    if (this.aiTimer < 0) {
+      // Custom duration idle - count up from negative to 0
+      this.aiTimer += dt;
+      this.vx = 0; // No movement
+
+      const customDuration = Math.abs(this.aiTimer); // Original negative value
+      console.log(`[BLUE SLIME IDLE] Custom duration timer: ${this.aiTimer}/${customDuration}, vx: ${this.vx}`);
+
+      if (this.aiTimer >= 0) {
+        console.log(`[BLUE SLIME IDLE] Custom duration expired, consulting BT for next behavior`);
+        // Custom idle duration expired - consult BT for next behavior
+        const nextBehavior = this.consultBTForBehavior(players);
+        console.log(`[BLUE SLIME IDLE] BT returned:`, nextBehavior);
+        this.transitionToBehavior(nextBehavior, behaviors);
+        this.aiTimer = 0;
+      }
+      return;
+    }
+
+    // Normal idle behavior
     this.aiTimer += dt;
     this.vx = 0; // No movement
 
@@ -347,9 +368,8 @@ class BlueSlime {
     }
   }
 
-  // Walking behavior: patrol movement, check boundaries and player detection
+  // Walking behavior: patrol movement with intelligent collision handling
   updateWalkingBehavior(players, dt, behaviors) {
-    // Patrol movement logic
     const patrolSpeed = behaviors.patrol?.speed || 50;
     const patrolRadius = behaviors.patrol?.radiusX || 200;
 
@@ -359,32 +379,53 @@ class BlueSlime {
       this.startX = this.x; // Patrol center
     }
 
-    // Check patrol boundaries
+    // Check screen boundaries - consult BT for decision
+    const boundaryDirection = window.enemyAIUtils.getScreenBoundaryDirection(this, this.patrolDirection);
+    if (boundaryDirection !== null) {
+      console.log(`[BLUE SLIME PATROL] Hit screen boundary, consulting BT for decision`);
+      // Consult BT with context about screen boundary collision
+      const nextBehavior = this.consultBTForBehavior(players, { reason: 'screen_boundary', boundaryDirection });
+      this.transitionToBehavior(nextBehavior, behaviors);
+      return;
+    }
+
+    // Check entity collisions - consult BT for decision
+    const entities = window.gameState ? window.gameState.getAllEntities() : [];
+    const collisions = window.enemyAIUtils.detectEntityCollisions(this, entities, 80);
+
+    if (collisions.length > 0) {
+      console.log(`[BLUE SLIME PATROL] Detected ${collisions.length} entity collisions, consulting BT`);
+      // Consult BT with context about entity collision
+      const nextBehavior = this.consultBTForBehavior(players, {
+        reason: 'entity_collision',
+        collisions: collisions
+      });
+      this.transitionToBehavior(nextBehavior, behaviors);
+      return;
+    }
+
+    // Check patrol radius boundaries - consult BT for decision
     if (Math.abs(this.x - this.startX) >= patrolRadius) {
-      // Reached boundary - consult BT for next behavior (might reverse or change)
-      const nextBehavior = this.consultBTForBehavior(players);
-      if (nextBehavior.type === 'patrol') {
-        // Continue patrolling but reverse direction
-        this.patrolDirection *= -1;
-      } else {
-        // Transition to different behavior
-        this.transitionToBehavior(nextBehavior, behaviors);
-        return;
-      }
+      console.log(`[BLUE SLIME PATROL] Reached patrol radius boundary, consulting BT`);
+      // Consult BT with context about patrol end
+      const nextBehavior = this.consultBTForBehavior(players, { reason: 'patrol_end' });
+      this.transitionToBehavior(nextBehavior, behaviors);
+      return;
     }
 
     // Check for player detection during patrol
     const closestPlayer = this.getClosestPlayer(players);
     if (closestPlayer && closestPlayer.distance <= (behaviors.chase?.radiusX || 300)) {
+      console.log(`[BLUE SLIME PATROL] Player detected during patrol, consulting BT`);
       // Player detected - consult BT for chase decision
-      const nextBehavior = this.consultBTForBehavior(players);
+      const nextBehavior = this.consultBTForBehavior(players, { reason: 'player_detected', playerDistance: closestPlayer.distance });
       if (nextBehavior.type === 'chase') {
         this.transitionToBehavior(nextBehavior, behaviors);
         return;
       }
     }
 
-    // Continue patrol movement
+    // Continue patrol movement - no issues detected
     this.vx = this.patrolDirection * patrolSpeed;
   }
 
@@ -403,7 +444,8 @@ class BlueSlime {
     const attackRange = behaviors.attack ? 100 : 100; // Use attack range from BT config
 
     if (closestPlayer.distance <= attackRange) {
-      // In attack range - consult BT for attack decision
+      // In attack range - stop chasing and attack
+      this.vx = 0; // Stop moving!
       const nextBehavior = this.consultBTForBehavior(players);
       if (nextBehavior.type === 'attack') {
         this.transitionToBehavior(nextBehavior, behaviors);
@@ -430,18 +472,22 @@ class BlueSlime {
     // No additional logic needed here
   }
 
-  // Consult BT for strategic behavior decision
-  consultBTForBehavior(players) {
-    console.log('[BLUE SLIME BT] consultBTForBehavior called, aiContext:', !!this.aiContext, 'behaviorTree:', !!this.aiContext?.behaviorTree, 'tickEnemyAI:', !!window.tickEnemyAI);
+  // Consult BT for strategic behavior decision with context
+  consultBTForBehavior(players, context = {}) {
+    console.log('[BLUE SLIME BT] consultBTForBehavior called with context:', context, 'aiContext:', !!this.aiContext, 'behaviorTree:', !!this.aiContext?.behaviorTree, 'tickEnemyAI:', !!window.tickEnemyAI);
 
     if (!this.aiContext || !this.aiContext.behaviorTree) {
       console.log('[BLUE SLIME BT] BT not available, using fallback');
       // BT not available - fallback decisions
-      return this.fallbackBehaviorDecision(players);
+      return this.fallbackBehaviorDecision(players, context);
     }
 
-    console.log('[BLUE SLIME BT] Consulting BT for decision...');
+    // Add context to aiContext for BT decision making
+    this.aiContext.consultationContext = context;
+
+    console.log('[BLUE SLIME BT] Consulting BT for decision with context...');
     console.log('[BLUE SLIME BT] Context targets:', this.aiContext.targets);
+    console.log('[BLUE SLIME BT] Consultation context:', context);
 
     // Update boss phase if needed
     if (this.aiContext.rarity === "boss" && this.aiContext.bossPhaseManager) {
@@ -451,6 +497,10 @@ class BlueSlime {
     // Tick BT for decision
     const command = window.tickEnemyAI(this.aiContext.behaviorTree, this.aiContext);
     console.log('[BLUE SLIME BT] BT returned command:', command);
+
+    // Clear context after consultation
+    delete this.aiContext.consultationContext;
+
     return command;
   }
 
@@ -462,10 +512,24 @@ class BlueSlime {
       case 'idle':
         this.stateMachine.changeState('enemy_idle');
         this.vx = 0;
+        // Set idle timer for custom duration if specified
+        if (command.duration) {
+          this.aiTimer = -command.duration; // Negative to count up to 0
+        }
         break;
 
       case 'patrol':
         this.stateMachine.changeState('enemy_walking');
+        // Reset patrol direction for new patrol cycle
+        this.patrolDirection = 1; // Always start right for new patrols
+        this.startX = this.x; // Reset patrol center
+        // vx will be set in updateWalkingBehavior
+        break;
+
+      case 'reverse_patrol':
+        // Stay in walking state but reverse direction
+        this.stateMachine.changeState('enemy_walking');
+        this.patrolDirection *= -1; // Reverse current direction
         // vx will be set in updateWalkingBehavior
         break;
 
@@ -491,16 +555,45 @@ class BlueSlime {
   }
 
   // Fallback behavior decision when BT is not available
-  fallbackBehaviorDecision(players) {
+  fallbackBehaviorDecision(players, context = {}) {
+    console.log('[BLUE SLIME FALLBACK] Making decision with context:', context);
+
     const closestPlayer = this.getClosestPlayer(players);
 
-    if (closestPlayer && closestPlayer.distance <= 100) {
-      return { type: 'attack', attackType: 'light' };
-    } else if (closestPlayer && closestPlayer.distance <= 300) {
-      return { type: 'chase' };
-    } else {
-      return { type: 'patrol' };
+    // Context-aware fallback decisions
+    switch(context.reason) {
+      case 'screen_boundary':
+        // Hit screen boundary - reverse direction
+        return { type: 'reverse_patrol' };
+
+      case 'entity_collision':
+        // Hit entity - idle briefly then reverse
+        return { type: 'idle', duration: 1.0 };
+
+      case 'patrol_end':
+        // Reached patrol end - reverse direction
+        return { type: 'reverse_patrol' };
+
+      case 'player_detected':
+        // Player detected - chase if close enough
+        if (closestPlayer && closestPlayer.distance <= 300) {
+          return { type: 'chase' };
+        }
+        break;
+
+      default:
+        // Standard fallback logic
+        if (closestPlayer && closestPlayer.distance <= 100) {
+          return { type: 'attack', attackType: 'light' };
+        } else if (closestPlayer && closestPlayer.distance <= 300) {
+          return { type: 'chase' };
+        } else {
+          return { type: 'patrol' };
+        }
     }
+
+    // Default fallback
+    return { type: 'patrol' };
   }
 
   // Helper: Get closest player
@@ -508,7 +601,11 @@ class BlueSlime {
     if (!players || players.length === 0) return null;
 
     return players.reduce((closest, player) => {
-      const distance = Math.abs(this.x - player.x);
+      // Use X-Z distance for 2.5D detection
+      const distance = Math.sqrt(
+        Math.pow(this.x - player.x, 2) +
+        Math.pow(this.z - player.z, 2)
+      );
       if (!closest || distance < closest.distance) {
         return { ...player, distance };
       }
@@ -526,9 +623,12 @@ class BlueSlime {
     this.aiContext.self.x = this.x;
     this.aiContext.self.y = this.y;
 
-    // Update targets (players)
+    // Update targets (players) - Use X-Z distance for 2.5D detection
     this.aiContext.targets = players.map(player => ({
-      distance: Math.abs(this.x - player.x),
+      distance: Math.sqrt(  // ✅ X-Z distance for 2.5D
+        Math.pow(this.x - player.x, 2) +
+        Math.pow(this.z - player.z, 2)
+      ),
       hpPercent: (player.health / player.maxHealth) * 100,
       damageDone: 0 // Could track damage dealt to each player
     }));

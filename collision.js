@@ -159,7 +159,7 @@ function getCurrentHitBoxPosition(entity) {
 function checkEntityCollision(entity1, entity2, collisionType, params = {}) {
   const defaults = {
     zTolerance: collisionType === 'movement' ? 30 : 10,
-    buffer: collisionType === 'movement' ? 5 : 0, // Allow small overlap for movement
+    buffer: collisionType === 'movement' ? 8 : 0, // Allow larger overlap for movement to prevent sticking
     entity1Pos: { x: entity1.x, y: entity1.y, z: entity1.z }, // Allow custom position for entity1
     logCollisions: collisionType === 'movement' // Log movement collisions, not attacks
   };
@@ -266,6 +266,8 @@ function applyCollisionCorrection(entity, proposedX, proposedY, proposedZ, axis)
                      [...players, window.enemy, window.ally].filter(e => e !== null && e !== undefined);
   const others = allEntities.filter(e => e !== entity && e !== null && e !== undefined);
 
+  console.log(`[COLLISION_CORRECTION] Checking ${entity.entityType} movement on ${axis}-axis. Others: ${others.length}`);
+
   // Check collision with each other entity
   for (const other of others) {
     const hasCollision = checkEntityCollision(
@@ -294,18 +296,50 @@ function applyCollisionCorrection(entity, proposedX, proposedY, proposedZ, axis)
           const proposedCenter = proposedHitBoxX + entityHitBox.width / 2;
           const otherCenter = otherHitBox.x + otherHitBox.width / 2;
 
-          if (proposedCenter < otherCenter) {
-            // Proposed position is to the left, correct to the left edge of other
-            const correctedHitBoxX = otherHitBox.x - entityHitBox.width;
-            const correctedEntityX = entity.x + (correctedHitBoxX - entityHitBox.x);
-            console.log(`[COLLISION CORRECTION] Left collision: correcting X from ${proposedX.toFixed(1)} to ${correctedEntityX.toFixed(1)}`);
-            return correctedEntityX;
+          // Calculate overlap between hit boxes (Separation Vector approach)
+          const entityLeft = proposedHitBoxX;
+          const entityRight = proposedHitBoxX + entityHitBox.width;
+          const entityTop = entityHitBox.y;
+          const entityBottom = entityHitBox.y + entityHitBox.height;
+
+          const otherLeft = otherHitBox.x;
+          const otherRight = otherHitBox.x + otherHitBox.width;
+          const otherTop = otherHitBox.y;
+          const otherBottom = otherHitBox.y + otherHitBox.height;
+
+          // Calculate overlap on X axis
+          const overlapX = Math.min(entityRight, otherRight) - Math.max(entityLeft, otherLeft);
+          const overlapY = Math.min(entityBottom, otherBottom) - Math.max(entityTop, otherTop);
+
+          console.log(`[COLLISION_CORRECTION] Overlap X: ${overlapX.toFixed(1)}, Y: ${overlapY.toFixed(1)}`);
+
+          // If there's actual overlap, calculate separation
+          if (overlapX > 0 && overlapY > 0) {
+            // Determine separation direction based on centers
+            const entityCenterX = proposedHitBoxX + entityHitBox.width / 2;
+            const otherCenterX = otherHitBox.x + otherHitBox.width / 2;
+
+            // Calculate separation distance (split overlap equally)
+            const separationX = overlapX / 2 + 1; // +1 pixel buffer to prevent sticking
+
+            if (entityCenterX < otherCenterX) {
+              // Entity is to the left, push it further left
+              const correctedHitBoxX = proposedHitBoxX - separationX;
+              const correctedEntityX = entity.x + (correctedHitBoxX - entityHitBox.x);
+              console.log(`[COLLISION_CORRECTION] Separation vector: push left by ${separationX.toFixed(1)}px`);
+              console.log(`[COLLISION_CORRECTION] Correcting X from ${proposedX.toFixed(1)} to ${correctedEntityX.toFixed(1)}`);
+              return correctedEntityX;
+            } else {
+              // Entity is to the right, push it further right
+              const correctedHitBoxX = proposedHitBoxX + separationX;
+              const correctedEntityX = entity.x + (correctedHitBoxX - entityHitBox.x);
+              console.log(`[COLLISION_CORRECTION] Separation vector: push right by ${separationX.toFixed(1)}px`);
+              console.log(`[COLLISION_CORRECTION] Correcting X from ${proposedX.toFixed(1)} to ${correctedEntityX.toFixed(1)}`);
+              return correctedEntityX;
+            }
           } else {
-            // Proposed position is to the right, correct to the right edge of other
-            const correctedHitBoxX = otherHitBox.x + otherHitBox.width;
-            const correctedEntityX = entity.x + (correctedHitBoxX - entityHitBox.x);
-            console.log(`[COLLISION CORRECTION] Right collision: correcting X from ${proposedX.toFixed(1)} to ${correctedEntityX.toFixed(1)}`);
-            return correctedEntityX;
+            console.log(`[COLLISION_CORRECTION] No overlap detected, allowing movement`);
+            return proposedX;
           }
         }
       }
