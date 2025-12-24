@@ -853,18 +853,54 @@ function checkIfEntityIsInCollision(entity) {
 
 // Universal screen boundaries function - keeps all entities within screen bounds
 function applyScreenBoundaries(entity) {
-  // Horizontal boundaries (X-axis)
-  if (entity.x < X_MIN) {
-    console.log(`[SCREEN_BOUNDARIES] ${entity.entityType} hit left boundary, clamping X from ${entity.x} to ${X_MIN}`);
-    entity.x = X_MIN;
-    entity.vx = 0; // Stop horizontal movement
-  } else if (entity.x > X_MAX) {
-    console.log(`[SCREEN_BOUNDARIES] ${entity.entityType} hit right boundary, clamping X from ${entity.x} to ${X_MAX}`);
-    entity.x = X_MAX;
-    entity.vx = 0; // Stop horizontal movement
+  // Get current per-frame hit box dimensions and position offset
+  const hitBoxData = getCurrentHitBoxDimensions(entity);
+  const hitBoxPosition = getCurrentHitBoxPosition(entity);
+
+  if (hitBoxData && hitBoxPosition) {
+    // Calculate boundaries based on actual hit box position in sprite frame
+    const hitBoxOffsetX = hitBoxPosition.x - entity.x; // How much hit box is offset from entity.x
+    const hitBoxOffsetY = hitBoxPosition.y - entity.z; // How much hit box is offset from entity.z
+
+    // Ensure full hit box visibility: entity.x + hitBoxOffsetX + hitBoxData.width <= CANVAS_WIDTH
+    const leftBoundary = -hitBoxOffsetX; // Allow entity to go left enough to show full hit box
+    const rightBoundary = CANVAS_WIDTH - (hitBoxOffsetX + hitBoxData.width);
+    const bottomBoundary = Z_MIN; // Same as before
+    const topBoundary = Z_MAX; // Same as before
+
+    console.log(`[SCREEN_BOUNDARIES] ${entity.entityType} hit box offset X: ${hitBoxOffsetX}, width: ${hitBoxData.width}`);
+    console.log(`[SCREEN_BOUNDARIES] ${entity.entityType} boundaries - left: ${leftBoundary}, right: ${rightBoundary}`);
+
+    // Horizontal boundaries (X-axis) - ensure full hit box visibility
+    if (entity.x < leftBoundary) {
+      console.log(`[SCREEN_BOUNDARIES] ${entity.entityType} hit left boundary, clamping X from ${entity.x} to ${leftBoundary}`);
+      entity.x = leftBoundary;
+      entity.vx = 0; // Stop horizontal movement
+    } else if (entity.x > rightBoundary) {
+      console.log(`[SCREEN_BOUNDARIES] ${entity.entityType} hit right boundary, clamping X from ${entity.x} to ${rightBoundary}`);
+      entity.x = rightBoundary;
+      entity.vx = 0; // Stop horizontal movement
+    }
+  } else {
+    // Fallback for entities without per-frame hit boxes
+    const entityWidth = entity.collisionW || entity.w || 50;
+    const leftBoundary = 0;
+    const rightBoundary = CANVAS_WIDTH - entityWidth;
+    const bottomBoundary = Z_MIN;
+    const topBoundary = Z_MAX;
+
+    console.log(`[SCREEN_BOUNDARIES] ${entity.entityType} fallback boundaries - left: ${leftBoundary}, right: ${rightBoundary}, width: ${entityWidth}`);
+
+    if (entity.x < leftBoundary) {
+      entity.x = leftBoundary;
+      entity.vx = 0;
+    } else if (entity.x > rightBoundary) {
+      entity.x = rightBoundary;
+      entity.vx = 0;
+    }
   }
 
-  // Vertical boundaries (Z-axis) - same as before but now universal
+  // Vertical boundaries (Z-axis) - same as before
   if (entity.z < Z_MIN) {
     console.log(`[SCREEN_BOUNDARIES] ${entity.entityType} hit bottom boundary, clamping Z from ${entity.z} to ${Z_MIN}`);
     entity.z = Z_MIN;
