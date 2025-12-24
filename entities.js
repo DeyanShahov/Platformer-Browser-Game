@@ -474,6 +474,16 @@ class BlueSlime {
 
   // Consult BT for strategic behavior decision with context
   consultBTForBehavior(players, context = {}) {
+    // Get behavior constraints based on current physical environment
+    const constraints = window.getBehaviorConstraints ? window.getBehaviorConstraints(this) : null;
+    if (constraints) {
+      context.behaviorConstraints = constraints;
+      console.log(`[BT_CONSTRAINTS] Applying constraints:`, {
+        blocked: Array.from(constraints.blocked),
+        allowed: Array.from(constraints.allowed)
+      });
+    }
+
     // Green log - enemy asking BT for decision
     const situationText = this.getSituationText(context);
     console.log(`%c[BT_QUERY] Blue Slime #${this.level}: "${situationText}"`, 'color: #00ff00; font-weight: bold; font-size: 14px;');

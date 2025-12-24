@@ -851,6 +851,76 @@ function checkIfEntityIsInCollision(entity) {
   return false;
 }
 
+// Behavior constraints function - determines which behaviors are physically possible
+function getBehaviorConstraints(entity) {
+  const constraints = {
+    allowed: new Set(['idle', 'attack', 'chase']), // Always allowed
+    blocked: new Set(),
+    reasons: {}
+  };
+
+  // Check horizontal movement constraints
+  const entityWidth = entity.collisionW || entity.w || 50;
+
+  // Can move right?
+  const canMoveRight = entity.x < (CANVAS_WIDTH - entityWidth);
+  if (!canMoveRight) {
+    constraints.blocked.add('patrol_right');
+    constraints.blocked.add('move_right');
+    constraints.reasons.patrol_right = 'screen_boundary_right';
+  }
+
+  // Can move left?
+  const canMoveLeft = entity.x > 0;
+  if (!canMoveLeft) {
+    constraints.blocked.add('patrol_left');
+    constraints.blocked.add('move_left');
+    constraints.reasons.patrol_left = 'screen_boundary_left';
+  }
+
+  // Can patrol? (needs both directions available or specific logic)
+  const canPatrol = canMoveRight || canMoveLeft;
+  if (!canPatrol) {
+    constraints.blocked.add('patrol');
+    constraints.reasons.patrol = 'no_movement_space';
+  }
+
+  // Check vertical movement constraints
+  const canMoveUp = entity.z > Z_MIN;
+  const canMoveDown = entity.z < Z_MAX;
+
+  if (!canMoveUp) {
+    constraints.blocked.add('move_up');
+    constraints.reasons.move_up = 'screen_boundary_top';
+  }
+
+  if (!canMoveDown) {
+    constraints.blocked.add('move_down');
+    constraints.reasons.move_down = 'screen_boundary_bottom';
+  }
+
+  // Check for obstacles/entities blocking movement
+  const entities = window.gameState ? window.gameState.getAllEntities() : [];
+  const nearbyEntities = entities.filter(e =>
+    e !== entity &&
+    Math.abs(e.x - entity.x) < 100 &&
+    Math.abs(e.z - entity.z) < 50
+  );
+
+  if (nearbyEntities.length > 0) {
+    constraints.blocked.add('patrol');
+    constraints.reasons.patrol = 'entities_blocking';
+  }
+
+  console.log(`[BEHAVIOR_CONSTRAINTS] ${entity.entityType} constraints:`, {
+    allowed: Array.from(constraints.allowed),
+    blocked: Array.from(constraints.blocked),
+    reasons: constraints.reasons
+  });
+
+  return constraints;
+}
+
 // Universal screen boundaries function - keeps all entities within screen bounds
 function applyScreenBoundaries(entity) {
   // Get current per-frame hit box dimensions and position offset
@@ -868,16 +938,16 @@ function applyScreenBoundaries(entity) {
     const bottomBoundary = Z_MIN; // Same as before
     const topBoundary = Z_MAX; // Same as before
 
-    console.log(`[SCREEN_BOUNDARIES] ${entity.entityType} hit box offset X: ${hitBoxOffsetX}, width: ${hitBoxData.width}`);
-    console.log(`[SCREEN_BOUNDARIES] ${entity.entityType} boundaries - left: ${leftBoundary}, right: ${rightBoundary}`);
+    //console.log(`[SCREEN_BOUNDARIES] ${entity.entityType} hit box offset X: ${hitBoxOffsetX}, width: ${hitBoxData.width}`);
+    //console.log(`[SCREEN_BOUNDARIES] ${entity.entityType} boundaries - left: ${leftBoundary}, right: ${rightBoundary}`);
 
     // Horizontal boundaries (X-axis) - ensure full hit box visibility
     if (entity.x < leftBoundary) {
-      console.log(`[SCREEN_BOUNDARIES] ${entity.entityType} hit left boundary, clamping X from ${entity.x} to ${leftBoundary}`);
+      //console.log(`[SCREEN_BOUNDARIES] ${entity.entityType} hit left boundary, clamping X from ${entity.x} to ${leftBoundary}`);
       entity.x = leftBoundary;
       entity.vx = 0; // Stop horizontal movement
     } else if (entity.x > rightBoundary) {
-      console.log(`[SCREEN_BOUNDARIES] ${entity.entityType} hit right boundary, clamping X from ${entity.x} to ${rightBoundary}`);
+      //console.log(`[SCREEN_BOUNDARIES] ${entity.entityType} hit right boundary, clamping X from ${entity.x} to ${rightBoundary}`);
       entity.x = rightBoundary;
       entity.vx = 0; // Stop horizontal movement
     }
@@ -911,3 +981,6 @@ function applyScreenBoundaries(entity) {
     entity.vz = 0; // Stop vertical movement
   }
 }
+
+// Export behavior constraints function globally
+window.getBehaviorConstraints = getBehaviorConstraints;
