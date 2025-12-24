@@ -474,6 +474,10 @@ class BlueSlime {
 
   // Consult BT for strategic behavior decision with context
   consultBTForBehavior(players, context = {}) {
+    // Green log - enemy asking BT for decision
+    const situationText = this.getSituationText(context);
+    console.log(`%c[BT_QUERY] Blue Slime #${this.level}: "${situationText}"`, 'color: #00ff00; font-weight: bold; font-size: 14px;');
+
     console.log('[BLUE SLIME BT] consultBTForBehavior called with context:', context, 'aiContext:', !!this.aiContext, 'behaviorTree:', !!this.aiContext?.behaviorTree, 'tickEnemyAI:', !!window.tickEnemyAI);
 
     if (!this.aiContext || !this.aiContext.behaviorTree) {
@@ -497,6 +501,10 @@ class BlueSlime {
     // Tick BT for decision
     const command = window.tickEnemyAI(this.aiContext.behaviorTree, this.aiContext);
     console.log('[BLUE SLIME BT] BT returned command:', command);
+
+    // Red log - BT decision
+    const decisionText = this.getDecisionText(command, context);
+    console.log(`%c[BT_DECISION] Blue Slime #${this.level} from ${situationText} → ${decisionText}`, 'color: #ff0000; font-weight: bold; font-size: 14px;');
 
     // Clear context after consultation
     delete this.aiContext.consultationContext;
@@ -594,6 +602,52 @@ class BlueSlime {
 
     // Default fallback
     return { type: 'patrol' };
+  }
+
+  // Helper: Get situation text for BT queries
+  getSituationText(context = {}) {
+    switch(context.reason) {
+      case 'idle_timeout':
+        return 'Свърших с idle, какво да правя?';
+      case 'patrol_end':
+        return 'Свърших с патрула, какво сега?';
+      case 'screen_boundary':
+        return 'Патрулът е прекъснат от граница, какво сега?';
+      case 'entity_collision':
+        return 'Блъснах се в обект, какво да правя?';
+      case 'player_detected':
+        return 'Засечен е играч, какво да правя?';
+      case 'attack_range':
+        return 'Играчът е в обсег за атака, какво сега?';
+      case 'player_too_far':
+        return 'Играчът е твърде далеч, какво сега?';
+      case 'attack_complete':
+        return 'Направих атаката, какво сега?';
+      default:
+        return 'Нуждая се от инструкции, какво да правя?';
+    }
+  }
+
+  // Helper: Get decision text for BT responses
+  getDecisionText(command, context) {
+    if (!command) return 'няма решение';
+
+    switch(command.type) {
+      case 'idle':
+        const duration = command.duration ? ` за ${command.duration} сек` : '';
+        return `idle${duration}`;
+      case 'patrol':
+        return 'start_patrol';
+      case 'reverse_patrol':
+        return 'reverse_patrol';
+      case 'chase':
+        return 'chase_player';
+      case 'attack':
+        const attackType = command.attackType || 'light';
+        return `attack_${attackType}`;
+      default:
+        return command.type || 'unknown';
+    }
   }
 
   // Helper: Get closest player
