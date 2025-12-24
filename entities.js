@@ -298,7 +298,7 @@ class BlueSlime {
     const currentState = this.stateMachine.getCurrentStateName();
     const behaviors = this.aiContext?.behaviors || {};
 
-    console.log(`[BLUE SLIME FSM] Current state: ${currentState}, aiTimer: ${this.aiTimer}, vx: ${this.vx}`);
+    //console.log(`[BLUE SLIME FSM] Current state: ${currentState}, aiTimer: ${this.aiTimer}, vx: ${this.vx}`);
 
     // State-specific behavior logic
     switch(currentState) {
@@ -489,9 +489,9 @@ class BlueSlime {
     // Add context to aiContext for BT decision making
     this.aiContext.consultationContext = context;
 
-    console.log('[BLUE SLIME BT] Consulting BT for decision with context...');
-    console.log('[BLUE SLIME BT] Context targets:', this.aiContext.targets);
-    console.log('[BLUE SLIME BT] Consultation context:', context);
+    //console.log('[BLUE SLIME BT] Consulting BT for decision with context...');
+    //console.log('[BLUE SLIME BT] Context targets:', this.aiContext.targets);
+    //console.log('[BLUE SLIME BT] Consultation context:', context);
 
     // Update boss phase if needed
     if (this.aiContext.rarity === "boss" && this.aiContext.bossPhaseManager) {

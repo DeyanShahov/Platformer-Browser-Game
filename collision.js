@@ -266,7 +266,7 @@ function applyCollisionCorrection(entity, proposedX, proposedY, proposedZ, axis)
                      [...players, window.enemy, window.ally].filter(e => e !== null && e !== undefined);
   const others = allEntities.filter(e => e !== entity && e !== null && e !== undefined);
 
-  console.log(`[COLLISION_CORRECTION] Checking ${entity.entityType} movement on ${axis}-axis. Others: ${others.length}`);
+  //console.log(`[COLLISION_CORRECTION] Checking ${entity.entityType} movement on ${axis}-axis. Others: ${others.length}`);
 
   // Check collision with each other entity
   for (const other of others) {

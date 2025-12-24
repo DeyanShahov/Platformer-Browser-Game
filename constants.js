@@ -1,6 +1,8 @@
 // Game constants
 const Z_MIN = -450;
 const Z_MAX = 200;
+const X_MIN = 0;              // Left screen boundary
+const X_MAX = CANVAS_WIDTH;   // Right screen boundary
 const CANVAS_WIDTH = 1920;
 const CANVAS_HEIGHT = 1080;
 const SPEED = 200;

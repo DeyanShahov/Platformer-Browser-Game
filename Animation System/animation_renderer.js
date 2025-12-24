@@ -58,9 +58,9 @@ class AnimationRenderer {
                            currentStateName === 'enemy_jumping';
 
     // Debug logging for Blue Slime hit box issues
-    if (entity.animationEntityType === 'blue_slime') {
-      console.log(`[DEBUG BLUE SLIME] Entity type: ${entity.animationEntityType}, State: ${currentStateName}, usePerFrameData: ${usePerFrameData}`);
-    }
+    // if (entity.animationEntityType === 'blue_slime') {
+    //   console.log(`[DEBUG BLUE SLIME] Entity type: ${entity.animationEntityType}, State: ${currentStateName}, usePerFrameData: ${usePerFrameData}`);
+    // }
 
     // Debug logging for hurt box visibility
     // console.log(`[DEBUG HURTBOX] Entity: ${entity.id} (${entity.entityType}), State: ${currentStateName}, HasAnimation: ${!!entity.animation}, usePerFrameData: ${usePerFrameData}`);

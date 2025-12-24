@@ -465,6 +465,9 @@ function handleMovement(player, dt) {
   player.vy += GRAVITY * dt;
   player.y += player.vy * dt;
 
+  // Apply screen boundaries to keep player within screen bounds
+  applyScreenBoundaries(player);
+
   // Земя - използвай spawn позицията вместо hardcoded 100px
   const groundY = CANVAS_HEIGHT - 600; // Съответства на spawnY в main.js
   if (player.y >= groundY) {
@@ -764,6 +767,9 @@ function handleEnemyMovement(enemy, dt) {
     enemy.onGround = false;
   }
 
+  // Apply screen boundaries to keep enemy within screen bounds
+  applyScreenBoundaries(enemy);
+
   // Reset velocity after movement (AI will set it again next frame)
   // Keep vx for continuous movement, reset vz
   enemy.vz = 0;
@@ -843,4 +849,29 @@ function checkIfEntityIsInCollision(entity) {
   }
 
   return false;
+}
+
+// Universal screen boundaries function - keeps all entities within screen bounds
+function applyScreenBoundaries(entity) {
+  // Horizontal boundaries (X-axis)
+  if (entity.x < X_MIN) {
+    console.log(`[SCREEN_BOUNDARIES] ${entity.entityType} hit left boundary, clamping X from ${entity.x} to ${X_MIN}`);
+    entity.x = X_MIN;
+    entity.vx = 0; // Stop horizontal movement
+  } else if (entity.x > X_MAX) {
+    console.log(`[SCREEN_BOUNDARIES] ${entity.entityType} hit right boundary, clamping X from ${entity.x} to ${X_MAX}`);
+    entity.x = X_MAX;
+    entity.vx = 0; // Stop horizontal movement
+  }
+
+  // Vertical boundaries (Z-axis) - same as before but now universal
+  if (entity.z < Z_MIN) {
+    console.log(`[SCREEN_BOUNDARIES] ${entity.entityType} hit bottom boundary, clamping Z from ${entity.z} to ${Z_MIN}`);
+    entity.z = Z_MIN;
+    entity.vz = 0; // Stop vertical movement
+  } else if (entity.z > Z_MAX) {
+    console.log(`[SCREEN_BOUNDARIES] ${entity.entityType} hit top boundary, clamping Z from ${entity.z} to ${Z_MAX}`);
+    entity.z = Z_MAX;
+    entity.vz = 0; // Stop vertical movement
+  }
 }
