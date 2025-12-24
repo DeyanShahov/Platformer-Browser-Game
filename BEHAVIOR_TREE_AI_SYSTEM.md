@@ -22,26 +22,40 @@ BT Nodes:
 ├── Composites: Selector, Sequence
 ├── Decorators: Cooldown
 ├── Leaves: Condition, Action
-└── Context: Enemy state, targets, capabilities
+└── Context: Enemy state, targets, capabilities, behavior constraints
 ```
 
-#### 2. Enemy Behaviors (`ENEMY_BEHAVIORS`)
+#### 2. Universal Enemy Behaviors (`ENEMY_BEHAVIORS`)
 ```javascript
 Rarity Levels: common, elite, boss
 Intelligence: basic, normal, advanced
 
-Behavior Config:
-├── Movement: patrol radius, speed, awareness
-├── Combat: attack types, ranges
-├── Defense: block/evade chances
-└── Special: abilities availability
+Universal Config Structure:
+├── idle: { duration, transitions }
+├── patrol: { radiusX, speed, directionLogic, interruptHandling }
+├── targetSelection: { strategy, awarenessRadius }
+├── chase: { radiusX, speed }
+├── attack: { lightChance, mediumChance, heavyChance }
+├── block/evade: { useChance }
+└── special: { available, cooldown }
 ```
 
-#### 3. Integration Layer
+#### 3. Behavior Constraints System
+```javascript
+Physical Constraints:
+├── Screen boundaries (X/Z limits)
+├── Entity collisions
+├── Movement restrictions
+└── Dynamic behavior filtering
 ```
-BT System → Decision (COMMAND) → Movement System → FSM Actions
+
+#### 4. Integration Layer
+```
+Enemy Type → Rarity/Intelligence → BT Config → Universal BT Logic
     ↓
-Context Data ← Player positions ← Collision detection ← Self state
+BT System → Context-aware Decision → Movement System → FSM Actions
+    ↓
+Physical Constraints ← Environment State ← Collision Detection
 ```
 
 ### 📊 Data Flow
@@ -73,24 +87,59 @@ Context Data ← Player positions ← Collision detection ← Self state
 - **Normal AI**: Phase transitions, special mechanics
 - **Advanced AI**: Adaptive AI, player prediction
 
-### Blue Slime (Prototype Implementation)
+### Universal Patrol System
+
+**Patrol Behavior Flow:**
+1. **Spawn Idle** → Initial idle period (configured per enemy type)
+2. **Idle Timeout** → BT consultation for patrol direction
+3. **Direction Selection** → Constraint-based (left/right/both/none)
+4. **Patrol Execution** → Movement with continuous constraint checking
+5. **Interrupt Handling** → Boundary/Entity/Player/Distance triggers
+6. **BT Re-consultation** → Context-aware response to interruption
+
+**Patrol Configuration Structure:**
+```javascript
+patrol: {
+  radiusX: 200,        // Patrol distance
+  speed: 50,          // Movement speed
+  directionLogic: 'constraint_based', // How to choose direction
+  interruptHandling: { // What triggers patrol interruption
+    onBoundary: 'reverse',   // Hit screen edge → reverse direction
+    onEntity: 'idle',        // Hit entity → idle briefly
+    onPlayer: 'chase',       // Player detected → chase
+    onDistance: true         // Max distance reached → reverse
+  }
+}
+```
+
+### Blue Slime (Universal Implementation)
 
 ```javascript
 Current Config: ENEMY_BEHAVIORS.common.basic
 {
-  idle: { duration: 2000 },
-  patrol: { radiusX: 200, speed: 50, radiusY: 0 },
-  chase: { radiusX: 300, speed: 80, radiusY: 0 },
+  idle: { duration: 3 },
+  patrol: {
+    radiusX: 200, speed: 50,
+    directionLogic: 'constraint_based',
+    interruptHandling: {
+      onBoundary: 'reverse',
+      onEntity: 'idle',
+      onPlayer: 'chase'
+    }
+  },
+  targetSelection: { strategy: "firstHit" },
+  chase: { radiusX: 300, speed: 80 },
   attack: { lightChance: 1.0, mediumChance: 0, heavyChance: 0 },
   meta: { awarenessRadius: 150 }
 }
 ```
 
-**Behavior States:**
-- **Idle**: 2 секунди чакане
-- **Patrol**: Движение наляво-дясно в 200px радиус
-- **Chase**: Преследване в 300px радиус
-- **Attack**: Атака в 100px радиус (само light attacks)
+**Behavior Flow:**
+- **Spawn** → IDLE 3 секунди
+- **Idle Timeout** → BT пита за посока (constraint-based)
+- **Patrol Start** → Движение с interrupt monitoring
+- **Interrupt** → BT преоценява ситуацията
+- **Response** → Reverse/Idle/Chase базирано на interrupt тип
 
 ---
 
@@ -174,36 +223,39 @@ COMMAND.ATTACK → Stop movement, trigger attack animation
 
 ## 🚀 Implementation Roadmap
 
-### Phase 1: Blue Slime Prototype ✅
-- [x] BT system core implementation
-- [x] Basic patrol behavior
-- [x] Target detection and chasing
-- [x] Attack range logic
-- [ ] **NEXT**: Movement system integration
+### Phase 1: Universal BT Architecture ✅
+- [x] BT system core implementation with node types
+- [x] Rarity/Intelligence-based configurations
+- [x] Universal patrol system with constraint awareness
+- [x] Context-aware patrol interruption handling
+- [x] Dynamic command generation based on physical constraints
+- [x] Behavior constraints system integration
+- [x] Blue Slime using common/basic configuration
 
-### Phase 2: Movement System Integration
-- [ ] Implement patrol waypoints
-- [ ] Add obstacle avoidance
-- [ ] Collision-based direction changes
-- [ ] Terrain-specific behaviors
+### Phase 2: Enhanced Patrol Behaviors
+- [x] Constraint-based direction selection
+- [x] Patrol interruption handling (boundary/entity/player/distance)
+- [x] Dynamic patrol command generation
+- [ ] **NEXT**: Advanced patrol patterns (circular, waypoint-based)
 
 ### Phase 3: Combat Enhancement
-- [ ] Attack type selection (Light/Medium/Heavy)
-- [ ] Defensive behaviors (Block/Evade)
+- [ ] Attack type selection (Light/Medium/Heavy) profiles
+- [ ] Defensive behaviors (Block/Evade) integration
 - [ ] Combo attack sequences
-- [ ] Special ability integration
+- [ ] Special ability integration with cooldowns
 
 ### Phase 4: Multiple Enemy Types
-- [ ] Skeleton warriors (melee focused)
-- [ ] Skeleton archers (ranged attacks)
-- [ ] Elite knights (advanced tactics)
-- [ ] Boss enemies (phase mechanics)
+- [ ] Skeleton warriors (melee focused - elite/normal config)
+- [ ] Skeleton archers (ranged attacks - elite/advanced config)
+- [ ] Elite knights (advanced tactics - boss/basic config)
+- [ ] Boss enemies (phase mechanics - boss/normal/advanced)
 
-### Phase 5: Advanced Features
-- [ ] Co-op target selection
-- [ ] Dynamic difficulty adjustment
-- [ ] Environmental interactions
-- [ ] Player prediction AI
+### Phase 5: Advanced AI Features
+- [ ] Co-op target selection and prioritization
+- [ ] Dynamic difficulty adjustment based on player performance
+- [ ] Environmental interactions (cover, terrain utilization)
+- [ ] Player prediction AI and adaptive behaviors
+- [ ] Group AI coordination between multiple enemies
 
 ---
 
