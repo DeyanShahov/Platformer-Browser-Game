@@ -537,18 +537,27 @@ class BlueSlime {
         break;
 
       case 'patrol':
+      case 'patrol_left':
+      case 'patrol_right':
         this.stateMachine.changeState('enemy_walking');
-        // Reset patrol direction for new patrol cycle
-        this.patrolDirection = 1; // Always start right for new patrols
+        // Set patrol direction based on command type
+        if (command.type === 'patrol_left') {
+          this.patrolDirection = -1; // Go left
+        } else if (command.type === 'patrol_right') {
+          this.patrolDirection = 1;  // Go right
+        } else {
+          // Default 'patrol' command - use constraint-based logic
+          this.patrolDirection = 1; // Default to right
+        }
         this.startX = this.x; // Reset patrol center
-        // vx will be set in updateWalkingBehavior
+        console.log(`[BLUE SLIME TRANSITION] Starting patrol with direction: ${this.patrolDirection} (command: ${command.type})`);
         break;
 
       case 'reverse_patrol':
         // Stay in walking state but reverse direction
         this.stateMachine.changeState('enemy_walking');
         this.patrolDirection *= -1; // Reverse current direction
-        // vx will be set in updateWalkingBehavior
+        console.log(`[BLUE SLIME TRANSITION] Reversing patrol direction to: ${this.patrolDirection}`);
         break;
 
       case 'chase':
