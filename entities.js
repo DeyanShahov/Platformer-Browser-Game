@@ -389,16 +389,20 @@ class BlueSlime {
       return;
     }
 
-    // Check entity collisions - consult BT for decision
-    const entities = window.gameState ? window.gameState.getAllEntities() : [];
-    const collisions = window.enemyAIUtils.detectEntityCollisions(this, entities, 80);
+    // Use unified collision system like the player does
+    const proposedX = this.x + (this.patrolDirection * patrolSpeed * dt);
+    const correctedX = window.applyCollisionCorrection ?
+      window.applyCollisionCorrection(this, proposedX, this.y, this.z, 'x') :
+      proposedX;
 
-    if (collisions.length > 0) {
-      console.log(`[BLUE SLIME PATROL] Detected ${collisions.length} entity collisions, consulting BT`);
+    // Check if movement was blocked by collision
+    const hasCollision = correctedX !== proposedX;
+    if (hasCollision) {
+      console.log(`[BLUE SLIME PATROL] Movement blocked by collision, consulting BT`);
       // Consult BT with context about entity collision
       const nextBehavior = this.consultBTForBehavior(players, {
         reason: 'entity_collision',
-        collisions: collisions
+        blockedMovement: true
       });
       this.transitionToBehavior(nextBehavior, behaviors);
       return;
@@ -426,6 +430,7 @@ class BlueSlime {
     }
 
     // Continue patrol movement - no issues detected
+    this.x = correctedX; // Apply corrected movement
     this.vx = this.patrolDirection * patrolSpeed;
   }
 
