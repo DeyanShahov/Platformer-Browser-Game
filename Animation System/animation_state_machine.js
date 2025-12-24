@@ -665,7 +665,7 @@ class AnimationStateMachine {
     newState.lastTransitionTime = performance.now();
     newState.enter(this.entity);
 
-    console.log(`[FSM] Changed to state: ${newStateName}`);
+    //console.log(`[FSM] Changed to state: ${newStateName}`);
     return true;
   }
 

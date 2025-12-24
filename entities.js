@@ -237,7 +237,7 @@ class BlueSlime {
     this.animation = null;
     this.stateMachine = null; // Will be created after animation registration
 
-    // Initialize BT AI System (following example pattern)
+    // Initialize BT AI System (universal)
     this.initializeBT();
 
     // Register with combat system
@@ -248,14 +248,14 @@ class BlueSlime {
     console.log(`[BLUE SLIME] Created Blue Slime (Level ${level}) at (${x}, ${y}) with ${this.maxHealth} HP`);
   }
 
-  // Initialize Behavior Tree AI System (following example_use_of_BT.js pattern)
+  // Initialize Behavior Tree AI System (universal system)
   initializeBT() {
-    if (!window.createEnemyBehaviorTree || !window.tickEnemyAI || !window.createAttackProfile) {
-      console.warn('[BLUE SLIME] BT system not loaded, using fallback AI');
+    if (!window.createUniversalEnemyBehaviorTree || !window.tickEnemyAI || !window.createAttackProfile) {
+      console.warn('[BLUE SLIME] Universal BT system not loaded, using fallback AI');
       return;
     }
 
-    // Create BT context following example pattern exactly
+    // Create BT context using rarity/intelligence system
     this.aiContext = {
       name: `BlueSlime_${this.level}`,
       rarity: this.rarity,
@@ -265,15 +265,15 @@ class BlueSlime {
       capabilities: { canBlock: false, canEvade: false },
       attackProfile: window.createAttackProfile(["light"]), // Blue Slime uses only light attacks
       intelligence: { blockChance: 0, evadeChance: 0.1, aggression: 0.3 },
-      behaviors: window.ENEMY_BEHAVIORS?.[this.rarity]?.[this.intelligence],
+      behaviors: window.ENEMY_BEHAVIORS?.[this.rarity]?.[this.intelligence], // Rarity/intelligence config
       phaseSpecialAvailable: false, // Blue Slime is not a boss
       command: null,
     };
 
-    // Create BT tree (following example pattern)
-    this.aiContext.behaviorTree = window.createEnemyBehaviorTree();
+    // Create BT tree using universal factory
+    this.aiContext.behaviorTree = window.createUniversalEnemyBehaviorTree(this.rarity, this.intelligence);
 
-    console.log(`[BLUE SLIME] BT AI system initialized: ${this.rarity}/${this.intelligence}`);
+    console.log(`[BLUE SLIME] Universal BT AI system initialized: ${this.rarity}/${this.intelligence}`);
   }
 
   // AI Update - FSM controls execution, BT provides strategic decisions

@@ -57,7 +57,7 @@ class EntityAnimation {
     this.onAnimationEnd = onEnd;
     this.forceAnimation = force;
 
-    console.log(`[EntityAnimation] Set animation: ${this.entityType}:${animationType}`);
+    //console.log(`[EntityAnimation] Set animation: ${this.entityType}:${animationType}`);
     return true;
   }
 

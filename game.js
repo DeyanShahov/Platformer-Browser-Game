@@ -727,7 +727,7 @@ function updateEnemyAI(enemy, dt) {
 
           // Trigger FSM attack
           enemy.stateMachine.handleAction(randomAttack);
-          console.log(`[ENEMY AI] Enemy attacks with ${randomAttack}`);
+          //console.log(`[ENEMY AI] Enemy attacks with ${randomAttack}`);
         }
       }
     }
