@@ -368,6 +368,27 @@ const patrolInterruptedByPlayer = new Condition(ctx =>
   ctx.consultationContext?.reason?.includes('player')
 );
 
+// Attack completion condition
+const attackCompleted = new Condition(ctx =>
+  ctx.consultationContext?.reason === 'attack_complete'
+);
+
+// Situation-aware conditions
+const afterAttackCondition = new Condition(ctx =>
+  ctx.consultationContext?.reason === 'attack_complete' ||
+  ctx.consultationContext?.reason === 'attack_timeout'
+);
+
+const boundaryCollisionCondition = new Condition(ctx =>
+  ctx.consultationContext?.reason === 'screen_boundary' ||
+  ctx.consultationContext?.reason === 'entity_collision'
+);
+
+const playerDetectionCondition = new Condition(ctx =>
+  ctx.consultationContext?.reason === 'player_detected' ||
+  ctx.consultationContext?.reason === 'player_in_range'
+);
+
 const canPatrolLeft = new Condition(ctx =>
   !ctx.behaviorConstraints?.blocked?.has('patrol_left')
 );
@@ -422,8 +443,8 @@ function createPatrolDecisionSubtree(config) {
         // Player detected during patrol - chase immediately
         new Sequence([patrolInterruptedByPlayer, new Action(() => ({ type: COMMAND.CHASE }))]),
 
-        // Hit boundary - reverse patrol direction
-        new Sequence([patrolInterruptedByBoundary, new Action(() => ({ type: COMMAND.REVERSE_PATROL }))]),
+        // Hit boundary - go to idle (thinking phase)
+        new Sequence([patrolInterruptedByBoundary, new Action(() => ({ type: COMMAND.IDLE, duration: 0.5 }))]),
 
         // Hit entity - idle briefly
         new Sequence([patrolInterruptedByEntity, new Action(() => ({ type: COMMAND.IDLE, duration: 1.0 }))]),

@@ -32,7 +32,12 @@ class AnimationState {
       return null;
     }
 
-    // Transition to idle if no movement, but prevent immediate oscillation
+    // For enemy entities, let AI control transitions - don't auto-transition
+    if (entity.entityType === 'enemy') {
+      return null;
+    }
+
+    // Player logic: Transition to idle if no movement, but prevent immediate oscillation
     if (!this.hasMovementInput(entity) && performance.now() - this.lastTransitionTime > 100) {
       console.log(`[FSM] Walking: no movement detected, vx=${entity.vx}, vz=${entity.vz}, transitioning to idle`);
       return 'idle';
@@ -777,7 +782,24 @@ class EnemyIdleState extends AnimationState {
 
   enter(entity) {
     super.enter(entity);
-    // Use entity's animation type dynamically
+    console.log(`[DEBUG] EnemyIdleState.enter: START - isThinking=${entity.isThinking}, aiTimer=${entity.aiTimer}, pendingCommand=`, entity.pendingCommand);
+
+    // Protect thinking phase from interruptions OR preserve pending commands
+    const shouldProtect = (entity.isThinking && entity.aiTimer < 0) || entity.pendingCommand;
+    console.log(`[DEBUG] EnemyIdleState.enter: shouldProtect calculation: (${entity.isThinking} && ${entity.aiTimer < 0}) || ${!!entity.pendingCommand} = ${shouldProtect}`);
+
+    if (shouldProtect) {
+      console.log(`[ENEMY IDLE] Protecting thinking phase OR pending command (aiTimer: ${entity.aiTimer}, hasPending: ${!!entity.pendingCommand})`);
+      console.log(`[DEBUG] EnemyIdleState.enter: state preserved, pendingCommand =`, entity.pendingCommand);
+      // Don't change animation or reset damage flags - preserve state
+      return;
+    }
+
+    console.log(`[DEBUG] EnemyIdleState.enter: normal idle logic, preserving pendingCommand`);
+    // Normal idle enter logic - preserve any pending commands
+    // entity.pendingCommand = null; // REMOVED: Don't clear pending commands
+    entity.isThinking = false;
+
     const idleType = this.getEntityAnimationType(entity, 'IDLE');
     if (entity.animation && idleType) {
       entity.animation.setAnimation(idleType, true);
@@ -916,12 +938,9 @@ class EnemyAttackState extends AnimationState {
         // Animation completed, reset damage flag
         entity.damageDealt = false;
 
-        // Return to appropriate movement state
-        if (this.hasMovementInput(entity)) {
-          return 'enemy_walking';
-        } else {
-          return 'enemy_idle';
-        }
+        // For enemies, let AI system handle transitions - don't auto-transition
+        // This allows BaseEnemy to consult BT for next action after attack completes
+        return null;
       }
     }
   }

@@ -260,7 +260,8 @@ function checkCollisionWithBuffer(ax, ay, az, aw, ah, azThickness, tx, ty, tz, t
 }
 
 // Collision correction function - allows animations but corrects position
-function applyCollisionCorrection(entity, proposedX, proposedY, proposedZ, axis) {
+function applyCollisionCorrection(entity, proposedX, proposedY, proposedZ, axis, options = {}) {
+  const buffer = options.buffer || 0; // Allow custom buffer for AI vs player movement
   // Get all other entities
   const allEntities = window.gameState ? window.gameState.getAllEntities() :
                      [...players, window.enemy, window.ally].filter(e => e !== null && e !== undefined);

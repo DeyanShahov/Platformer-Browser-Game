@@ -466,7 +466,12 @@ function handleMovement(player, dt) {
   player.y += player.vy * dt;
 
   // Apply screen boundaries to keep player within screen bounds
-  applyScreenBoundaries(player);
+  const boundaryResult = applyScreenBoundaries(player);
+  if (boundaryResult.wasLimited) {
+    // Stop movement if we hit a boundary
+    player.vx = 0;
+    player.vz = 0;
+  }
 
   // Земя - използвай spawn позицията вместо hardcoded 100px
   const groundY = CANVAS_HEIGHT - 600; // Съответства на spawnY в main.js
@@ -767,8 +772,12 @@ function handleEnemyMovement(enemy, dt) {
     enemy.onGround = false;
   }
 
-  // Apply screen boundaries to keep enemy within screen bounds
-  applyScreenBoundaries(enemy);
+  // Apply screen boundaries and check for interruption
+  const boundaryResult = applyScreenBoundaries(enemy);
+  if (boundaryResult.wasLimited) {
+    // Signal that boundary was hit - AI will handle BT consultation
+    enemy.boundaryInterrupted = true;
+  }
 
   // Reset velocity after movement (AI will set it again next frame)
   // Keep vx for continuous movement, reset vz
@@ -859,30 +868,62 @@ function getBehaviorConstraints(entity) {
     reasons: {}
   };
 
-  // Check horizontal movement constraints
-  const entityWidth = entity.collisionW || entity.w || 50;
+  // Check horizontal movement constraints (same logic as applyScreenBoundaries)
+  const hitBoxData = getCurrentHitBoxDimensions(entity);
+  const hitBoxPosition = getCurrentHitBoxPosition(entity);
 
-  // Can move right?
-  const canMoveRight = entity.x < (CANVAS_WIDTH - entityWidth);
-  if (!canMoveRight) {
-    constraints.blocked.add('patrol_right');
-    constraints.blocked.add('move_right');
-    constraints.reasons.patrol_right = 'screen_boundary_right';
+  let canMoveRight = true;
+  let canMoveLeft = true;
+
+  if (hitBoxData && hitBoxPosition) {
+    // Use same boundary calculation as applyScreenBoundaries
+    const hitBoxOffsetX = hitBoxPosition.x - entity.x;
+    const rightBoundary = CANVAS_WIDTH - (hitBoxOffsetX + hitBoxData.width);
+    const leftBoundary = -hitBoxOffsetX;
+
+    // Can move right?
+    canMoveRight = entity.x < rightBoundary;
+    if (!canMoveRight) {
+      constraints.blocked.add('patrol_right');
+      constraints.blocked.add('move_right');
+      constraints.reasons.patrol_right = 'screen_boundary_right';
+    }
+
+    // Can move left?
+    canMoveLeft = entity.x > leftBoundary;
+    if (!canMoveLeft) {
+      constraints.blocked.add('patrol_left');
+      constraints.blocked.add('move_left');
+      constraints.reasons.patrol_left = 'screen_boundary_left';
+    }
+  } else {
+    // Fallback for entities without per-frame hit boxes
+    const entityWidth = entity.collisionW || entity.w || 50;
+    canMoveRight = entity.x < (CANVAS_WIDTH - entityWidth);
+    if (!canMoveRight) {
+      constraints.blocked.add('patrol_right');
+      constraints.blocked.add('move_right');
+      constraints.reasons.patrol_right = 'screen_boundary_right';
+    }
+
+    canMoveLeft = entity.x > 0;
+    if (!canMoveLeft) {
+      constraints.blocked.add('patrol_left');
+      constraints.blocked.add('move_left');
+      constraints.reasons.patrol_left = 'screen_boundary_left';
+    }
   }
 
-  // Can move left?
-  const canMoveLeft = entity.x > 0;
-  if (!canMoveLeft) {
-    constraints.blocked.add('patrol_left');
-    constraints.blocked.add('move_left');
-    constraints.reasons.patrol_left = 'screen_boundary_left';
-  }
-
-  // Can patrol? (needs both directions available or specific logic)
+  // Can patrol? (needs at least one direction available)
   const canPatrol = canMoveRight || canMoveLeft;
   if (!canPatrol) {
     constraints.blocked.add('patrol');
     constraints.reasons.patrol = 'no_movement_space';
+  } else {
+    // Allow patrol if at least one direction is available
+    constraints.allowed.add('patrol');
+    constraints.allowed.add('patrol_left');
+    constraints.allowed.add('patrol_right');
   }
 
   // Check vertical movement constraints
@@ -921,8 +962,10 @@ function getBehaviorConstraints(entity) {
   return constraints;
 }
 
-// Universal screen boundaries function - keeps all entities within screen bounds
+// Universal screen boundaries function - checks and applies boundaries, returns interruption info
 function applyScreenBoundaries(entity) {
+  let wasLimited = false;
+
   // Get current per-frame hit box dimensions and position offset
   const hitBoxData = getCurrentHitBoxDimensions(entity);
   const hitBoxPosition = getCurrentHitBoxPosition(entity);
@@ -943,13 +986,15 @@ function applyScreenBoundaries(entity) {
 
     // Horizontal boundaries (X-axis) - ensure full hit box visibility
     if (entity.x < leftBoundary) {
-      //console.log(`[SCREEN_BOUNDARIES] ${entity.entityType} hit left boundary, clamping X from ${entity.x} to ${leftBoundary}`);
+      console.log(`[SCREEN_BOUNDARIES] ${entity.entityType} hit left boundary, clamping X from ${entity.x} to ${leftBoundary}`);
       entity.x = leftBoundary;
       entity.vx = 0; // Stop horizontal movement
+      wasLimited = true;
     } else if (entity.x > rightBoundary) {
-      //console.log(`[SCREEN_BOUNDARIES] ${entity.entityType} hit right boundary, clamping X from ${entity.x} to ${rightBoundary}`);
+      console.log(`[SCREEN_BOUNDARIES] ${entity.entityType} hit right boundary, clamping X from ${entity.x} to ${rightBoundary}`);
       entity.x = rightBoundary;
       entity.vx = 0; // Stop horizontal movement
+      wasLimited = true;
     }
   } else {
     // Fallback for entities without per-frame hit boxes
@@ -964,9 +1009,11 @@ function applyScreenBoundaries(entity) {
     if (entity.x < leftBoundary) {
       entity.x = leftBoundary;
       entity.vx = 0;
+      wasLimited = true;
     } else if (entity.x > rightBoundary) {
       entity.x = rightBoundary;
       entity.vx = 0;
+      wasLimited = true;
     }
   }
 
@@ -975,11 +1022,15 @@ function applyScreenBoundaries(entity) {
     console.log(`[SCREEN_BOUNDARIES] ${entity.entityType} hit bottom boundary, clamping Z from ${entity.z} to ${Z_MIN}`);
     entity.z = Z_MIN;
     entity.vz = 0; // Stop vertical movement
+    wasLimited = true;
   } else if (entity.z > Z_MAX) {
     console.log(`[SCREEN_BOUNDARIES] ${entity.entityType} hit top boundary, clamping Z from ${entity.z} to ${Z_MAX}`);
     entity.z = Z_MAX;
     entity.vz = 0; // Stop vertical movement
+    wasLimited = true;
   }
+
+  return { wasLimited };
 }
 
 // Export behavior constraints function globally
