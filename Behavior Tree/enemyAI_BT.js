@@ -460,7 +460,23 @@ function createPatrolDecisionSubtree(config) {
     // Priority 2: Idle timeout (spawn or regular) - transition to patrol
     new Sequence([
       idleTimeout,
-      new Action(ctx => generateContextualPatrolCommand(ctx, config))
+      new Sequence([
+        // Ensure constraints are up-to-date before patrol decision
+        new Condition(ctx => {
+          // Force constraint refresh by calling getBehaviorConstraints
+          const freshConstraints = window.getBehaviorConstraints ?
+            window.getBehaviorConstraints(ctx.self) : null;
+          if (freshConstraints) {
+            ctx.behaviorConstraints = freshConstraints;
+            console.log(`[BT_CONSTRAINTS] Refreshed constraints for patrol decision:`, {
+              blocked: Array.from(freshConstraints.blocked),
+              allowed: Array.from(freshConstraints.allowed)
+            });
+          }
+          return true; // Always succeed, just refresh constraints
+        }),
+        new Action(ctx => generateContextualPatrolCommand(ctx, config))
+      ])
     ]),
 
     // Priority 3: Normal patrol - choose direction based on constraints

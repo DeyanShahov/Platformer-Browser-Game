@@ -416,13 +416,14 @@ class BaseEnemy {
 
   // Consult BT for strategic behavior decision with context
   consultBTForBehavior(players, context = {}) {
-    // Get behavior constraints based on current physical environment
+    // Get fresh behavior constraints based on current physical environment
     const constraints = window.getBehaviorConstraints ? window.getBehaviorConstraints(this) : null;
     if (constraints) {
       context.behaviorConstraints = constraints;
-      console.log(`[BT_CONSTRAINTS] Applying constraints:`, {
+      console.log(`[BT_CONSTRAINTS] Fresh constraints for ${context.reason || 'general'}:`, {
         blocked: Array.from(constraints.blocked),
-        allowed: Array.from(constraints.allowed)
+        allowed: Array.from(constraints.allowed),
+        reasons: constraints.reasons
       });
     }
 
