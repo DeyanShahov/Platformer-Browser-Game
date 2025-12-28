@@ -593,3 +593,13 @@ function applyScreenBoundaries(entity) {
 
   return { wasLimited };
 }
+
+// ===========================================
+// GLOBAL EXPORTS
+// ===========================================
+
+// Export collision functions globally for use by other modules
+window.checkHitboxCollision = checkHitboxCollision;
+window.canMoveTo = canMoveTo;
+window.getBehaviorConstraints = getBehaviorConstraints;
+window.applyScreenBoundaries = applyScreenBoundaries;
