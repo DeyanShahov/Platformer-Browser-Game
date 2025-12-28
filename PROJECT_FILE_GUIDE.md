@@ -41,21 +41,29 @@ Platformer Browser Game/
 **Dependencies:** `game.js`, `render.js`, `constants.js`
 **Integration Points:** Called once at game start
 
-### `game.js` - Main Game Loop & Logic
-**Purpose:** Central game logic coordinator and main update/render loop
+### `game.js` - Main Game Loop & Core Logic **[RECENTLY ENHANCED]**
+**Purpose:** Central game logic coordinator, main update/render loop, and core game mechanics
 **Responsibilities:**
-- Player updates and physics
-- Enemy AI coordination
+- Player updates, physics, and entity management
+- Enemy AI coordination and combat
 - Input processing and controller support
-- Collision resolution
-- Game state transitions
+- Collision resolution and boundary enforcement
+- Game state transitions and entity lifecycle
+- Player character class and behavior **[MOVED HERE]**
 **Key Functions:**
 - `update(dt)` - Main update loop
 - `handleMovement(player, dt)` - Player physics
-- `getBehaviorConstraints(entity)` - AI decision boundaries **[RECENTLY REFACTORED]**
-- `applyScreenBoundaries(entity)` - Boundary enforcement
-**Dependencies:** `game_state.js`, `input.js`, `collision.js`, `combat_system.js`
-**Integration Points:** Core of game loop, called every frame
+- `checkHitboxCollision(attacker, target, params)` - Attack collision **[MOVED HERE]**
+- `canMoveTo(entity, proposedX, proposedY, proposedZ)` - Movement validation **[MOVED HERE]**
+- `getBehaviorConstraints(entity)` - AI decision boundaries **[MOVED HERE]**
+- `applyScreenBoundaries(entity)` - Boundary enforcement **[MOVED HERE]**
+- `initGameWithSelections()` - Game initialization **[MOVED HERE]**
+- `showSkillTreeForPlayer(playerIndex)` - Skill tree display **[MOVED HERE]**
+- `showCharacterStatsForPlayer(playerIndex)` - Stats display **[MOVED HERE]**
+**Key Classes:**
+- `Player` - Complete player character class **[MOVED FROM entities.js]**
+**Dependencies:** `game_state.js`, `input.js`, `collision.js`, `combat_system.js`, `menu.js`
+**Integration Points:** Core of game loop, called every frame; main game initialization
 
 ### `game_state.js` - Global State Management
 **Purpose:** Centralized storage and management of all game state
@@ -87,7 +95,7 @@ Platformer Browser Game/
 **Dependencies:** None (fundamental constants)
 **Integration Points:** Imported by most game systems
 
-### `render.js` - Rendering Engine
+### `render.js` - Rendering Engine **[RECENTLY REFACTORED]**
 **Purpose:** Handles all visual output and canvas drawing operations
 **Responsibilities:**
 - Canvas clearing and setup
@@ -99,27 +107,28 @@ Platformer Browser Game/
 - `render()` - Main render function
 - `drawEntity(entity)` - Individual entity drawing
 - `renderUI()` - Interface elements
+- `renderEntityLabels()` - Entity status displays
 **Dependencies:** `entities.js`, `animation_system.js`
 **Integration Points:** Called every frame after update
+**Note:** Entity sorting logic moved to `game.js`
 
 ---
 
 ## 👥 CHARACTER & PLAYER SYSTEMS
 
-### `entities.js` - Player Entity Definitions
-**Purpose:** Base player character classes and shared entity functionality
+### `entities.js` - Entity Management Utilities **[RECENTLY REFACTORED]**
+**Purpose:** Basic entity creation utilities and shared entity variables
 **Responsibilities:**
-- Player character templates
-- Basic entity properties (position, health, etc.)
-- Shared character behaviors
-- Entity serialization/deserialization
-**Key Classes:**
-- `Player` - Base player class
-- `CharacterStats` - Stat management
-**Dependencies:** `constants.js`, `character_info.js`
-**Integration Points:** Extended by specific character classes
+- Entity creation helper functions
+- Global entity variable management
+- Basic entity initialization
+**Key Functions:**
+- `createEntity()` - Entity instantiation utility
+**Dependencies:** None (basic utilities)
+**Integration Points:** Used by game state system for entity creation
+**Note:** Player class moved to `game.js`, enemy classes moved to `base_enemy.js`
 
-### `character_info.js` - Character Statistics & Progression
+### `character_info.js` - Character Statistics & Progression **[RECENTLY REFACTORED]**
 **Purpose:** Manages character stats, leveling, and progression systems
 **Responsibilities:**
 - Experience and leveling calculations
@@ -130,8 +139,10 @@ Platformer Browser Game/
 - `addExperience(amount)` - XP management
 - `calculateStatBonus()` - Stat computations
 - `getLevelProgress()` - Progression tracking
+- `modifyStrength(amount)`, `modifySpeed(amount)`, `modifyIntelligence(amount)` - Stat modifications **[MOVED HERE]**
 **Dependencies:** `constants.js`, `combat_system.js`
 **Integration Points:** Used by all character-related systems
+**Note:** UI display methods moved to `character_stats_ui.js`, combat attributes moved to `combat_system.js`
 
 ### `character_stats_ui.js` - Character Stats Interface
 **Purpose:** UI components for displaying character statistics
@@ -165,18 +176,23 @@ Platformer Browser Game/
 **Dependencies:** `character_info.js`, `entities.js`
 **Integration Points:** Called whenever combat occurs
 
-### `skills.js` - Individual Skill Implementations
-**Purpose:** Contains specific skill logic and effects
+### `skills.js` - Skill Progression & Implementation **[RECENTLY REFACTORED]**
+**Purpose:** Contains skill progression systems and individual skill implementations
 **Responsibilities:**
-- Skill execution logic
+- Skill execution logic and effects
 - Effect calculations and application
 - Skill cooldown management
 - Multi-target skill handling
+- Skill leveling and progression **[MOVED HERE]**
+- Micro skill tree management **[MOVED HERE]**
 **Key Functions:**
 - `executeSkill(skillId, caster, targets)` - Skill activation
 - `calculateSkillDamage(skill, caster)` - Skill-specific calculations
+- `OnePerRowSystem` - Micro skill progression system **[MOVED HERE]**
+- `LevelBasedSystem` - Skill leveling system **[MOVED HERE]**
 **Dependencies:** `combat_system.js`, `character_info.js`
 **Integration Points:** Called by skill tree system
+**Note:** Combat resource checks moved to `combat_system.js`
 
 ---
 
@@ -376,10 +392,10 @@ Platformer Browser Game/
 
 ## 🎨 UI & INTERFACE SYSTEMS
 
-### `ui.js` - General UI Management
-**Purpose:** Core UI system coordination
+### `ui.js` - UI Rendering & Display **[RECENTLY REFACTORED]**
+**Purpose:** Core UI rendering and display management
 **Responsibilities:**
-- UI state management
+- UI state management and coordination
 - Component coordination
 - Input handling for UI
 - Accessibility features
@@ -387,22 +403,25 @@ Platformer Browser Game/
 - `initUI()` - UI initialization
 - `handleUIInput()` - UI interactions
 - `renderUI()` - UI drawing
+- `renderPlayerPortraits()` - Character selection display **[MOVED HERE]**
+- `renderCharacterStatusUI()` - Status overlays **[MOVED HERE]**
 **Dependencies:** `render.js`
 **Integration Points:** Main UI coordinator
+**Note:** Game initialization logic moved to `game.js`
 
-### `menu.js` - Menu System
-**Purpose:** Game menus and navigation
+### `menu.js` - Menu System **[RECENTLY REFACTORED]**
+**Purpose:** Game menus and navigation with state management
 **Responsibilities:**
-- Main menu display
-- Pause menu functionality
-- Settings management
+- Main menu display and navigation
+- Settings management and controls
 - Menu state transitions
 **Key Functions:**
 - `showMainMenu()` - Menu display
 - `handleMenuInput()` - Menu navigation
-- `togglePauseMenu()` - Pause functionality
+- `showControlsMenu()` - Controls configuration
 **Dependencies:** `ui.js`, `game_state.js`
 **Integration Points:** Game state transitions
+**Note:** Skill tree and character stats functions moved to `game.js`
 
 ### `css/skill-tree.css` - Skill Tree Styling
 **Purpose:** CSS styling for skill tree interface
@@ -482,19 +501,28 @@ Platformer Browser Game/
 **Dependencies:** `constants.js`
 **Integration Points:** Game update loop
 
-### `collision.js` - Collision Detection System
-**Purpose:** Advanced collision detection and resolution
+### `collision.js` - Collision Detection System **[RECENTLY ENHANCED]**
+**Purpose:** Advanced collision detection and resolution with global exports
 **Responsibilities:**
 - 3D collision detection with Z-depth
 - Collision buffer systems
 - Entity intersection calculations
 - Collision response coordination
+- Attack collision detection **[MOVED HERE]**
+- Movement validation **[MOVED HERE]**
+- AI behavior constraints **[MOVED HERE]**
+- Screen boundary enforcement **[MOVED HERE]**
 **Key Functions:**
 - `checkCollisionWithBuffer()` - Main collision check
+- `checkHitboxCollision(attacker, target, params)` - Attack collision **[MOVED HERE]**
+- `canMoveTo(entity, proposedX, proposedY, proposedZ)` - Movement validation **[MOVED HERE]**
+- `getBehaviorConstraints(entity)` - AI decision boundaries **[MOVED HERE]**
+- `applyScreenBoundaries(entity)` - Boundary enforcement **[MOVED HERE]**
 - `resolveCollision()` - Collision response
 - `getCollisionBounds(entity)` - Boundary calculation
+**Global Exports:** All major collision functions exported globally for cross-module use
 **Dependencies:** `entities.js`, `constants.js`
-**Integration Points:** Physics and combat systems
+**Integration Points:** Physics, combat, AI, and game systems
 
 ---
 
