@@ -77,25 +77,8 @@ function render() {
   ctx.lineTo(ctx.canvas.width, baselineY - Z_MAX*1.0);
   ctx.stroke();
 
-  // Взимане на всички елементи от game state или fallback към старата система
-  const entities = window.gameState ? window.gameState.getAllEntities() :
-                   [...players, window.enemy, window.ally].filter(e => e !== null && e !== undefined);
-
-  // Debug logging for backwards compatibility
-  if (!window.gameState && window.enemy && window.enemy.isDying) {
-    console.log('[RENDER] Enemy dying status (legacy):', {
-      enemyExists: window.enemy !== null,
-      isDying: window.enemy.isDying,
-      deathTimer: window.enemy.deathTimer,
-      defeatHandled: window.enemy.defeatHandled,
-      visible: window.enemy.visible,
-      entitiesCount: entities.length,
-      enemyInEntities: entities.includes(window.enemy)
-    });
-  }
-
-  // Sort ALL entities by Z-order (effective Y position)
-  entities.sort((a, b) => (a.y - a.z) - (b.y - b.z)); // Sort by effective bottom Y ascending
+  // Get sorted entities using game logic (moved from render.js to game.js)
+  const entities = getSortedEntitiesForRendering();
 
   // Render ALL entities in correct Z-order (single loop)
   entities.forEach((entity, index) => {
@@ -143,21 +126,14 @@ function renderEntityLabels(entity, index) {
 
 function renderEnemyLabels(entity) {
   const enemyInfo = entity.enemyData.getEnemyInfo();
-  const healthPercent = entity.maxHealth > 0 ? (entity.health / entity.maxHealth) * 100 : 0;
-  const healthStatus = entity.health <= 0 ? '[Мъртъв]' :
-                      healthPercent > 60 ? '[Жив]' :
-                      healthPercent > 30 ? '[Ранен]' : '[Критично]';
 
-  // Color based on health
-  const healthColor = entity.health <= 0 ? '#FF0000' :  // Dead - red
-                     healthPercent > 60 ? '#00FF00' :   // Healthy - green
-                     healthPercent > 30 ? '#FFFF00' :   // Wounded - yellow
-                     '#FF8800'; // Critical - orange
+  // Use game logic function for health status and color (moved from render.js to game.js)
+  const healthData = getEnemyHealthStatus(entity);
 
   // Enemy info line
-  ctx.fillStyle = healthColor;
+  ctx.fillStyle = healthData.healthColor;
   ctx.font = "14px Arial";
-  ctx.fillText(`${enemyInfo.displayName} (Lv.${enemyInfo.level}) - ${entity.health}/${entity.maxHealth} HP ${healthStatus}`,
+  ctx.fillText(`${enemyInfo.displayName} (Lv.${enemyInfo.level}) - ${entity.health}/${entity.maxHealth} HP ${healthData.healthStatus}`,
                entity.x, entity.y - entity.h - entity.z - 40);
 }
 

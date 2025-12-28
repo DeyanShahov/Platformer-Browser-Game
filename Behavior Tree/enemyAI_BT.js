@@ -538,28 +538,53 @@ function generateContextualPatrolCommand(ctx, config) {
 
 /* =========================
    SOFT TARGET SELECTION
+   Now uses centralized enemy AI utilities for consistency
    ========================= */
 function selectTarget(ctx) {
-  if (!ctx.targets || ctx.targets.length === 0) return null;
+  if (!ctx.self || !ctx.targets || ctx.targets.length === 0) return null;
 
   const awarenessRadius = ctx.behaviors?.meta?.awarenessRadius || 150;
 
-  // Filter targets within awareness radius
-  const validTargets = ctx.targets.filter(t => t.distance <= awarenessRadius);
+  // Use centralized getEntitiesInRange utility for consistency
+  if (window.enemyAIUtils && window.enemyAIUtils.getEntitiesInRange) {
+    // Convert targets array to entities array format expected by utility
+    const targetEntities = ctx.targets.map(t => t.entity || t);
 
-  if (validTargets.length === 0) return null;
+    // Get entities within range using utility
+    const entitiesInRange = window.enemyAIUtils.getEntitiesInRange(ctx.self, targetEntities, awarenessRadius);
 
-  // Select best target from valid ones
-  let best = validTargets[0];
-  let bestScore = -Infinity;
-  for (const t of validTargets) {
-    let score = (1000 - t.distance) + (100 - t.hpPercent);
-    if (score > bestScore) {
-      bestScore = score;
-      best = t;
+    if (entitiesInRange.length === 0) return null;
+
+    // Select best target from valid ones
+    let best = entitiesInRange[0];
+    let bestScore = -Infinity;
+    for (const t of entitiesInRange) {
+      // Calculate score based on distance and health
+      let score = (1000 - t.distance) + (100 - (t.entity.hpPercent || 100));
+      if (score > bestScore) {
+        bestScore = score;
+        best = t;
+      }
     }
+    return best;
+  } else {
+    // Fallback to original implementation
+    const validTargets = ctx.targets.filter(t => t.distance <= awarenessRadius);
+
+    if (validTargets.length === 0) return null;
+
+    // Select best target from valid ones
+    let best = validTargets[0];
+    let bestScore = -Infinity;
+    for (const t of validTargets) {
+      let score = (1000 - t.distance) + (100 - t.hpPercent);
+      if (score > bestScore) {
+        bestScore = score;
+        best = t;
+      }
+    }
+    return best;
   }
-  return best;
 }
 
 /* =========================

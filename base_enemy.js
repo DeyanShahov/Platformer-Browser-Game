@@ -493,8 +493,29 @@ class BaseEnemy {
   }
 
   // Get thinking duration based on enemy type and situation
+  // Now uses centralized configuration for consistency
   getThinkingDuration(behaviors) {
-    // Base duration depends on intelligence
+    // Use centralized thinking duration calculation
+    if (window.enemyAIConfig && window.enemyAIConfig.calculateThinkingDuration) {
+      const baseDuration = window.enemyAIConfig.CONSTANTS?.THINKING_DURATION_BASE || 3000;
+      const context = this.aiContext?.consultationContext?.reason;
+
+      // Map context reasons to config situation names
+      const situationMap = {
+        'attack_complete': 'attack_complete',
+        'player_detected': 'player_detected',
+        'screen_boundary': 'screen_boundary',
+        'entity_collision': 'entity_collision',
+        'patrol_end': 'patrol_end',
+        'idle_timeout': 'idle_timeout'
+      };
+
+      const situation = situationMap[context] || 'idle_timeout';
+
+      return window.enemyAIConfig.calculateThinkingDuration(baseDuration, this.intelligence, this.rarity, situation);
+    }
+
+    // Fallback to original implementation if config not available
     let baseDuration;
 
     if (this.intelligence === 'basic') {
@@ -834,7 +855,201 @@ class BaseEnemy {
 }
 
 // ===========================================
+// ENEMY CREATION FUNCTION - MOVED FROM enemy_data.js
+// ===========================================
+
+// Create enemy instance with stats
+function createEnemyWithData(enemyType = 'basic', level = 1) {
+  const enemyData = new EnemyData(enemyType, level);
+  const stats = enemyData.getScaledStats();
+
+  // Create the enemy entity (using existing createEntity function)
+  // Use default Y position if CANVAS_HEIGHT is not available
+  // Move entities higher up - responsive to canvas size
+  const enemyY = (typeof CANVAS_HEIGHT !== 'undefined') ? Math.max(200, CANVAS_HEIGHT - 600) : 300;
+
+  // Scale X position for new canvas size
+  const scaleFactor = (typeof CANVAS_WIDTH !== 'undefined') ? CANVAS_WIDTH / 900 : 1;
+  const enemyX = 450 * scaleFactor;
+
+  const enemy = window.createEntity(enemyX, enemyY, 0, 60, 60, "#FF3020");
+
+  // Add Z thickness for 2.5D collision
+  enemy.zThickness = 5;// 25;  // Enemy thickness (slightly less than player)
+
+  // Apply stats from enemy data
+  enemy.maxHealth = stats.maxHealth;
+  enemy.health = stats.maxHealth;
+  enemy.currentAction = null;
+  enemy.executionTimer = 0;
+  enemy.hit = false;
+
+  // Entity type for combat system
+  enemy.entityType = 'enemy';
+
+  // Add character info for combat system
+  enemy.characterInfo = new window.CharacterInfo('enemy');
+  enemy.characterInfo.baseAttack = stats.baseAttack;
+  enemy.characterInfo.baseDefense = stats.baseDefense;
+  enemy.characterInfo.strength = stats.strength;
+  enemy.characterInfo.criticalChance = stats.criticalChance;
+
+  // Death state properties
+  enemy.isDying = false;
+  enemy.deathTimer = 0;
+  enemy.blinkCount = 0;
+  enemy.visible = true; // For blink animation
+
+  // Store enemy data for reference
+  enemy.enemyData = enemyData;
+
+  // Add animation placeholder - will be registered by animation system
+  enemy.animation = null;
+
+  // FSM will be added after animation registration in main.js
+  enemy.stateMachine = null;
+
+  // Register enemy with combat system
+  if (window.enemyCombatManager) {
+    window.enemyCombatManager.registerEnemy(enemy);
+  }
+
+  //console.log(`[ENEMY] Created ${enemyData.getDisplayName()} (Level ${level}) with ${stats.maxHealth} HP`);
+
+  return enemy;
+}
+
+// ===========================================
+// BLUE SLIME ENEMY CLASS - moved from entities.js
+// ===========================================
+
+// Blue Slime Enemy Class - inherits universal AI from BaseEnemy
+class BlueSlime extends BaseEnemy {
+  constructor(x, y, z, level = 1) {
+    // Blue Slime specific configuration
+    const config = {
+      // Dimensions (scaled for sprite)
+      w: 240,  // Visual width (2x scaled sprite: 120*2)
+      h: 256,  // Visual height (2x scaled sprite: 128*2)
+      collisionW: 120,  // Collision width (same as sprite frame)
+      collisionH: 128,  // Collision height (same as sprite frame)
+      zThickness: 3,   // Z thickness for 2.5D collision
+
+      // Stats (Blue Slime specific)
+      maxHealth: 80 + (level - 1) * 20, // 80 base + 20 per level
+      baseAttack: 8 + (level - 1) * 2,   // 8 base + 2 per level
+      baseDefense: 2,
+      speed: 40, // Slower than player
+
+      // Character info
+      strength: 5 + level,
+      criticalChance: 0.03, // 3% crit chance
+
+      // AI configuration
+      rarity: 'common',        // BT rarity level
+      intelligence: 'basic',   // BT intelligence level
+
+      // Animation
+      animationEntityType: 'blue_slime',
+
+      // Level for rewards
+      level: level
+    };
+
+    // Call BaseEnemy constructor with position and config
+    super(x, y, z, config);
+
+    // Blue Slime specific properties
+    this.level = level;
+
+    console.log(`[BLUE SLIME] Created Blue Slime (Level ${level}) at (${x}, ${y}) with ${this.maxHealth} HP`);
+  }
+
+  // Override attack profile for Blue Slime (only light attacks)
+  createAttackProfile() {
+    return window.createAttackProfile ? window.createAttackProfile(["light"]) : null;
+  }
+
+  // Take damage from player attacks
+  takeDamage(damage) {
+    if (this.isDying) return 0;
+
+    this.health -= damage;
+    this.hit = true;
+
+    console.log(`[BLUE SLIME] Took ${damage} damage, health: ${this.health}/${this.maxHealth}`);
+
+    if (this.health <= 0) {
+      this.die();
+      return damage; // Return full damage dealt
+    }
+
+    // Play hurt animation
+    if (this.stateMachine) {
+      this.stateMachine.forceState('hurt');
+    }
+
+    return damage;
+  }
+
+  // Death sequence
+  die() {
+    this.isDying = true;
+    this.health = 0;
+
+    console.log(`[BLUE SLIME] Blue Slime defeated!`);
+
+    // Play death animation
+    if (this.stateMachine) {
+      this.stateMachine.forceState('dead');
+    }
+
+    // Remove from combat system after death animation
+    setTimeout(() => {
+      if (window.enemyCombatManager) {
+        window.enemyCombatManager.unregisterEnemy(this);
+      }
+    }, 2000); // 2 second delay
+  }
+
+  // Update death animation (blink effect)
+  updateDeath(dt) {
+    if (!this.isDying) return;
+
+    this.deathTimer += dt;
+    this.blinkCount++;
+
+    // Blink every 100ms
+    this.visible = Math.floor(this.deathTimer * 10) % 2 === 0;
+
+    // Remove after 2 seconds
+    if (this.deathTimer > 2.0) {
+      this.visible = false;
+      // Entity will be removed by game cleanup
+    }
+  }
+
+  // Get experience reward for defeating this enemy
+  getExperienceReward() {
+    return 150 + (this.level - 1) * 50; // 150 base + 50 per level
+  }
+
+  // Get gold reward
+  getGoldReward() {
+    return 15 + (this.level - 1) * 5; // 15 base + 5 per level
+  }
+}
+
+// Factory function to create Blue Slime
+function createBlueSlime(x, y, z, level = 1) {
+  return new BlueSlime(x, y, z, level);
+}
+
+// ===========================================
 // GLOBAL EXPORTS
 // ===========================================
 
 window.BaseEnemy = BaseEnemy;
+window.createEnemyWithData = createEnemyWithData;
+window.BlueSlime = BlueSlime;
+window.createBlueSlime = createBlueSlime;

@@ -1,4 +1,406 @@
+// ===========================================
+// GLOBAL DECLARATIONS - Available immediately when file loads
+// ===========================================
+let playerSelections = {}; // Temporary selections
+let confirmedSelections = {}; // Confirmed/final selections
+let activePlayers = new Set(); // Track which players have joined
+let detectedPlayers = 1; // Keyboard always available
+
+// Separate game state string from GameState instance
+window.gameStateString = 'start'; // 'start', 'playing'
+
+// Character definitions - declared globally for UI access
+const characters = [
+  { id: 'blue', name: 'Син герой', color: '#3AA0FF', position: 0 },
+  { id: 'orange', name: 'Оранжев герой', color: '#FFA500', position: 30 },
+  { id: 'green', name: 'Зелен герой', color: '#00FF00', position: 60 },
+  { id: 'red', name: 'Червен герой', color: '#FF0000', position: 90 }
+];
+
+// Make globally available immediately
+window.characters = characters;
+window.activePlayers = activePlayers;
+window.playerSelections = playerSelections;
+window.confirmedSelections = confirmedSelections;
+
 // Game logic and loop
+
+function updatePlayerDetection() {
+  const gamepads = navigator.getGamepads();
+  let controllerCount = 0;
+  for (let i = 0; i < gamepads.length; i++) {
+    if (gamepads[i]) controllerCount++;
+  }
+  detectedPlayers = 1 + controllerCount; // Keyboard + controllers
+
+  // Update status with joined players info
+  updatePlayerStatus();
+}
+
+function updatePlayerStatus() {
+  const statusEl = document.getElementById('playerStatus');
+  const joinedPlayers = Array.from(activePlayers).sort();
+
+  if (joinedPlayers.length === 0) {
+    // No players joined yet - show join instructions
+    statusEl.textContent = 'Press 1-4 to join as Player X';
+  } else {
+    // Show joined players and device detection
+    const joinedText = `Players joined: ${joinedPlayers.join(', ')}`;
+    const deviceText = detectedPlayers > 1 ? ` | ${detectedPlayers} devices detected` : '';
+    statusEl.textContent = joinedText + deviceText;
+  }
+}
+
+function joinPlayer(playerId) {
+  console.log(`[DEBUG] joinPlayer(${playerId}) called`);
+  if (!activePlayers.has(playerId)) {
+    console.log(`[DEBUG] Adding player ${playerId} to activePlayers`);
+    activePlayers.add(playerId);
+    console.log(`Player ${playerId} joined!`);
+
+    // Auto-assign first available character
+    assignFirstAvailableCharacter(playerId);
+
+    // Auto-confirm for Players 3 & 4 (console testing only)
+    if (playerId >= 3) {
+      confirmSelection(playerId);
+    }
+
+    updatePlayerStatus();
+
+    // Reset start button state - new player needs to confirm selection
+    updateStartButton();
+  } else {
+    console.log(`[DEBUG] Player ${playerId} already active`);
+  }
+}
+
+function removePlayer(playerId) {
+  if (activePlayers.has(playerId)) {
+    activePlayers.delete(playerId);
+
+    // Clean up selections for this player
+    for (let charId in playerSelections) {
+      if (playerSelections[charId] === playerId) {
+        delete playerSelections[charId];
+        updateSelectionUI(charId);
+      }
+    }
+
+    for (let charId in confirmedSelections) {
+      if (confirmedSelections[charId] === playerId) {
+        delete confirmedSelections[charId];
+        updateSelectionUI(charId);
+      }
+    }
+
+    updatePlayerStatus();
+    updateStartButton();
+
+    console.log(`Player ${playerId} removed!`);
+  }
+}
+
+function assignFirstAvailableCharacter(playerId) {
+  // Find first available character (not taken by any player)
+  for (let i = 0; i < window.characters.length; i++) {
+    const char = window.characters[i];
+    if (!isCharacterTaken(char.id, null)) { // null = check if taken by anyone
+      playerSelections[char.id] = playerId;
+      updateSelectionUI(char.id);
+      console.log(`Player ${playerId} auto-assigned to ${char.name}`);
+      break;
+    }
+  }
+}
+
+function selectCharacter(playerId, direction) {
+  // Find current selection for this player
+  let currentIndex = -1;
+  for (let charId in playerSelections) {
+    if (playerSelections[charId] === playerId) {
+      currentIndex = window.characters.findIndex(c => c.id === charId);
+      break;
+    }
+  }
+
+  // Calculate new index (skip taken characters)
+  let attempts = 0;
+  let newIndex = currentIndex;
+
+  do {
+    if (direction === 'next') {
+      newIndex = (newIndex + 1) % window.characters.length;
+    } else if (direction === 'previous') {
+      newIndex = newIndex <= 0 ? window.characters.length - 1 : newIndex - 1;
+    }
+    attempts++;
+  } while (isCharacterTaken(window.characters[newIndex].id, playerId) && attempts < window.characters.length);
+
+  // If we couldn't find an available character, don't change selection
+  if (isCharacterTaken(window.characters[newIndex].id, playerId)) {
+    return;
+  }
+
+  // Clear previous selection and confirmed selection for this player
+  for (let charId in playerSelections) {
+    if (playerSelections[charId] === playerId) {
+      delete playerSelections[charId];
+      updateSelectionUI(charId);
+    }
+  }
+
+  // Remove any confirmed selections for this player (they must reconfirm)
+  for (let charId in confirmedSelections) {
+    if (confirmedSelections[charId] === playerId) {
+      delete confirmedSelections[charId];
+      // Update UI for the old confirmed character
+      updateSelectionUI(charId);
+      console.log(`Player ${playerId} changed selection, removed confirmed choice`);
+      break; // Should only have one confirmed selection per player
+    }
+  }
+
+  // Set new selection (temporarily highlight)
+  const newChar = window.characters[newIndex];
+  playerSelections[newChar.id] = playerId;
+  updateSelectionUI(newChar.id);
+
+  // Update start button since confirmed selections may have changed
+  updateStartButton();
+}
+
+function isCharacterTaken(charId, excludePlayerId) {
+  // Check if character is selected by another player
+  for (let selectedCharId in playerSelections) {
+    if (selectedCharId === charId && playerSelections[selectedCharId] !== excludePlayerId) {
+      return true;
+    }
+  }
+  return false;
+}
+
+function confirmSelection(playerId) {
+  // Find if player has a selection
+  let selectedChar = null;
+  for (let charId in playerSelections) {
+    if (playerSelections[charId] === playerId) {
+      selectedChar = charId;
+      break;
+    }
+  }
+
+  if (selectedChar) {
+    // Move from temporary to confirmed selections
+    confirmedSelections[selectedChar] = playerId;
+
+    // Mark as confirmed (permanent)
+    const indicator = document.getElementById(`selection-${selectedChar}`);
+    if (indicator) {
+      indicator.textContent = `Player ${playerId}`;
+      indicator.classList.add('confirmed');
+    }
+
+    console.log(`Player ${playerId} confirmed selection of ${window.characters.find(c => c.id === selectedChar).name}`);
+
+    // Check if we can start the game
+    updateStartButton();
+  }
+}
+
+function updateSelectionUI(charId) {
+  const indicator = document.getElementById(`selection-${charId}`);
+  if (indicator) {
+    const playerId = playerSelections[charId];
+    if (playerId) {
+      indicator.textContent = `P${playerId}`;
+      indicator.classList.remove('confirmed');
+    } else {
+      indicator.textContent = '';
+    }
+  }
+}
+
+function updateStartButton() {
+  const startBtn = document.getElementById('startGameBtn');
+
+  // Check if all joined players have confirmed their selections
+  const joinedPlayers = Array.from(activePlayers);
+  const allConfirmed = joinedPlayers.every(playerId => {
+    // Check if this player has a confirmed selection
+    return Object.values(confirmedSelections).includes(playerId);
+  });
+
+  const hasSelections = Object.keys(confirmedSelections).length > 0;
+
+  if (joinedPlayers.length === 1) {
+    // Single player - just needs any selection
+    startBtn.disabled = !hasSelections;
+    startBtn.textContent = hasSelections ? 'Start Game' : 'Select Character First';
+  } else {
+    // Multiple players - all must confirm
+    startBtn.disabled = !allConfirmed;
+    startBtn.textContent = allConfirmed ? 'Start Game' : 'All Players Must Confirm Selection';
+  }
+}
+
+// Player class - moved from entities.js
+class Player {
+  constructor(controls, x, y, z, color, characterId = null) {
+    this.controls = controls;
+    this.x = x;
+    this.y = y;
+    this.z = z;
+    this.w = 500;  // Visual width (for sprite rendering) - DOUBLED from 250
+    this.h = 500;  // Visual height (for sprite rendering) - DOUBLED from 250
+    this.collisionW = 240;  // Collision width (smaller than visual) - DOUBLED from 120
+    this.collisionH = 260;  // Collision height - DOUBLED from 130
+    this.zThickness = 5;   // Z thickness for 2.5D collision (hero has most presence)
+    this.vx = 0;
+    this.vy = 0;
+    this.vz = 0;
+    this.color = color;
+    this.onGround = false;
+
+    // Character info system
+    this.characterInfo = new CharacterInfo(characterId || this.getCharacterIdFromColor(color));
+
+    // FSM handles actions now - removed currentAction system
+    // Removed cooldown timers - FSM handles timing
+
+    // UI Stats
+    this.maxHealth = 100;
+    this.health = this.maxHealth;
+    this.maxEnergy = 50;
+    this.energy = this.maxEnergy;
+    this.maxMana = 30;
+    this.mana = this.maxMana; // ← Вече е добавено
+
+    // Initialize characterInfo resources to match player resources
+    this.characterInfo.mana = this.mana;
+    this.characterInfo.energy = this.energy;
+
+    // Combat stats (synchronized with characterInfo, can be modified by passive skills)
+    this.baseAttack = this.characterInfo.baseAttack;
+    this.hitChance = this.characterInfo.hitChance;
+    this.dodgeChance = this.characterInfo.dodgeChance;
+    this.blockChance = this.characterInfo.blockChance;
+
+    // Skill Tree System
+    this.skillPoints = 0;  // Available skill points for unlocking skills
+
+    // Micro skill tracking - completely separate from main skill system
+    this.selectedMicroSkills = new Map(); // parentSkillType -> Set(skillIndices)
+
+    // Нова система за нива на уменията по страници (замества старата unlockedSkills)
+    this.skillLevelsByPage = {
+      [SKILL_PAGES.MAIN]: new Map([
+        [SKILL_TYPES.BASIC_ATTACK_LIGHT, 1],  // Започват отключени на ниво 1
+        [SKILL_TYPES.BASIC_ATTACK_MEDIUM, 1], // Добавено: средна атака отключена
+        [SKILL_TYPES.SECONDARY_ATTACK_LIGHT, 1],
+        [SKILL_TYPES.JUMP, 1]  // Jump is always available
+      ]),
+      [SKILL_PAGES.SECONDARY]: new Map() // Втората страница започва празна
+    };
+
+    // Обратна съвместимост - комбинирано unlockedSkills Set от всички страници
+    this.unlockedSkills = new Set([
+      SKILL_TYPES.BASIC_ATTACK_LIGHT,
+      SKILL_TYPES.BASIC_ATTACK_MEDIUM, // Добавено: средна атака отключена
+      SKILL_TYPES.SECONDARY_ATTACK_LIGHT,
+      SKILL_TYPES.JUMP
+    ]);
+
+    // Helper method to get skill levels for a specific page
+    this.getSkillLevelsForPage = (page) => {
+      return this.skillLevelsByPage[page] || new Map();
+    };
+
+    // Helper method to get combined skill levels from all pages
+    this.skillLevels = new Proxy({}, {
+      get: (target, prop) => {
+        // If accessing Map methods, delegate to combined logic
+        if (prop === 'get') {
+          return (skillType) => {
+            // Check all pages for this skill
+            for (const page of Object.values(SKILL_PAGES)) {
+              const pageLevels = this.skillLevelsByPage[page];
+              if (pageLevels && pageLevels.has(skillType)) {
+                return pageLevels.get(skillType);
+              }
+            }
+            return 0; // Not found in any page
+          };
+        }
+
+        if (prop === 'set') {
+          return (skillType, value) => {
+            // Determine which page this skill belongs to and update there
+            let targetPage = null;
+            if (Object.values(SKILL_GRID_LAYOUTS[SKILL_PAGES.MAIN]).flat().includes(skillType)) {
+              targetPage = SKILL_PAGES.MAIN;
+            } else if (Object.values(SKILL_GRID_LAYOUTS[SKILL_PAGES.SECONDARY]).flat().includes(skillType)) {
+              targetPage = SKILL_PAGES.SECONDARY;
+            }
+
+            if (targetPage) {
+              this.skillLevelsByPage[targetPage].set(skillType, value);
+              // Update unlockedSkills for backwards compatibility
+              if (value > 0) {
+                this.unlockedSkills.add(skillType);
+              } else {
+                this.unlockedSkills.delete(skillType);
+              }
+            }
+            return this.skillLevels; // Return the proxy for chaining
+          };
+        }
+
+        if (prop === 'has') {
+          return (skillType) => {
+            for (const page of Object.values(SKILL_PAGES)) {
+              const pageLevels = this.skillLevelsByPage[page];
+              if (pageLevels && pageLevels.has(skillType)) {
+                return true;
+              }
+            }
+            return false;
+          };
+        }
+
+        // For other properties, return undefined
+        return undefined;
+      }
+    });
+
+    // Combat flags
+    this.hit = false;
+    this.damageDealt = false; // Prevent multiple damage calculations per attack
+
+    // Animation entity type for animation system
+    this.animationEntityType = 'knight';
+
+    // Animation system - will be registered by animation system after creation
+    this.animation = null;
+
+    // New State Machine for animation states
+    this.stateMachine = null;
+  }
+
+  // Helper method to determine character ID from color
+  getCharacterIdFromColor(color) {
+    const colorMap = {
+      '#3AA0FF': 'blue',
+      '#FFA500': 'orange',
+      '#00FF00': 'green',
+      '#FF0000': 'red'
+    };
+    return colorMap[color] || 'blue'; // Default to blue if color not found
+  }
+
+  // FSM handles all actions now - removed old action system methods
+}
 
 // Global variables for skill tree timing
 let lastSkillTreeToggleTime = 0; // Timestamp to prevent rapid toggling
@@ -128,13 +530,13 @@ function handleKeyboardInput(player) {
   const controls = getCurrentControls(player);
 
   // Движения
-  if (keys[controls.left]) player.vx = -SPEED;
-  if (keys[controls.right]) player.vx = SPEED;
-  if (keys[controls.up]) player.vz = Z_SPEED;
-  if (keys[controls.down]) player.vz = -Z_SPEED;
+  if (window.keys[controls.left]) player.vx = -SPEED;
+  if (window.keys[controls.right]) player.vx = SPEED;
+  if (window.keys[controls.up]) player.vz = Z_SPEED;
+  if (window.keys[controls.down]) player.vz = -Z_SPEED;
 
   // Скок - FSM-based
-  if (keys[controls.jump] && player.onGround && player.stateMachine) {
+  if (window.keys[controls.jump] && player.onGround && player.stateMachine) {
     console.log(`[JUMP] Jump started - player on ground, triggering FSM jump`);
     logAction(0, 'клавиатура', controls.jump.toUpperCase(), 'jump');
     player.vy = JUMP_FORCE;
@@ -143,11 +545,11 @@ function handleKeyboardInput(player) {
   }
 
   // Основни атаки - FSM-based
-  if (keys[controls.basicAttackLight] && player.stateMachine && !player.stateMachine.isInAttackState()) {
+  if (window.keys[controls.basicAttackLight] && player.stateMachine && !player.stateMachine.isInAttackState()) {
     logAction(0, 'клавиатура', controls.basicAttackLight.toUpperCase(), 'attack_light');
     player.stateMachine.handleAction('attack_light');
   }
-  if (keys[controls.basicAttackMedium] && player.stateMachine && !player.stateMachine.isInAttackState()) {
+  if (window.keys[controls.basicAttackMedium] && player.stateMachine && !player.stateMachine.isInAttackState()) {
     // Check if player can perform skill (resources, etc.) - centralized in combat_system.js
     if (window.combatResolver.canPlayerPerformSkill(player, 'basic_attack_medium')) {
       logAction(0, 'клавиатура', controls.basicAttackMedium.toUpperCase(), 'attack_medium');
@@ -157,22 +559,22 @@ function handleKeyboardInput(player) {
       // TODO: Show "not enough mana" feedback to player
     }
   }
-  // if (keys[controls.basicAttackHeavy] && player.stateMachine && !player.stateMachine.isInAttackState()) {
+  // if (window.keys[controls.basicAttackHeavy] && player.stateMachine && !player.stateMachine.isInAttackState()) {
   //   logAction(0, 'клавиатура', controls.basicAttackHeavy.toUpperCase(), 'attack_heavy');
   //   player.stateMachine.handleAction('attack_heavy');
   // }
 
   // Допълнителни атаки - FSM-based (when implemented)
   // For now, secondary attacks use the same as primary
-  if (keys[controls.secondaryAttackLight] && player.stateMachine && !player.stateMachine.isInAttackState()) {
+  if (window.keys[controls.secondaryAttackLight] && player.stateMachine && !player.stateMachine.isInAttackState()) {
     logAction(0, 'клавиатура', controls.secondaryAttackLight.toUpperCase(), 'attack_light');
-    player.stateMachine.handleAction('secondary_attack_light');
+    player.stateMachine.handleAction('attack_light');
   }
-  // if (keys[controls.secondaryAttackMedium] && player.stateMachine && !player.stateMachine.isInAttackState()) {
+  // if (window.keys[controls.secondaryAttackMedium] && player.stateMachine && !player.stateMachine.isInAttackState()) {
   //   logAction(0, 'клавиатура', controls.secondaryAttackMedium.toUpperCase(), 'attack_medium');
   //   player.stateMachine.handleAction('secondary_attack_medium');
   // }
-  // if (keys[controls.secondaryAttackHeavy] && player.stateMachine && !player.stateMachine.isInAttackState()) {
+  // if (window.keys[controls.secondaryAttackHeavy] && player.stateMachine && !player.stateMachine.isInAttackState()) {
   //   logAction(0, 'клавиатура', controls.secondaryAttackHeavy.toUpperCase(), 'attack_heavy');
   //   player.stateMachine.handleAction('secondary_attack_heavy');
   // }
@@ -214,20 +616,21 @@ function handleSkillTreeKeys() {
   if (now - lastSkillTreeToggleTime < 300) return; // 300ms debounce
 
   // Debug logging
-  //console.log('handleSkillTreeKeys called - currentMenu:', currentMenu, 'keys.t:', keys['t'], 'keys.y:', keys['y'], 'keys.u:', keys['u'], 'keys.i:', keys['i']);
+  //console.log('[DEBUG] handleSkillTreeKeys called - menuActive:', menuActive, 'gameState:', window.gameStateString);
+  //console.log('[DEBUG] Keys - 5:', window.keys['5'], '6:', window.keys['6'], '7:', window.keys['7'], '8:', window.keys['8']);
 
   // Toggle main menu (Escape or 'm')
-  if (keys['Escape'] || keys['m']) {
+  if (window.keys['Escape'] || window.keys['m']) {
     toggleMenu();
     lastSkillTreeToggleTime = now;
-    keys['Escape'] = false;
-    keys['m'] = false;
+    window.keys['Escape'] = false;
+    window.keys['m'] = false;
   }
 
   // Player 1 skill tree (key 5) - 3-tier toggle system
-  key5Pressed = keys['5'];
-  if (key5Pressed && !key5WasPressed && players.length >= 1) { // Key just pressed
-    //console.log('Key 5 pressed - currentMenu:', currentMenu, 'currentSkillTreePlayer:', currentSkillTreePlayer);
+  key5Pressed = window.keys['5'];
+  if (key5Pressed && !key5WasPressed && window.gameState.players && window.gameState.players.length >= 1) { // Key just pressed
+    //console.log('Key r pressed - currentMenu:', currentMenu, 'currentSkillTreePlayer:', currentSkillTreePlayer);
     if (currentMenu === 'microTree' && currentSkillTreePlayer === 0) {
       // Tier 3: Micro tree is open - close micro tree (main tree stays open)
       //console.log('Closing micro tree for player 1 (main tree stays open)');
@@ -247,8 +650,8 @@ function handleSkillTreeKeys() {
   key5WasPressed = key5Pressed;
 
   // Player 2 skill tree (key 6) - 3-tier toggle system
-  key6Pressed = keys['6'];
-  if (key6Pressed && !key6WasPressed && players.length >= 2) {
+  key6Pressed = window.keys['6'];
+  if (key6Pressed && !key6WasPressed && window.gameState.players && window.gameState.players.length >= 2) {
     if (currentMenu === 'microTree' && currentSkillTreePlayer === 1) {
       // Tier 3: Micro tree is open - close micro tree (main tree stays open)
       hideMicroTree();
@@ -265,8 +668,8 @@ function handleSkillTreeKeys() {
   key6WasPressed = key6Pressed;
 
   // Player 3 skill tree (key 7) - 3-tier toggle system
-  key7Pressed = keys['7'];
-  if (key7Pressed && !key7WasPressed && players.length >= 3) {
+  key7Pressed = window.keys['7'];
+  if (key7Pressed && !key7WasPressed && window.gameState.players && window.gameState.players.length >= 3) {
     if (currentMenu === 'microTree' && currentSkillTreePlayer === 2) {
       // Tier 3: Micro tree is open - close micro tree (main tree stays open)
       hideMicroTree();
@@ -283,8 +686,8 @@ function handleSkillTreeKeys() {
   key7WasPressed = key7Pressed;
 
   // Player 4 skill tree (key 8) - 3-tier toggle system
-  key8Pressed = keys['8'];
-  if (key8Pressed && !key8WasPressed && players.length >= 4) {
+  key8Pressed = window.keys['8'];
+  if (key8Pressed && !key8WasPressed && window.gameState.players && window.gameState.players.length >= 4) {
     if (currentMenu === 'microTree' && currentSkillTreePlayer === 3) {
       // Tier 3: Micro tree is open - close micro tree (main tree stays open)
       hideMicroTree();
@@ -305,7 +708,7 @@ function handleSkillTreeKeys() {
     //console.log('Skill tree is open, checking tab navigation for player:', currentSkillTreePlayer);
 
     // Player 1 tab navigation (key t)
-    keyTPressed = keys['t'] || keys['T'];
+    keyTPressed = window.keys['t'] || window.keys['T'];
     if (keyTPressed && !keyTWasPressed) {
       //console.log('T key pressed, currentSkillTreePlayer:', currentSkillTreePlayer);
       if (currentSkillTreePlayer === 0) {
@@ -319,7 +722,7 @@ function handleSkillTreeKeys() {
     keyTWasPressed = keyTPressed;
 
     // Player 2 tab navigation (key y)
-    keyYPressed = keys['y'] || keys['Y'];
+    keyYPressed = window.keys['y'] || window.keys['Y'];
     if (keyYPressed && !keyYWasPressed) {
       if (currentSkillTreePlayer === 1) {
         const nextPage = currentSkillPage === SKILL_PAGES.MAIN ? SKILL_PAGES.SECONDARY : SKILL_PAGES.MAIN;
@@ -330,7 +733,7 @@ function handleSkillTreeKeys() {
     keyYWasPressed = keyYPressed;
 
     // Player 3 tab navigation (key u)
-    keyUPressed = keys['u'] || keys['U'];
+    keyUPressed = window.keys['u'] || window.keys['U'];
     if (keyUPressed && !keyUWasPressed) {
       if (currentSkillTreePlayer === 2) {
         const nextPage = currentSkillPage === SKILL_PAGES.MAIN ? SKILL_PAGES.SECONDARY : SKILL_PAGES.MAIN;
@@ -341,7 +744,7 @@ function handleSkillTreeKeys() {
     keyUWasPressed = keyUPressed;
 
     // Player 4 tab navigation (key i)
-    keyIPressed = keys['i'] || keys['I'];
+    keyIPressed = window.keys['i'] || window.keys['I'];
     if (keyIPressed && !keyIWasPressed) {
       if (currentSkillTreePlayer === 3) {
         const nextPage = currentSkillPage === SKILL_PAGES.MAIN ? SKILL_PAGES.SECONDARY : SKILL_PAGES.MAIN;
@@ -604,9 +1007,13 @@ function handleCharacterStatsKeys() {
   const now = performance.now();
   if (now - lastSkillTreeToggleTime < 300) return; // 300ms debounce (reuse same timer)
 
+  // Debug logging
+  //console.log('[DEBUG] handleCharacterStatsKeys called - menuActive:', menuActive, 'gameState:', window.gameStateString);
+  //console.log('[DEBUG] Character stats keys - 9:', window.keys['9'], '0:', window.keys['0'], '-:', window.keys['-'], '=', window.keys['=']);
+
   // Player 1 character stats (key 9) - toggle player's own stats
-  key9Pressed = keys['9'];
-  if (key9Pressed && !key9WasPressed && players.length >= 1) { // Key just pressed
+  key9Pressed = window.keys['9'];
+  if (key9Pressed && !key9WasPressed && window.gameState.players && window.gameState.players.length >= 1) { // Key just pressed
     if (currentMenu === 'characterStats' && currentCharacterStatsPlayer === 0) {
       // Close if player's own stats are open
       hideCharacterStats();
@@ -620,8 +1027,8 @@ function handleCharacterStatsKeys() {
   key9WasPressed = key9Pressed;
 
   // Player 2 character stats (key 0) - toggle player's own stats
-  key0Pressed = keys['0'];
-  if (key0Pressed && !key0WasPressed && players.length >= 2) {
+  key0Pressed = window.keys['0'];
+  if (key0Pressed && !key0WasPressed && window.gameState.players && window.gameState.players.length >= 2) {
     if (currentMenu === 'characterStats' && currentCharacterStatsPlayer === 1) {
       // Close if player's own stats are open
       hideCharacterStats();
@@ -635,8 +1042,8 @@ function handleCharacterStatsKeys() {
   key0WasPressed = key0Pressed;
 
   // Player 3 character stats (key -) - toggle player's own stats
-  keyMinusPressed = keys['-'];
-  if (keyMinusPressed && !keyMinusWasPressed && players.length >= 3) {
+  keyMinusPressed = window.keys['-'];
+  if (keyMinusPressed && !keyMinusWasPressed && window.gameState.players && window.gameState.players.length >= 3) {
     if (currentMenu === 'characterStats' && currentCharacterStatsPlayer === 2) {
       // Close if player's own stats are open
       hideCharacterStats();
@@ -650,8 +1057,8 @@ function handleCharacterStatsKeys() {
   keyMinusWasPressed = keyMinusPressed;
 
   // Player 4 character stats (key =) - toggle player's own stats
-  keyEqualsPressed = keys['='];
-  if (keyEqualsPressed && !keyEqualsWasPressed && players.length >= 4) {
+  keyEqualsPressed = window.keys['='];
+  if (keyEqualsPressed && !keyEqualsWasPressed && window.players && window.players.length >= 4) {
     if (currentMenu === 'characterStats' && currentCharacterStatsPlayer === 3) {
       // Close if player's own stats are open
       hideCharacterStats();
@@ -861,6 +1268,7 @@ function checkIfEntityIsInCollision(entity) {
 }
 
 // Behavior constraints function - determines which behaviors are physically possible
+// Now uses centralized enemy AI utilities for consistency
 function getBehaviorConstraints(entity) {
   const constraints = {
     allowed: new Set(['idle', 'attack', 'chase']), // Always allowed
@@ -868,46 +1276,54 @@ function getBehaviorConstraints(entity) {
     reasons: {}
   };
 
-  // Check horizontal movement constraints (same logic as applyScreenBoundaries)
-  const hitBoxData = getCurrentHitBoxDimensions(entity);
-  const hitBoxPosition = getCurrentHitBoxPosition(entity);
+  // Use centralized constants
+  const config = window.enemyAIConfig?.CONSTANTS || {};
+  const btCheckDistanceX = config.BT_CONSTRAINT_CHECK_DISTANCE_X || 100;
+  const btCheckDistanceZ = config.BT_CONSTRAINT_CHECK_DISTANCE_Z || 50;
 
-  let canMoveRight = true;
-  let canMoveLeft = true;
+  // Check horizontal movement constraints using enemyAIUtils (cached version for performance)
+  if (window.enemyAIUtils && window.enemyAIUtils.checkScreenBoundariesCached) {
+    const boundaries = window.enemyAIUtils.checkScreenBoundariesCached(entity);
 
-  if (hitBoxData && hitBoxPosition) {
-    // Use same boundary calculation as applyScreenBoundaries
-    const hitBoxOffsetX = hitBoxPosition.x - entity.x;
-    const rightBoundary = CANVAS_WIDTH - (hitBoxOffsetX + hitBoxData.width);
-    const leftBoundary = -hitBoxOffsetX;
-
-    // Can move right?
-    canMoveRight = entity.x < rightBoundary;
-    if (!canMoveRight) {
+    // Can move right? (check if not at right boundary)
+    if (boundaries.right) {
       constraints.blocked.add('patrol_right');
       constraints.blocked.add('move_right');
       constraints.reasons.patrol_right = 'screen_boundary_right';
     }
 
-    // Can move left?
-    canMoveLeft = entity.x > leftBoundary;
-    if (!canMoveLeft) {
+    // Can move left? (check if not at left boundary)
+    if (boundaries.left) {
+      constraints.blocked.add('patrol_left');
+      constraints.blocked.add('move_left');
+      constraints.reasons.patrol_left = 'screen_boundary_left';
+    }
+  } else if (window.enemyAIUtils && window.enemyAIUtils.checkScreenBoundaries) {
+    // Fallback to non-cached version
+    const boundaries = window.enemyAIUtils.checkScreenBoundaries(entity);
+
+    // Can move right? (check if not at right boundary)
+    if (boundaries.right) {
+      constraints.blocked.add('patrol_right');
+      constraints.blocked.add('move_right');
+      constraints.reasons.patrol_right = 'screen_boundary_right';
+    }
+
+    // Can move left? (check if not at left boundary)
+    if (boundaries.left) {
       constraints.blocked.add('patrol_left');
       constraints.blocked.add('move_left');
       constraints.reasons.patrol_left = 'screen_boundary_left';
     }
   } else {
-    // Fallback for entities without per-frame hit boxes
+    // Fallback for when utils are not available
     const entityWidth = entity.collisionW || entity.w || 50;
-    canMoveRight = entity.x < (CANVAS_WIDTH - entityWidth);
-    if (!canMoveRight) {
+    if (entity.x >= CANVAS_WIDTH - entityWidth) {
       constraints.blocked.add('patrol_right');
       constraints.blocked.add('move_right');
       constraints.reasons.patrol_right = 'screen_boundary_right';
     }
-
-    canMoveLeft = entity.x > 0;
-    if (!canMoveLeft) {
+    if (entity.x <= 0) {
       constraints.blocked.add('patrol_left');
       constraints.blocked.add('move_left');
       constraints.reasons.patrol_left = 'screen_boundary_left';
@@ -915,7 +1331,7 @@ function getBehaviorConstraints(entity) {
   }
 
   // Can patrol? (needs at least one direction available)
-  const canPatrol = canMoveRight || canMoveLeft;
+  const canPatrol = !constraints.blocked.has('patrol_left') || !constraints.blocked.has('patrol_right');
   if (!canPatrol) {
     constraints.blocked.add('patrol');
     constraints.reasons.patrol = 'no_movement_space';
@@ -940,17 +1356,28 @@ function getBehaviorConstraints(entity) {
     constraints.reasons.move_down = 'screen_boundary_bottom';
   }
 
-  // Check for obstacles/entities blocking movement
-  const entities = window.gameState ? window.gameState.getAllEntities() : [];
-  const nearbyEntities = entities.filter(e =>
-    e !== entity &&
-    Math.abs(e.x - entity.x) < 100 &&
-    Math.abs(e.z - entity.z) < 50
-  );
+  // Check for obstacles/entities blocking movement using enemyAIUtils
+  if (window.enemyAIUtils && window.enemyAIUtils.detectEntityCollisions) {
+    const entities = window.gameState ? window.gameState.getAllEntities() : [];
+    const nearbyEntities = window.enemyAIUtils.detectEntityCollisions(entity, entities, btCheckDistanceX);
 
-  if (nearbyEntities.length > 0) {
-    constraints.blocked.add('patrol');
-    constraints.reasons.patrol = 'entities_blocking';
+    if (nearbyEntities.length > 0) {
+      constraints.blocked.add('patrol');
+      constraints.reasons.patrol = 'entities_blocking';
+    }
+  } else {
+    // Fallback entity checking
+    const entities = window.gameState ? window.gameState.getAllEntities() : [];
+    const nearbyEntities = entities.filter(e =>
+      e !== entity &&
+      Math.abs(e.x - entity.x) < btCheckDistanceX &&
+      Math.abs(e.z - entity.z) < btCheckDistanceZ
+    );
+
+    if (nearbyEntities.length > 0) {
+      constraints.blocked.add('patrol');
+      constraints.reasons.patrol = 'entities_blocking';
+    }
   }
 
   console.log(`[BEHAVIOR_CONSTRAINTS] ${entity.entityType} constraints:`, {
@@ -1035,3 +1462,403 @@ function applyScreenBoundaries(entity) {
 
 // Export behavior constraints function globally
 window.getBehaviorConstraints = getBehaviorConstraints;
+
+// COLLISION FUNCTIONS MOVED BACK TO collision.js
+
+// ===========================================
+// SKILL TREE FUNCTIONS - moved from menu.js
+// ===========================================
+
+// Helper function to get current skill grid layout
+// function getCurrentSkillGridLayout() {
+//   return SKILL_GRID_LAYOUTS[currentSkillPage] || SKILL_GRID_LAYOUTS[SKILL_PAGES.MAIN];
+// }
+
+// Helper function to find grid position of a skill
+// function findSkillGridPosition(skillType) {
+//   const currentLayout = getCurrentSkillGridLayout();
+//   for (let row = 0; row < currentLayout.length; row++) {
+//     for (let col = 0; col < currentLayout[row].length; col++) {
+//       if (currentLayout[row][col] === skillType) {
+//         return { row, col };
+//       }
+//     }
+//   }
+//   return null;
+// }
+
+// Draw connection lines between prerequisite skills
+// function drawConnectionLines(svgContainer, player) {
+//   // Clear existing lines
+//   svgContainer.innerHTML = '';
+
+//   // Icon dimensions (including margins)
+//   const iconSize = 64;
+//   const iconMargin = 10;
+//   const totalIconSize = iconSize + iconMargin;
+
+//   // Define skill chains and their gap positions (moved 2 columns to the right due to padding changes)
+//   const skillChains = [
+//     // Basic attack chain - gap at column 3.5 (between col 3 and 4) - moved +2 from 1.25
+//     { skills: [SKILL_TYPES.BASIC_ATTACK_LIGHT, SKILL_TYPES.BASIC_ATTACK_MEDIUM, SKILL_TYPES.BASIC_ATTACK_HEAVY], gapColumn: 3 },
+//     // Secondary attack chain - gap at column 4.5 (between col 4 and 5) - moved +2 from 2.3
+//     { skills: [SKILL_TYPES.SECONDARY_ATTACK_LIGHT, SKILL_TYPES.SECONDARY_ATTACK_MEDIUM, SKILL_TYPES.SECONDARY_ATTACK_HEAVY], gapColumn: 4.05 },
+//     // Enhanced attack chain - gap at column 5.5 (between col 5 and 6) - moved +2 from 3.4
+//     { skills: [SKILL_TYPES.ENHANCED_ATTACK, SKILL_TYPES.STRONG_ATTACK, SKILL_TYPES.ULTIMATE_ATTACK], gapColumn: 5.15 }
+//   ];
+
+//   // Draw vertical lines for each skill chain
+//   skillChains.forEach(chain => {
+//     for (let i = 0; i < chain.skills.length - 1; i++) {
+//       const fromSkill = chain.skills[i];
+//       const toSkill = chain.skills[i + 1];
+
+//       // Find grid positions
+//       const fromPos = findSkillGridPosition(fromSkill);
+//       const toPos = findSkillGridPosition(toSkill);
+
+//       if (fromPos && toPos) {
+//         // Draw vertical line in the gap between columns with dynamic color
+//         drawVerticalLineInGap(svgContainer, fromPos.row, toPos.row, chain.gapColumn, totalIconSize, player, toSkill);
+//       }
+//     }
+//   });
+// }
+
+// Draw a vertical line in the gap between columns with dynamic color
+// function drawVerticalLineInGap(svgContainer, fromRow, toRow, gapColumn, totalIconSize, player, toSkill) {
+//   // Calculate pixel positions for the vertical line in the gap
+//   const lineX = gapColumn * totalIconSize; // Position in the gap (e.g., 0.5 * totalIconSize)
+//   const fromY = (fromRow + 0.5) * totalIconSize; // Center of from icon
+//   const toY = (toRow + 0.5) * totalIconSize;   // Center of to icon
+
+//   // Determine line color based on target skill status
+//   let lineColor = '#666666'; // Default gray for locked skills
+
+//   if (player.unlockedSkills.has(toSkill)) {
+//     lineColor = '#00ff00'; // Green - target skill is unlocked
+//   } else if (window.skillTreeManager.canUnlockSkill(player, toSkill)) {
+//     lineColor = '#ff8800'; // Orange - target skill can be unlocked
+//   } else {
+//     lineColor = '#666666'; // Gray - target skill is locked
+//   }
+
+//   // Create vertical line
+//   const line = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+//   line.setAttribute('x1', lineX);
+//   line.setAttribute('y1', fromY);
+//   line.setAttribute('x2', lineX);
+//   line.setAttribute('y2', toY);
+//   line.setAttribute('stroke', lineColor);
+//   line.setAttribute('stroke-width', '5'); // Even thicker for better visibility
+//   line.setAttribute('opacity', '0.95'); // Very opaque
+//   line.setAttribute('stroke-linecap', 'round');
+
+//   svgContainer.appendChild(line);
+// }
+
+
+
+
+
+// ===========================================
+// ENTITY SORTING LOGIC - moved from render.js
+// ===========================================
+
+// Get sorted entities for rendering (game logic that was in render.js)
+function getSortedEntitiesForRendering() {
+  // Get all entities from game state or fallback to legacy system
+  const entities = window.gameState ? window.gameState.getAllEntities() :
+                   [...players, window.enemy, window.ally].filter(e => e !== null && e !== undefined);
+
+  // Debug logging for backwards compatibility
+  if (!window.gameState && window.enemy && window.enemy.isDying) {
+    console.log('[RENDER] Enemy dying status (legacy):', {
+      enemyExists: window.enemy !== null,
+      isDying: window.enemy.isDying,
+      deathTimer: window.enemy.deathTimer,
+      defeatHandled: window.enemy.defeatHandled,
+      visible: window.enemy.visible,
+      entitiesCount: entities.length,
+      enemyInEntities: entities.includes(window.enemy)
+    });
+  }
+
+  // Sort entities by Z-order (effective Y position) for proper rendering
+  return entities.sort((a, b) => (a.y - a.z) - (b.y - b.z));
+}
+
+// ===========================================
+// ENEMY STATUS LOGIC - moved from render.js
+// ===========================================
+
+// Get enemy health status and color (game logic that was in render.js)
+function getEnemyHealthStatus(entity) {
+  if (!entity.enemyData) return null;
+
+  const healthPercent = entity.maxHealth > 0 ? (entity.health / entity.maxHealth) * 100 : 0;
+  const healthStatus = entity.health <= 0 ? '[Мъртъв]' :
+                      healthPercent > 60 ? '[Жив]' :
+                      healthPercent > 30 ? '[Ранен]' : '[Критично]';
+
+  // Color based on health
+  const healthColor = entity.health <= 0 ? '#FF0000' :  // Dead - red
+                     healthPercent > 60 ? '#00FF00' :   // Healthy - green
+                     healthPercent > 30 ? '#FFFF00' :   // Wounded - yellow
+                     '#FF8800'; // Critical - orange
+
+  return { healthStatus, healthColor, healthPercent };
+}
+
+
+
+// Initialize game with selected players and characters
+function initGameWithSelections() {
+  console.log('[GAME] initGameWithSelections called');
+
+  // Hide start screen
+  const startScreen = document.getElementById('startScreen');
+  if (startScreen) {
+    startScreen.style.display = 'none';
+    console.log('[GAME] Start screen hidden');
+  }
+
+  // Setup canvas
+  const canvas = document.getElementById("game");
+  ctx = canvas.getContext("2d");
+
+  // Initialize animation system first
+  initializeAnimationSystem().then(() => {
+    console.log('[GAME] Animation system initialized');
+
+    // Initialize damage number manager
+    if (window.damageNumberManager) {
+      window.damageNumberManager.init(canvas);
+    }
+
+    // Initialize game state system
+    window.gameState = new GameState();
+    console.log('[GAME] Game state initialized');
+
+    // Clear global arrays for backwards compatibility
+    window.players = [];
+    console.log('[GAME] window.players cleared and set to:', window.players);
+
+    // Create players based on confirmed selections (sorted by player ID for consistent ordering)
+    const selectedChars = Object.keys(window.playerSelections).sort((a, b) =>
+      window.playerSelections[a] - window.playerSelections[b]
+    );
+    console.log('[GAME] Creating players for selectedChars:', selectedChars);
+
+    selectedChars.forEach((charId, index) => {
+      const char = window.characters.find(c => c.id === charId);
+      const playerId = window.playerSelections[charId];
+      const playerKey = `player${playerId}`;
+
+      console.log(`[GAME] Creating player ${playerId} with key ${playerKey}, controls exist:`, !!window.controls[playerKey]);
+
+      if (window.controls[playerKey]) {
+        // Scale X positions for new canvas size (from 900 to 1920)
+        const scaleFactor = CANVAS_WIDTH / 900; // ~2.13
+        const baseX = 100 * scaleFactor; // ~213
+        const spacing = 100 * scaleFactor; // ~213
+        const x = baseX + (index * spacing);
+
+        // Move entities higher up - responsive to canvas size
+        const spawnY = Math.max(200, CANVAS_HEIGHT - 600); // Min 200px from top
+        const player = new Player(window.controls[playerKey], x, spawnY, char.position, char.color, char.id);
+
+        console.log(`[GAME] Player ${playerId} created:`, player);
+
+        // Add to game state instead of directly to players
+        window.gameState.addEntity(player, 'player');
+        console.log(`[GAME] Player ${playerId} added to game state`);
+
+        // Register player with animation system
+        if (window.animationSystem && window.animationSystem.isInitialized) {
+          const animation = window.animationSystem.registerEntity(player, 'knight');
+          console.log(`[GAME] Player ${playerId} registered with animation system:`, animation ? 'SUCCESS' : 'FAILED');
+          if (animation) {
+            console.log(`[GAME] Player ${playerId} animation state:`, animation.getDebugInfo());
+          }
+        } else {
+          console.warn(`[GAME] Animation system not ready for player ${playerId}:`, {
+            systemExists: !!window.animationSystem,
+            isInitialized: window.animationSystem ? window.animationSystem.isInitialized : false
+          });
+        }
+
+        // Initialize State Machine for player
+        if (window.AnimationStateMachine) {
+          player.stateMachine = new window.AnimationStateMachine(player);
+          console.log(`[GAME] Player ${playerId} state machine initialized:`, player.stateMachine.getCurrentStateName());
+        } else {
+          console.warn(`[GAME] AnimationStateMachine not available for player ${playerId}`);
+        }
+      } else {
+        console.warn(`No controls found for player ${playerId} (${playerKey})`);
+      }
+    });
+
+    console.log('[GAME] Final game state debug:', window.gameState.getDebugInfo());
+
+    // Create enemies using the new enemy data system
+    const blueSlime = createBlueSlime(650 * (CANVAS_WIDTH / 900), Math.max(200, CANVAS_HEIGHT - 600), 0, 1);
+    window.gameState.addEntity(blueSlime, 'enemy');
+    console.log('[GAME] Blue Slime added to game state');
+
+    // Register Blue Slime with animation system
+    if (window.animationSystem && window.animationSystem.isInitialized) {
+      const blueSlimeAnimation = window.animationSystem.registerEntity(blueSlime, 'blue_slime');
+      console.log(`[GAME] Blue Slime registered with animation system:`, blueSlimeAnimation ? 'SUCCESS' : 'FAILED');
+
+      // Create FSM after animation registration
+      if (window.EnemyAnimationStateMachine) {
+        blueSlime.stateMachine = new window.EnemyAnimationStateMachine(blueSlime);
+        console.log(`[GAME] Blue Slime FSM initialized:`, blueSlime.stateMachine.getCurrentStateName());
+      }
+    }
+
+    // Initialize menu system
+    if (window.initMenu) {
+      window.initMenu();
+    }
+
+    // Set game state to playing
+    window.gameStateString = 'playing';
+
+    // Start game loop
+    requestAnimationFrame(loop);
+
+    console.log('[GAME] Game initialization completed successfully');
+  }).catch(error => {
+    console.error('[GAME] Failed to initialize animation system:', error);
+  });
+}
+
+// Export start screen variables and functions for UI access
+window.characters = characters;
+window.activePlayers = activePlayers;
+window.playerSelections = playerSelections;
+window.updatePlayerDetection = updatePlayerDetection;
+window.joinPlayer = joinPlayer;
+window.removePlayer = removePlayer;
+window.selectCharacter = selectCharacter;
+window.confirmSelection = confirmSelection;
+window.updatePlayerStatus = updatePlayerStatus;
+window.updateSelectionUI = updateSelectionUI;
+window.updateStartButton = updateStartButton;
+window.isCharacterTaken = isCharacterTaken;
+window.initGameWithSelections = initGameWithSelections;
+
+
+
+
+
+
+
+// ===========================================
+// ENEMY DEFEAT FUNCTIONS MOVED FROM combat_system.js
+// ===========================================
+
+// Handle enemy defeat
+function handleEnemyDefeat(attacker, defeatedEnemy) {
+  console.log(`[COMBAT] handleEnemyDefeat called with attacker:`, attacker, `defeatedEnemy:`, defeatedEnemy);
+
+  console.log(`[COMBAT] Enemy defeated! ${attacker ? `Awarding experience to ${attacker.characterInfo?.getDisplayName() || 'Player'}` : 'Experience already awarded'}`);
+
+  // Award experience to the attacker (only if attacker is provided)
+  if (attacker && attacker.characterInfo) {
+    const experienceReward = 200; // 200 XP for enemy defeat
+    attacker.characterInfo.addExperience(experienceReward, attacker);
+    console.log(`[COMBAT] ${attacker.characterInfo.getDisplayName()} gained ${experienceReward} experience!`);
+  }
+
+  // Remove enemy from the game world via game state
+  removeEnemyFromGame(defeatedEnemy);
+
+  // Trigger any post-defeat effects
+  onEnemyDefeated(attacker, defeatedEnemy);
+}
+
+// Remove enemy from the game
+function removeEnemyFromGame(defeatedEnemy) {
+  console.log(`[COMBAT] Removing enemy from game world...`);
+
+  // Remove from game state if available
+  if (window.gameState) {
+    const entityId = window.gameState.getEntityId(defeatedEnemy);
+    if (entityId) {
+      window.gameState.removeEntity(entityId);
+      console.log(`[COMBAT] Enemy removed from game state (ID: ${entityId})`);
+    }
+  } else {
+    // Fallback for backwards compatibility
+    if (window.enemy === defeatedEnemy) {
+      console.log(`[COMBAT] Setting window.enemy to null (legacy mode)`);
+      window.enemy = null;
+    }
+  }
+
+  console.log(`[COMBAT] Enemy removal complete`);
+}
+
+// Post-defeat effects and events
+function onEnemyDefeated(attacker, defeatedEnemy) {
+  // Future: trigger quest updates, loot drops, achievements, etc.
+  console.log(`[COMBAT] Enemy defeat processing complete`);
+
+  // For now, trigger respawn after a short delay
+  setTimeout(() => {
+    respawnEnemy();
+  }, 2000); // 2 second delay before respawn
+}
+
+// Respawn enemy (for testing purposes)
+function respawnEnemy() {
+  console.log(`[COMBAT] Checking respawn conditions...`);
+
+  // Check if we need to respawn (no enemies in game state or window.enemy is null)
+  const shouldRespawn = window.gameState ?
+    window.gameState.getEntitiesByType('enemy').length === 0 :
+    window.enemy === null;
+
+  if (shouldRespawn) {
+    console.log(`[COMBAT] Respawning enemy...`);
+
+    // Create new enemy
+    const newEnemy = window.createEnemyWithData('basic', 1);
+
+    // Register enemy with animation system (same as in main.js)
+    if (window.animationSystem && window.animationSystem.isInitialized) {
+      const enemyAnimation = window.animationSystem.registerEntity(newEnemy, 'enemy');
+      console.log(`[COMBAT RESPAWN] Enemy registered with animation system:`, enemyAnimation ? 'SUCCESS' : 'FAILED');
+
+      // Initialize FSM after animation is registered
+      if (window.AnimationStateMachine) {
+        newEnemy.stateMachine = new window.AnimationStateMachine(newEnemy);
+        console.log(`[COMBAT RESPAWN] Enemy FSM initialized:`, newEnemy.stateMachine.getCurrentStateName());
+      }
+    } else {
+      console.warn(`[COMBAT RESPAWN] Animation system not ready for respawned enemy`);
+    }
+
+    // Register with enemy combat manager
+    if (window.enemyCombatManager) {
+      window.enemyCombatManager.registerEnemy(newEnemy);
+      console.log(`[COMBAT RESPAWN] Enemy registered with combat manager`);
+    }
+
+    // Add to game state if available
+    if (window.gameState) {
+      window.gameState.addEntity(newEnemy, 'enemy');
+      console.log(`[COMBAT] Enemy respawned and added to game state with ${newEnemy.health}/${newEnemy.maxHealth} HP (ID: ${newEnemy.id})`);
+    } else {
+      // Fallback for backwards compatibility
+      window.enemy = newEnemy;
+      console.log(`[COMBAT] Enemy respawned with ${window.enemy.health}/${window.enemy.maxHealth} HP (legacy mode)`);
+    }
+  } else {
+    console.log(`[COMBAT] Respawn not needed - enemies still present`);
+  }
+}

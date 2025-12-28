@@ -259,7 +259,7 @@ class CharacterStatsUI {
     document.getElementById('energyText').textContent = `${player.energy}/${player.maxEnergy}`;
 
     // Update experience bar
-    const expPercent = info.getExperiencePercentage();
+    const expPercent = this.getExperiencePercentage(info);
     document.getElementById('experienceBar').style.width = `${expPercent}%`;
     document.getElementById('experienceText').textContent = `${info.experience}/${info.experienceToNext}`;
 
@@ -274,7 +274,7 @@ class CharacterStatsUI {
     // Update combat attributes (attack reads from player for dynamic skill updates, others from characterInfo)
     document.getElementById('baseAttackValue').textContent = player.baseAttack; // Динамично от пасивни умения
     document.getElementById('baseDefenseValue').textContent = info.baseDefense;
-    document.getElementById('criticalChanceValue').textContent = info.getCriticalChanceDisplay();
+    document.getElementById('criticalChanceValue').textContent = this.getCriticalChanceDisplay(info);
 
     // Update new combat chances (read from characterInfo for dynamic skill updates)
     document.getElementById('hitChanceValue').textContent = `${Math.round(info.hitChance * 100)}%`;
@@ -282,7 +282,7 @@ class CharacterStatsUI {
     document.getElementById('blockChanceValue').textContent = `${Math.round(info.blockChance * 100)}%`;
 
     // Update magic resistances
-    const resistances = info.getMagicResistanceDisplay();
+    const resistances = this.getMagicResistanceDisplay(info);
     document.getElementById('waterResistanceValue').textContent = resistances.water;
     document.getElementById('fireResistanceValue').textContent = resistances.fire;
     document.getElementById('airResistanceValue').textContent = resistances.air;
@@ -292,12 +292,12 @@ class CharacterStatsUI {
     this.updateSkillsDisplay(player);
   }
 
-  // Stat modification methods (called from onclick handlers)
+  // UI interaction methods - now delegate to character logic
   increaseStrength() {
     if (this.currentPlayerIndex !== null) {
       const player = window.players[this.currentPlayerIndex];
       if (player && player.characterInfo) {
-        player.characterInfo.increaseStrength();
+        player.characterInfo.modifyStrength(1);
         this.updateCharacterDisplay(player);
       }
     }
@@ -307,7 +307,7 @@ class CharacterStatsUI {
     if (this.currentPlayerIndex !== null) {
       const player = window.players[this.currentPlayerIndex];
       if (player && player.characterInfo) {
-        player.characterInfo.decreaseStrength();
+        player.characterInfo.modifyStrength(-1);
         this.updateCharacterDisplay(player);
       }
     }
@@ -317,7 +317,7 @@ class CharacterStatsUI {
     if (this.currentPlayerIndex !== null) {
       const player = window.players[this.currentPlayerIndex];
       if (player && player.characterInfo) {
-        player.characterInfo.increaseSpeed();
+        player.characterInfo.modifySpeed(1);
         this.updateCharacterDisplay(player);
       }
     }
@@ -327,7 +327,7 @@ class CharacterStatsUI {
     if (this.currentPlayerIndex !== null) {
       const player = window.players[this.currentPlayerIndex];
       if (player && player.characterInfo) {
-        player.characterInfo.decreaseSpeed();
+        player.characterInfo.modifySpeed(-1);
         this.updateCharacterDisplay(player);
       }
     }
@@ -337,7 +337,7 @@ class CharacterStatsUI {
     if (this.currentPlayerIndex !== null) {
       const player = window.players[this.currentPlayerIndex];
       if (player && player.characterInfo) {
-        player.characterInfo.increaseIntelligence();
+        player.characterInfo.modifyIntelligence(1);
         this.updateCharacterDisplay(player);
       }
     }
@@ -347,7 +347,7 @@ class CharacterStatsUI {
     if (this.currentPlayerIndex !== null) {
       const player = window.players[this.currentPlayerIndex];
       if (player && player.characterInfo) {
-        player.characterInfo.decreaseIntelligence();
+        player.characterInfo.modifyIntelligence(-1);
         this.updateCharacterDisplay(player);
       }
     }
@@ -391,6 +391,44 @@ class CharacterStatsUI {
         this.updateCharacterDisplay(player);
       }
     }
+  }
+
+  // Get formatted stats for UI display (moved from character_info.js)
+  getFormattedStats(characterInfo) {
+    return {
+      level: characterInfo.level,
+      experience: characterInfo.experience,
+      experienceToNext: characterInfo.experienceToNext,
+      experiencePercentage: this.getExperiencePercentage(characterInfo),
+      freePoints: characterInfo.freePoints,
+      strength: characterInfo.strength,
+      speed: characterInfo.speed,
+      intelligence: characterInfo.intelligence,
+      baseAttack: characterInfo.baseAttack,
+      baseDefense: characterInfo.baseDefense,
+      criticalChance: Math.round(characterInfo.criticalChance * 100), // Convert to percentage
+      magicResistance: { ...characterInfo.magicResistance }
+    };
+  }
+
+  // Get experience percentage for UI (moved from character_info.js)
+  getExperiencePercentage(characterInfo) {
+    return (characterInfo.experience / characterInfo.experienceToNext) * 100;
+  }
+
+  // Get critical chance as formatted string (moved from character_info.js)
+  getCriticalChanceDisplay(characterInfo) {
+    return `${Math.round(characterInfo.criticalChance * 100)}%`;
+  }
+
+  // Get magic resistance as formatted strings (moved from character_info.js)
+  getMagicResistanceDisplay(characterInfo) {
+    return {
+      water: `${characterInfo.magicResistance.water}%`,
+      fire: `${characterInfo.magicResistance.fire}%`,
+      air: `${characterInfo.magicResistance.air}%`,
+      earth: `${characterInfo.magicResistance.earth}%`
+    };
   }
 }
 

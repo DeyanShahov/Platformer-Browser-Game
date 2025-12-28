@@ -940,13 +940,13 @@ function drawConnectionLine(svgContainer, fromPos, toPos, totalIconSize) {
 // Skill Tree Functions
 function showSkillTreeForPlayer(playerIndex) {
   console.log(`[SKILL TREE] Attempting to show for player ${playerIndex + 1} (index: ${playerIndex})`);
-  if (playerIndex < 0 || playerIndex >= window.players.length) {
+  if (playerIndex < 0 || playerIndex >= window.gameState.players.length) {
     console.log(`[SKILL TREE] Invalid player index: ${playerIndex}`);
     return;
   }
 
   currentSkillTreePlayer = playerIndex;
-  const player = window.players[playerIndex];
+  const player = window.gameState.players[playerIndex];
   console.log(`[SKILL TREE] Setting currentSkillTreePlayer to index ${playerIndex}`);
 
   // Reset cursor to top-left
@@ -1080,7 +1080,7 @@ function loadSkillIconForElement(element, row, col) {
   const { x, y } = getIconPosition(skillInfo.iconRow, skillInfo.iconCol);
 
   // Get the current player for level display
-  const player = currentSkillTreePlayer !== null ? window.players[currentSkillTreePlayer] : null;
+  const player = currentSkillTreePlayer !== null ? window.gameState.players[currentSkillTreePlayer] : null;
 
   element.innerHTML = `<img src="Assets/Swordsman-Skill-Icons.webp"
     style="
@@ -1156,7 +1156,7 @@ function updateCursorPosition() {
 function updateSelectedSkillInfo() {
   if (currentSkillTreePlayer === null) return;
 
-  const player = window.players[currentSkillTreePlayer];
+  const player = window.gameState.players[currentSkillTreePlayer];
   const currentLayout = getCurrentSkillGridLayout();
   const skillType = currentLayout[skillCursorRow][skillCursorCol];
 
@@ -1341,7 +1341,7 @@ function handleUnlockClick() {
 function tryUnlockSelectedSkill() {
   if (currentSkillTreePlayer === null) return;
 
-  const player = window.players[currentSkillTreePlayer];
+  const player = window.gameState.players[currentSkillTreePlayer];
   const currentLayout = getCurrentSkillGridLayout();
   const skillType = currentLayout[skillCursorRow][skillCursorCol];
 
@@ -1384,7 +1384,7 @@ function toggleMenu() {
 // Character Stats Functions
 function showCharacterStatsForPlayer(playerIndex) {
   console.log(`[CHARACTER STATS] Attempting to show for player ${playerIndex + 1} (index: ${playerIndex})`);
-  if (playerIndex < 0 || playerIndex >= window.players.length) {
+  if (playerIndex < 0 || playerIndex >= window.gameState.players.length) {
     console.log(`[CHARACTER STATS] Invalid player index: ${playerIndex}`);
     return;
   }
@@ -1464,7 +1464,7 @@ function switchSkillTreePage(page) {
 
   // Re-render skill tree for current player
   if (currentSkillTreePlayer !== null) {
-    const player = window.players[currentSkillTreePlayer];
+    const player = window.gameState.players[currentSkillTreePlayer];
     renderSkillTree(player);
 
     // Update cursor position after re-rendering
@@ -1490,10 +1490,5 @@ function getSkillTypeDisplayText(usageType) {
   }
 }
 
-// Make skill tree and character stats functions global
-window.showSkillTreeForPlayer = showSkillTreeForPlayer;
-window.hideSkillTree = hideSkillTree;
-window.showCharacterStatsForPlayer = showCharacterStatsForPlayer;
-window.hideCharacterStats = hideCharacterStats;
+// Make menu functions global - skill tree and character stats functions moved to game.js
 window.toggleMenu = toggleMenu;
-window.switchSkillTreePage = switchSkillTreePage;

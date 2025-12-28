@@ -3,15 +3,8 @@
    Collision Detection, Movement Logic, Pathfinding
    ========================= */
 
-/* =========================
-   CONSTANTS
-   ========================= */
-const ENEMY_AI_CONSTANTS = {
-  SCREEN_MARGIN: 50,        // Pixels from screen edge to trigger boundary detection
-  COLLISION_CHECK_DISTANCE: 100,  // Distance to check for entity collisions
-  OBSTACLE_DETECTION_RANGE: 50,   // Range for obstacle detection
-  TERRAIN_CHECK_DEPTH: 10,        // How far down to check for terrain
-};
+// Import centralized configuration
+// Constants are now managed in enemy_ai_config.js
 
 /* =========================
    SCREEN BOUNDARY DETECTION
@@ -23,7 +16,7 @@ const ENEMY_AI_CONSTANTS = {
  * @param {number} margin - Margin from screen edge (default: 50px)
  * @returns {Object} { left: boolean, right: boolean, top: boolean, bottom: boolean }
  */
-function checkScreenBoundaries(enemy, margin = ENEMY_AI_CONSTANTS.SCREEN_MARGIN) {
+function checkScreenBoundaries(enemy, margin = (window.enemyAIConfig?.CONSTANTS?.SCREEN_MARGIN || 50)) {
   const canvas = document.getElementById('game');
   if (!canvas) return { left: false, right: false, top: false, bottom: false };
 
@@ -73,7 +66,7 @@ function getScreenBoundaryDirection(enemy, currentDirection) {
  * @param {number} checkDistance - Maximum distance to check (default: 100px)
  * @returns {Array} Array of collided entities
  */
-function detectEntityCollisions(enemy, entities, checkDistance = ENEMY_AI_CONSTANTS.COLLISION_CHECK_DISTANCE) {
+function detectEntityCollisions(enemy, entities, checkDistance = (window.enemyAIConfig?.CONSTANTS?.COLLISION_CHECK_DISTANCE || 100)) {
   if (!entities || entities.length === 0) return [];
 
   const collisions = [];
@@ -210,7 +203,7 @@ function findCollisionFreeDirection(enemy, currentDirection, entities) {
 function getTerrainTypeAt(x, y) {
   // This would integrate with the game's terrain/collision system
   // For now, simple ground check
-  const groundY = 480; // Same as player ground level
+  const groundY = window.enemyAIConfig?.CONSTANTS?.GROUND_LEVEL_Y || 480; // Use centralized constant
 
   if (y >= groundY - 5) return 'ground';
   if (y < groundY - 100) return 'air';
@@ -236,7 +229,7 @@ function calculatePatrolWaypoints(centerX, radius, numWaypoints = 4) {
   for (let i = 0; i < numWaypoints; i++) {
     const angle = i * angleStep;
     const x = centerX + Math.cos(angle) * radius;
-    const y = 480; // Ground level
+    const y = window.enemyAIConfig?.CONSTANTS?.GROUND_LEVEL_Y || 480; // Use centralized constant
 
     waypoints.push({ x, y });
   }
@@ -311,7 +304,7 @@ function getBestFleeDirection(enemy, threats) {
  * @param {number} checkDistance - Distance to check ahead
  * @returns {boolean} True if obstacle detected
  */
-function detectObstacleAhead(enemy, checkDistance = ENEMY_AI_CONSTANTS.OBSTACLE_DETECTION_RANGE) {
+function detectObstacleAhead(enemy, checkDistance = (window.enemyAIConfig?.CONSTANTS?.OBSTACLE_DETECTION_RANGE || 50)) {
   // Check screen boundaries
   const boundaries = checkScreenBoundaries(enemy, 20);
   if ((enemy.vx > 0 && boundaries.right) || (enemy.vx < 0 && boundaries.left)) {
@@ -333,18 +326,143 @@ function detectObstacleAhead(enemy, checkDistance = ENEMY_AI_CONSTANTS.OBSTACLE_
 }
 
 /* =========================
+   CACHING SYSTEM FOR PERFORMANCE
+   ========================= */
+
+// Cache for screen boundaries (canvas size rarely changes)
+let screenBoundaryCache = null;
+let lastCanvasWidth = 0;
+let lastCanvasHeight = 0;
+
+/**
+ * Get cached screen boundaries, update cache if canvas size changed
+ * @returns {Object} Cached boundary calculations
+ */
+function getCachedScreenBoundaries() {
+  const canvas = document.getElementById('game');
+  if (!canvas) return { left: false, right: false, top: false, bottom: false };
+
+  // Check if cache needs refresh
+  if (!screenBoundaryCache || lastCanvasWidth !== canvas.width || lastCanvasHeight !== canvas.height) {
+    lastCanvasWidth = canvas.width;
+    lastCanvasHeight = canvas.height;
+    screenBoundaryCache = {
+      width: canvas.width,
+      height: canvas.height,
+      centerX: canvas.width / 2,
+      centerY: canvas.height / 2
+    };
+  }
+
+  return screenBoundaryCache;
+}
+
+/* =========================
+   PERFORMANCE OPTIMIZATIONS
+   ========================= */
+
+/**
+ * Optimized distance calculation with early exit for performance
+ * @param {Object} entity1 - First entity
+ * @param {Object} entity2 - Second entity
+ * @param {number} maxDistance - Maximum distance to check (for early exit)
+ * @returns {number|null} Distance or null if exceeds maxDistance
+ */
+function calculateDistanceOptimized(entity1, entity2, maxDistance = Infinity) {
+  const dx = entity1.x - entity2.x;
+  const dy = entity1.y - entity2.y;
+
+  // Early exit for horizontal distance check
+  if (Math.abs(dx) > maxDistance) return null;
+
+  const distanceSquared = dx * dx + dy * dy;
+
+  // Early exit for squared distance check
+  if (distanceSquared > maxDistance * maxDistance) return null;
+
+  return Math.sqrt(distanceSquared);
+}
+
+/**
+ * Batch collision detection for multiple entities (more efficient)
+ * @param {Object} sourceEntity - Entity to check collisions for
+ * @param {Array} targetEntities - Entities to check against
+ * @param {number} checkDistance - Maximum distance to check
+ * @returns {Array} Array of collision data
+ */
+function batchCollisionDetection(sourceEntity, targetEntities, checkDistance) {
+  if (!targetEntities || targetEntities.length === 0) return [];
+
+  const collisions = [];
+  const checkDistanceSquared = checkDistance * checkDistance;
+
+  for (const target of targetEntities) {
+    if (target === sourceEntity) continue;
+
+    // Skip entities without hitboxes
+    if (!target.collisionW || !target.collisionH) continue;
+
+    // Quick distance check first (squared for performance)
+    const dx = sourceEntity.x - target.x;
+    const dy = sourceEntity.y - target.y;
+    const distanceSquared = dx * dx + dy * dy;
+
+    if (distanceSquared > checkDistanceSquared) continue;
+
+    const distance = Math.sqrt(distanceSquared);
+
+    // Detailed collision check
+    if (checkEntityCollision(sourceEntity, target)) {
+      collisions.push({
+        entity: target,
+        distance: distance,
+        direction: getDirectionToEntity(sourceEntity, target)
+      });
+    }
+  }
+
+  return collisions;
+}
+
+/* =========================
+   ENHANCED UTILITY FUNCTIONS
+   ========================= */
+
+/**
+ * Enhanced screen boundary check with caching
+ * @param {Object} enemy - Enemy entity
+ * @param {number} margin - Margin from screen edge
+ * @returns {Object} Boundary status
+ */
+function checkScreenBoundariesCached(enemy, margin = (window.enemyAIConfig?.CONSTANTS?.SCREEN_MARGIN || 50)) {
+  const canvas = document.getElementById('game');
+  if (!canvas) return { left: false, right: false, top: false, bottom: false };
+
+  const boundaries = getCachedScreenBoundaries();
+
+  return {
+    left: enemy.x <= margin,
+    right: enemy.x >= (boundaries.width - margin),
+    top: enemy.y <= margin,
+    bottom: enemy.y >= (boundaries.height - margin)
+  };
+}
+
+/* =========================
    GLOBAL EXPORTS (following project pattern)
    ========================= */
 window.enemyAIUtils = {
-  // Constants
-  CONSTANTS: ENEMY_AI_CONSTANTS,
+  // Constants (now from centralized config)
+  CONSTANTS: window.enemyAIConfig?.CONSTANTS || ENEMY_AI_CONSTANTS,
 
   // Screen boundary functions
   checkScreenBoundaries,
+  checkScreenBoundariesCached, // Optimized version with caching
   getScreenBoundaryDirection,
 
   // Entity collision functions
   detectEntityCollisions,
+  batchCollisionDetection, // Optimized batch processing
   checkEntityCollision,
   getDirectionToEntity,
 
@@ -360,7 +478,19 @@ window.enemyAIUtils = {
   // Distance utilities
   getEntitiesInRange,
   getBestFleeDirection,
+  calculateDistanceOptimized, // Performance optimized distance calc
 
   // BT integration
-  detectObstacleAhead
+  detectObstacleAhead,
+
+  // Caching utilities
+  getCachedScreenBoundaries,
+
+  // Performance monitoring (for debugging)
+  getPerformanceStats: function() {
+    return {
+      cacheHits: screenBoundaryCache ? 1 : 0,
+      canvasSize: { width: lastCanvasWidth, height: lastCanvasHeight }
+    };
+  }
 };

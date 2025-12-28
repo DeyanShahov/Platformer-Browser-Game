@@ -1,6 +1,57 @@
-// RPG Combat System for Platformer Game
+//// RPG Combat System for Platformer Game
 // Handles damage calculation, combat resolution, and battle mechanics
 // Works alongside the existing Skill System (timers, cooldowns, resources)
+
+// Combat Attributes Manager - moved from character_info.js
+class CombatAttributes {
+  constructor() {
+    // Default combat attributes for characters
+    this.defaults = {
+      baseAttack: 5,
+      baseDefense: 0,
+      criticalChance: 0.10, // 10%
+
+      // Combat chances (as percentages 0-1)
+      hitChance: 0.95,     // 95% chance to hit
+      dodgeChance: 0.05,   // 5% chance to dodge
+      blockChance: 0.05,   // 5% chance to block
+
+      // Magic resistances (0-100%)
+      magicResistance: {
+        water: 0,
+        fire: 0,
+        air: 0,
+        earth: 0
+      }
+    };
+  }
+
+  // Initialize combat attributes for a character
+  initializeForCharacter(characterInfo) {
+    characterInfo.baseAttack = this.defaults.baseAttack;
+    characterInfo.baseDefense = this.defaults.baseDefense;
+    characterInfo.criticalChance = this.defaults.criticalChance;
+    characterInfo.hitChance = this.defaults.hitChance;
+    characterInfo.dodgeChance = this.defaults.dodgeChance;
+    characterInfo.blockChance = this.defaults.blockChance;
+    characterInfo.magicResistance = { ...this.defaults.magicResistance };
+  }
+
+  // Get combat attributes display text
+  getCriticalChanceDisplay(characterInfo) {
+    return `${Math.round(characterInfo.criticalChance * 100)}%`;
+  }
+
+  // Get magic resistance display
+  getMagicResistanceDisplay(characterInfo) {
+    return {
+      water: `${characterInfo.magicResistance.water}%`,
+      fire: `${characterInfo.magicResistance.fire}%`,
+      air: `${characterInfo.magicResistance.air}%`,
+      earth: `${characterInfo.magicResistance.earth}%`
+    };
+  }
+}
 
 class CombatCalculator {
   constructor() {
@@ -358,107 +409,7 @@ class CombatResolver {
     return this.combatLog.slice(-count);
   }
 
-  // Handle enemy defeat
-  handleEnemyDefeat(attacker, defeatedEnemy) {
-    console.log(`[COMBAT] handleEnemyDefeat called with attacker:`, attacker, `defeatedEnemy:`, defeatedEnemy);
-
-    console.log(`[COMBAT] Enemy defeated! ${attacker ? `Awarding experience to ${attacker.characterInfo?.getDisplayName() || 'Player'}` : 'Experience already awarded'}`);
-
-    // Award experience to the attacker (only if attacker is provided)
-    if (attacker && attacker.characterInfo) {
-      const experienceReward = 200; // 200 XP for enemy defeat
-      attacker.characterInfo.addExperience(experienceReward, attacker);
-      console.log(`[COMBAT] ${attacker.characterInfo.getDisplayName()} gained ${experienceReward} experience!`);
-    }
-
-    // Remove enemy from the game world via game state
-    this.removeEnemyFromGame(defeatedEnemy);
-
-    // Trigger any post-defeat effects
-    this.onEnemyDefeated(attacker, defeatedEnemy);
-  }
-
-  // Remove enemy from the game
-  removeEnemyFromGame(defeatedEnemy) {
-    console.log(`[COMBAT] Removing enemy from game world...`);
-
-    // Remove from game state if available
-    if (window.gameState) {
-      const entityId = window.gameState.getEntityId(defeatedEnemy);
-      if (entityId) {
-        window.gameState.removeEntity(entityId);
-        console.log(`[COMBAT] Enemy removed from game state (ID: ${entityId})`);
-      }
-    } else {
-      // Fallback for backwards compatibility
-      if (window.enemy === defeatedEnemy) {
-        console.log(`[COMBAT] Setting window.enemy to null (legacy mode)`);
-        window.enemy = null;
-      }
-    }
-
-    console.log(`[COMBAT] Enemy removal complete`);
-  }
-
-  // Post-defeat effects and events
-  onEnemyDefeated(attacker, defeatedEnemy) {
-    // Future: trigger quest updates, loot drops, achievements, etc.
-    console.log(`[COMBAT] Enemy defeat processing complete`);
-
-    // For now, trigger respawn after a short delay
-    setTimeout(() => {
-      this.respawnEnemy();
-    }, 2000); // 2 second delay before respawn
-  }
-
-  // Respawn enemy (for testing purposes)
-  respawnEnemy() {
-    console.log(`[COMBAT] Checking respawn conditions...`);
-
-    // Check if we need to respawn (no enemies in game state or window.enemy is null)
-    const shouldRespawn = window.gameState ?
-      window.gameState.getEntitiesByType('enemy').length === 0 :
-      window.enemy === null;
-
-    if (shouldRespawn) {
-      console.log(`[COMBAT] Respawning enemy...`);
-
-      // Create new enemy
-      const newEnemy = window.createEnemyWithData('basic', 1);
-
-      // Register enemy with animation system (same as in main.js)
-      if (window.animationSystem && window.animationSystem.isInitialized) {
-        const enemyAnimation = window.animationSystem.registerEntity(newEnemy, 'enemy');
-        console.log(`[COMBAT RESPAWN] Enemy registered with animation system:`, enemyAnimation ? 'SUCCESS' : 'FAILED');
-
-        // Initialize FSM after animation is registered
-        if (window.AnimationStateMachine) {
-          newEnemy.stateMachine = new window.AnimationStateMachine(newEnemy);
-          console.log(`[COMBAT RESPAWN] Enemy FSM initialized:`, newEnemy.stateMachine.getCurrentStateName());
-        }
-      } else {
-        console.warn(`[COMBAT RESPAWN] Animation system not ready for respawned enemy`);
-      }
-
-      // Register with enemy combat manager
-      if (window.enemyCombatManager) {
-        window.enemyCombatManager.registerEnemy(newEnemy);
-        console.log(`[COMBAT RESPAWN] Enemy registered with combat manager`);
-      }
-
-      // Add to game state if available
-      if (window.gameState) {
-        window.gameState.addEntity(newEnemy, 'enemy');
-        console.log(`[COMBAT] Enemy respawned and added to game state with ${newEnemy.health}/${newEnemy.maxHealth} HP (ID: ${newEnemy.id})`);
-      } else {
-        // Fallback for backwards compatibility
-        window.enemy = newEnemy;
-        console.log(`[COMBAT] Enemy respawned with ${window.enemy.health}/${window.enemy.maxHealth} HP (legacy mode)`);
-      }
-    } else {
-      console.log(`[COMBAT] Respawn not needed - enemies still present`);
-    }
-  }
+  // MOVED TO game.js - Game logic for enemy defeat handling
 
   // Start enemy death sequence
   startEnemyDeathSequence(attacker, defeatedEnemy) {
@@ -491,7 +442,7 @@ class CombatResolver {
     if (defeatedEnemy.deathTimer >= totalDeathTime && !defeatedEnemy.defeatHandled) {
       // Death animation complete - remove enemy (only once)
       defeatedEnemy.defeatHandled = true;
-      this.handleEnemyDefeat(null, defeatedEnemy); // Pass null for attacker since rewards already given
+      handleEnemyDefeat(null, defeatedEnemy); // Call global function since handleEnemyDefeat moved to game.js
       return true; // Enemy is dead and removed
     }
 
@@ -770,14 +721,41 @@ class DamageNumberManager {
   }
 }
 
+// ===========================================
+// SKILL COMBAT LOGIC - moved from skills.js
+// ===========================================
+
+// Check if player can perform action (skill unlocked + resources) - moved from skills.js
+function canPlayerPerformSkill(player, actionType) {
+  // First check if skill is unlocked
+  if (!window.skillTreeManager.hasSkill(player, actionType)) return false;
+
+  // Check resource requirements
+  const skill = window.skillTreeManager.getSkillInfo(actionType);
+  if (skill.resourceType === RESOURCE_TYPES.NONE) return true;
+
+  if (skill.resourceType === RESOURCE_TYPES.MANA) {
+    return player.mana >= skill.resourceCost;
+  }
+
+  if (skill.resourceType === RESOURCE_TYPES.ENERGY) {
+    return player.energy >= skill.resourceCost;
+  }
+
+  return false;
+}
+
 // Global combat system instances
 window.combatCalculator = new CombatCalculator();
 window.combatResolver = new CombatResolver();
 window.enemyCombatManager = new EnemyCombatManager();
 window.damageNumberManager = new DamageNumberManager();
+window.combatAttributes = new CombatAttributes();
 
-// Export for use in other files
+// Export functions and classes
+window.canPlayerPerformSkill = canPlayerPerformSkill;
 window.CombatCalculator = CombatCalculator;
 window.CombatResolver = CombatResolver;
 window.EnemyCombatManager = EnemyCombatManager;
 window.DamageNumberManager = DamageNumberManager;
+window.CombatAttributes = CombatAttributes;

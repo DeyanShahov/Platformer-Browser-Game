@@ -18,23 +18,10 @@ class CharacterInfo {
     // Free points available for manual distribution
     this.freePoints = 0;
 
-    // Combat attributes (base values)
-    this.baseAttack = 5;
-    this.baseDefense = 0;
-    this.criticalChance = 0.10; // 10%
-
-    // Combat chances (as percentages 0-1)
-    this.hitChance = 0.95;     // 95% chance to hit
-    this.dodgeChance = 0.05;   // 5% chance to dodge
-    this.blockChance = 0.05;   // 5% chance to block
-
-    // Magic resistances (0-100%)
-    this.magicResistance = {
-      water: 0,
-      fire: 0,
-      air: 0,
-      earth: 0
-    };
+    // Initialize combat attributes using the combat system
+    if (window.combatAttributes) {
+      window.combatAttributes.initializeForCharacter(this);
+    }
 
     // Display names for characters
     this.displayNames = {
@@ -103,11 +90,6 @@ class CharacterInfo {
     return this.strength + this.speed + this.intelligence;
   }
 
-  // Get experience percentage for UI
-  getExperiencePercentage() {
-    return (this.experience / this.experienceToNext) * 100;
-  }
-
   // Manual point distribution methods
   increaseStrength() {
     if (this.freePoints > 0) {
@@ -167,37 +149,53 @@ class CharacterInfo {
     return false;
   }
 
-  // Get formatted stats for UI (updated to include new attributes)
-  getFormattedStats() {
-    return {
-      level: this.level,
-      experience: this.experience,
-      experienceToNext: this.experienceToNext,
-      experiencePercentage: this.getExperiencePercentage(),
-      freePoints: this.freePoints,
-      strength: this.strength,
-      speed: this.speed,
-      intelligence: this.intelligence,
-      baseAttack: this.baseAttack,
-      baseDefense: this.baseDefense,
-      criticalChance: Math.round(this.criticalChance * 100), // Convert to percentage
-      magicResistance: { ...this.magicResistance }
-    };
+  // UI interaction methods - moved from character_stats_ui.js
+  modifyStrength(amount) {
+    if (amount > 0 && this.freePoints > 0) {
+      this.strength += amount;
+      this.freePoints -= amount;
+      return true;
+    } else if (amount < 0) {
+      const minStrength = 10 + this.level - 1;
+      if (this.strength > minStrength) {
+        this.strength += amount; // amount is negative
+        this.freePoints -= amount; // subtracting negative = adding
+        return true;
+      }
+    }
+    return false;
   }
 
-  // Get critical chance as formatted string
-  getCriticalChanceDisplay() {
-    return `${Math.round(this.criticalChance * 100)}%`;
+  modifySpeed(amount) {
+    if (amount > 0 && this.freePoints > 0) {
+      this.speed += amount;
+      this.freePoints -= amount;
+      return true;
+    } else if (amount < 0) {
+      const minSpeed = 10 + this.level - 1;
+      if (this.speed > minSpeed) {
+        this.speed += amount;
+        this.freePoints -= amount;
+        return true;
+      }
+    }
+    return false;
   }
 
-  // Get magic resistance as formatted strings
-  getMagicResistanceDisplay() {
-    return {
-      water: `${this.magicResistance.water}%`,
-      fire: `${this.magicResistance.fire}%`,
-      air: `${this.magicResistance.air}%`,
-      earth: `${this.magicResistance.earth}%`
-    };
+  modifyIntelligence(amount) {
+    if (amount > 0 && this.freePoints > 0) {
+      this.intelligence += amount;
+      this.freePoints -= amount;
+      return true;
+    } else if (amount < 0) {
+      const minIntelligence = 10 + this.level - 1;
+      if (this.intelligence > minIntelligence) {
+        this.intelligence += amount;
+        this.freePoints -= amount;
+        return true;
+      }
+    }
+    return false;
   }
 }
 
