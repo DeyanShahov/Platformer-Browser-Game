@@ -182,13 +182,13 @@ class CharacterStatsUI {
 
   // Show character stats for a specific player
   showForPlayer(playerIndex) {
-    if (playerIndex < 0 || playerIndex >= window.players.length) {
+    if (playerIndex < 0 || playerIndex >= window.gameState.players.length) {
       console.log(`[CHARACTER STATS] Invalid player index: ${playerIndex}`);
       return;
     }
 
     this.currentPlayerIndex = playerIndex;
-    const player = window.players[playerIndex];
+    const player = window.gameState.players[playerIndex];
 
     // Update title
     const titleEl = document.getElementById('characterStatsTitle');
@@ -295,7 +295,7 @@ class CharacterStatsUI {
   // UI interaction methods - now delegate to character logic
   increaseStrength() {
     if (this.currentPlayerIndex !== null) {
-      const player = window.players[this.currentPlayerIndex];
+      const player = window.gameState.players[this.currentPlayerIndex];
       if (player && player.characterInfo) {
         player.characterInfo.modifyStrength(1);
         this.updateCharacterDisplay(player);
@@ -305,7 +305,7 @@ class CharacterStatsUI {
 
   decreaseStrength() {
     if (this.currentPlayerIndex !== null) {
-      const player = window.players[this.currentPlayerIndex];
+      const player = window.gameState.players[this.currentPlayerIndex];
       if (player && player.characterInfo) {
         player.characterInfo.modifyStrength(-1);
         this.updateCharacterDisplay(player);
@@ -315,7 +315,7 @@ class CharacterStatsUI {
 
   increaseSpeed() {
     if (this.currentPlayerIndex !== null) {
-      const player = window.players[this.currentPlayerIndex];
+      const player = window.gameState.players[this.currentPlayerIndex];
       if (player && player.characterInfo) {
         player.characterInfo.modifySpeed(1);
         this.updateCharacterDisplay(player);
@@ -325,7 +325,7 @@ class CharacterStatsUI {
 
   decreaseSpeed() {
     if (this.currentPlayerIndex !== null) {
-      const player = window.players[this.currentPlayerIndex];
+      const player = window.gameState.players[this.currentPlayerIndex];
       if (player && player.characterInfo) {
         player.characterInfo.modifySpeed(-1);
         this.updateCharacterDisplay(player);
@@ -335,7 +335,7 @@ class CharacterStatsUI {
 
   increaseIntelligence() {
     if (this.currentPlayerIndex !== null) {
-      const player = window.players[this.currentPlayerIndex];
+      const player = window.gameState.players[this.currentPlayerIndex];
       if (player && player.characterInfo) {
         player.characterInfo.modifyIntelligence(1);
         this.updateCharacterDisplay(player);
@@ -345,7 +345,7 @@ class CharacterStatsUI {
 
   decreaseIntelligence() {
     if (this.currentPlayerIndex !== null) {
-      const player = window.players[this.currentPlayerIndex];
+      const player = window.gameState.players[this.currentPlayerIndex];
       if (player && player.characterInfo) {
         player.characterInfo.modifyIntelligence(-1);
         this.updateCharacterDisplay(player);
@@ -386,7 +386,7 @@ class CharacterStatsUI {
   // Refresh the display (call this when stats change)
   refreshDisplay() {
     if (this.currentPlayerIndex !== null) {
-      const player = window.players[this.currentPlayerIndex];
+      const player = window.gameState.players[this.currentPlayerIndex];
       if (player) {
         this.updateCharacterDisplay(player);
       }

@@ -1058,7 +1058,7 @@ function handleCharacterStatsKeys() {
 
   // Player 4 character stats (key =) - toggle player's own stats
   keyEqualsPressed = window.keys['='];
-  if (keyEqualsPressed && !keyEqualsWasPressed && window.players && window.players.length >= 4) {
+  if (keyEqualsPressed && !keyEqualsWasPressed && window.gameState.players && window.gameState.players.length >= 4) {
     if (currentMenu === 'characterStats' && currentCharacterStatsPlayer === 3) {
       // Close if player's own stats are open
       hideCharacterStats();
