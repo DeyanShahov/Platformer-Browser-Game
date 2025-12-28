@@ -855,7 +855,7 @@ class BaseEnemy {
 }
 
 // ===========================================
-// ENEMY CREATION FUNCTION - MOVED FROM enemy_data.js
+// ENEMY CREATION FUNCTIONS
 // ===========================================
 
 // Create enemy instance with stats

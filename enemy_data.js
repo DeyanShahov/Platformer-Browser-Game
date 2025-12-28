@@ -105,8 +105,5 @@ class EnemyData {
   }
 }
 
-  // MOVED TO base_enemy.js - Enemy creation logic
-
 // Global enemy data management
 window.EnemyData = EnemyData;
-// createEnemyWithData moved to base_enemy.js
