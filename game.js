@@ -421,8 +421,6 @@ function updatePlayer(player, playerIndex, dt) {
 
   const inputMode = player.controls.inputMode || 'keyboard';
 
-
-
   // Движения и действия
   if (inputMode === 'keyboard') {
     handleKeyboardInput(player);
@@ -530,14 +528,21 @@ function handleKeyboardInput(player) {
   const controls = getCurrentControls(player);
 
   // Движения
-  if (window.keys[controls.left]) player.vx = -SPEED;
-  if (window.keys[controls.right]) player.vx = SPEED;
-  if (window.keys[controls.up]) player.vz = Z_SPEED;
-  if (window.keys[controls.down]) player.vz = -Z_SPEED;
+  if (window.keys[controls.left]) {
+    player.vx = -SPEED;
+  }
+  if (window.keys[controls.right]) {
+    player.vx = SPEED;
+  }
+  if (window.keys[controls.up]) {
+    player.vz = Z_SPEED;
+  }
+  if (window.keys[controls.down]){
+    player.vz = -Z_SPEED;
+  }
 
   // Скок - FSM-based
   if (window.keys[controls.jump] && player.onGround && player.stateMachine) {
-    console.log(`[JUMP] Jump started - player on ground, triggering FSM jump`);
     logAction(0, 'клавиатура', controls.jump.toUpperCase(), 'jump');
     player.vy = JUMP_FORCE;
     player.onGround = false;
@@ -555,7 +560,6 @@ function handleKeyboardInput(player) {
       logAction(0, 'клавиатура', controls.basicAttackMedium.toUpperCase(), 'attack_medium');
       player.stateMachine.handleAction('attack_medium');
     } else {
-      console.log('[INPUT] Cannot perform basic_attack_medium (not enough resources?)');
       // TODO: Show "not enough mana" feedback to player
     }
   }
@@ -1077,8 +1081,6 @@ function update(dt) {
   handleSkillTreeKeys();
   handleCharacterStatsKeys();
 
-  //console.log('[UPDATE] Starting update, menuActive:', menuActive);
-
   // Ако имаме активно меню, не ъпдейтвай играчите и враговете.
   // Това ефективно "паузира" играта.
   if (!menuActive) {
@@ -1087,15 +1089,12 @@ function update(dt) {
 
     // Обновяване на всички играчи
     if (window.gameState) {
-      //console.log('[UPDATE] Processing players via game state:', window.gameState.players.length, 'players');
       window.gameState.players.forEach((player, index) => {
-        //console.log(`[UPDATE] Processing player at index ${index}:`, player);
         updatePlayer(player, index, dt);
       });
 
       // Обновяване на всички противници (само живи и не умиращи)
       const enemies = window.gameState.getEntitiesByType('enemy');
-      //console.log('[UPDATE] Processing enemies:', enemies.length);
       enemies.forEach(enemy => {
         if (!enemy.isDying) { // Не обновяваме AI за умиращи противници
           updateEnemyAI(enemy, dt);
@@ -1103,13 +1102,9 @@ function update(dt) {
           handleEnemyMovement(enemy, dt);
         }
       });
-
-      //console.log('[UPDATE] Game state debug:', window.gameState.getDebugInfo());
     } else {
       // Fallback към старата система за backwards compatibility
-      //console.log('[UPDATE] Using legacy system, players:', players.length);
       players.forEach((player, index) => {
-        //console.log(`[UPDATE] Processing player at index ${index}:`, player);
         updatePlayer(player, index, dt);
       });
       updateEnemyAI(dt);

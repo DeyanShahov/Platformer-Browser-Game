@@ -1,6 +1,7 @@
 // Animation State Machine
 // Implements State Design Pattern for character animation states
 // Provides clean, scalable FSM for managing animation transitions
+// Phase 2: State management unification - integrate with AnimationSystem
 
 // ===========================================
 // BASE STATE CLASS

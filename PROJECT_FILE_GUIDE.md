@@ -11,6 +11,39 @@ This comprehensive guide documents every file in the Platformer Browser Game pro
 
 ## 🏗️ RECENT ARCHITECTURAL CHANGES (December 2025)
 
+### Animation System Refactoring - COMPLETED ✅
+**5-Phase Refactoring Completed Successfully**
+
+#### Phase 1: Data Consolidation ✅
+- Moved all animation logic functions to `animation_utils.js`
+- Converted `animation_data.js` to pure data definitions
+- Removed Blue Slime duplication from main data structures
+- Centralized animation data management
+
+#### Phase 2: State Management Unification ✅
+- Integrated AnimationStateMachine tightly with AnimationSystem
+- Added unified state machine creation methods
+- Enhanced state transition handling
+- Cleaner API for state management
+
+#### Phase 3: Asset Management Clarification ✅
+- Enhanced SpriteManager with asset categorization
+- Added asset statistics and memory tracking
+- Improved asset validation and error handling
+- Better asset lifecycle management
+
+#### Phase 4: Generic Entity Support ✅
+- Enhanced AnimationRenderer with generic entity drawing
+- Added support for different entity types (sprites, shapes, etc.)
+- Improved transformation handling
+- Better batch rendering capabilities
+
+#### Phase 5: Clean Integration Points ✅
+- Updated all integration points across the codebase
+- Cleaned up function exports and imports
+- Improved cross-module communication
+- Enhanced documentation and API consistency
+
 ### Entity Rendering Refactor:
 - **AnimationRenderer** now handles all game entity drawing (animated and non-animated)
 - **render.js** simplified to UI coordination only
@@ -25,11 +58,12 @@ This comprehensive guide documents every file in the Platformer Browser Game pro
 - **Maintainable**: Changes made in single location
 - **Consistent**: Unified visual effects and debug systems
 - **Performance**: Optimized rendering pipeline
+- **Modular**: Clean separation of concerns across animation system
 
 ### Files Affected:
-- `Animation System/animation_renderer.js` - Enhanced with universal entity drawing
-- `render.js` - Streamlined to UI orchestration
-- `PROJECT_FILE_GUIDE.md` - Updated documentation
+- `Animation System/` - Complete refactoring of all 6 files
+- `game.js` - Integration updates
+- `PROJECT_FILE_GUIDE.md` - Comprehensive documentation update
 
 ---
 
@@ -254,19 +288,25 @@ Platformer Browser Game/
 **Content:** Step-by-step animation guides
 **Integration Points:** Reference for new skill development
 
-### `Animation System/animation_system.js` - Animation Coordinator
-**Purpose:** Central animation management and playback system
+### `Animation System/animation_system.js` - Animation Coordinator **[REFACTORED]**
+**Purpose:** Central animation management and playback system with unified state machine integration
 **Responsibilities:**
-- Animation state management
-- Frame timing and sequencing
-- Entity animation coordination
-- Performance optimization
+- Animation state management and entity registration
+- Frame timing and sequencing with state machine coordination
+- Entity animation coordination with enhanced API
+- Performance optimization and batch operations
+- State machine integration (Phase 2: State management unification ✅)
 **Key Functions:**
-- `update(dt)` - Animation updates
-- `playAnimation(entity, animationName)` - Animation triggering
-- `registerAnimation(entity, data)` - Animation registration
-**Dependencies:** `Animation System/animation_data.js`
-**Integration Points:** Core animation system
+- `update(dt)` - Animation and state machine updates
+- `registerEntity(entity, entityType)` - Entity registration with animation
+- `createStateMachineForEntity(entity, isEnemy)` - State machine creation **[NEW]**
+- `transitionEntityToState(entity, stateName)` - Unified state transitions **[NEW]**
+- `getEntityCurrentState(entity)` - State queries **[NEW]**
+**Key Classes:**
+- `AnimationSystem` - Main coordinator class
+**Dependencies:** All Animation System files, state machines
+**Integration Points:** Core animation system, called by game.js and render.js
+**Note:** Enhanced with state machine integration methods for cleaner API
 
 ### `Animation System/animation_data.js` - Animation Definitions
 **Purpose:** Storage of animation frame data and sequences

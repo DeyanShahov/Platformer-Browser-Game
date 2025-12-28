@@ -1,5 +1,6 @@
 // Animation System
 // Central manager for all animations in the game
+// Phase 2: State management unification completed ✅
 
 class AnimationSystem {
   constructor() {
@@ -292,6 +293,63 @@ class AnimationSystem {
   blendAnimations(entity, fromAnimation, toAnimation, blendTime) {
     // TODO: Implement animation blending for smoother transitions
     console.log('[AnimationSystem] Animation blending not yet implemented');
+  }
+
+  // ===========================================
+  // STATE MACHINE INTEGRATION - Phase 2
+  // ===========================================
+
+  // Create and attach state machine to entity
+  createStateMachineForEntity(entity, isEnemy = false) {
+    if (!entity) return null;
+
+    const StateMachineClass = isEnemy ? window.EnemyAnimationStateMachine : window.AnimationStateMachine;
+    if (!StateMachineClass) {
+      console.warn('[AnimationSystem] StateMachine class not available');
+      return null;
+    }
+
+    const stateMachine = new StateMachineClass(entity);
+    entity.stateMachine = stateMachine;
+
+    console.log(`[AnimationSystem] Created ${isEnemy ? 'enemy' : 'player'} state machine for entity`);
+    return stateMachine;
+  }
+
+  // Unified state transition handling
+  transitionEntityToState(entity, stateName) {
+    if (!entity || !entity.stateMachine) return false;
+
+    return entity.stateMachine.changeState(stateName);
+  }
+
+  // Check if entity is in specific state
+  isEntityInState(entity, stateName) {
+    if (!entity || !entity.stateMachine) return false;
+
+    return entity.stateMachine.isInState(stateName);
+  }
+
+  // Get entity's current state name
+  getEntityCurrentState(entity) {
+    if (!entity || !entity.stateMachine) return 'none';
+
+    return entity.stateMachine.getCurrentStateName();
+  }
+
+  // Force entity state (for special cases)
+  forceEntityState(entity, stateName) {
+    if (!entity || !entity.stateMachine) return false;
+
+    return entity.stateMachine.forceState(stateName);
+  }
+
+  // Handle action for entity (unified interface)
+  handleEntityAction(entity, actionType) {
+    if (!entity || !entity.stateMachine) return false;
+
+    entity.stateMachine.handleAction(actionType);
+    return true;
   }
 }
 

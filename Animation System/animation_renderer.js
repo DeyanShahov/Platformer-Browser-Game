@@ -1,5 +1,6 @@
 // Animation Renderer
 // Handles canvas drawing operations for animated sprites
+// Phase 4: Generic entity support - enhanced entity type handling and rendering flexibility ✅
 
 class AnimationRenderer {
   constructor(canvas) {
@@ -438,6 +439,241 @@ class AnimationRenderer {
     };
 
     this.drawAnimatedEntity(adjustedEntity, animation);
+  }
+
+  // ===========================================
+  // GENERIC ENTITY SUPPORT METHODS - Phase 4
+  // ===========================================
+
+  // Generic entity renderer that adapts to entity type
+  drawGenericEntity(entity, options = {}) {
+    const entityType = this.getEntityType(entity);
+
+    switch (entityType) {
+      case 'animated_sprite':
+        return this.drawAnimatedEntity(entity, entity.animation);
+
+      case 'static_sprite':
+        return this.drawStaticSprite(entity, options);
+
+      case 'colored_rectangle':
+        return this.drawColoredRectangle(entity, entity.x, entity.y - entity.h - this.getZOffset(entity));
+
+      case 'custom_shape':
+        return this.drawCustomShape(entity, options);
+
+      default:
+        // Fallback to universal method
+        return this.drawEntity(entity);
+    }
+  }
+
+  // Determine entity rendering type
+  getEntityType(entity) {
+    if (entity.animation && entity.animation.currentAnimation) {
+      return 'animated_sprite';
+    }
+    if (entity.spritePath && window.spriteManager?.getSprite(entity.spritePath)) {
+      return 'static_sprite';
+    }
+    if (entity.color && !entity.spritePath) {
+      return 'colored_rectangle';
+    }
+    if (entity.shape) {
+      return 'custom_shape';
+    }
+    return 'unknown';
+  }
+
+  // Draw static sprite (non-animated)
+  drawStaticSprite(entity, options = {}) {
+    if (!entity.spritePath || !window.spriteManager) return;
+
+    const sprite = window.spriteManager.getSprite(entity.spritePath);
+    if (!sprite) return;
+
+    const zOffset = this.getZOffset(entity);
+    const drawX = entity.x;
+    const drawY = entity.y - entity.h - zOffset;
+
+    // Save context for transformations
+    this.ctx.save();
+
+    // Apply transformations
+    this.applyEntityTransformations(entity, drawX, drawY);
+
+    // Draw sprite
+    try {
+      this.ctx.drawImage(
+        sprite,
+        options.sourceX || 0,
+        options.sourceY || 0,
+        options.sourceWidth || sprite.width,
+        options.sourceHeight || sprite.height,
+        drawX, drawY,
+        entity.w || sprite.width,
+        entity.h || sprite.height
+      );
+    } catch (error) {
+      console.warn(`[AnimationRenderer] Failed to draw static sprite for ${entity.id}`, error);
+    }
+
+    // Draw debug boxes if needed
+    if (options.debug) {
+      this.drawDebugBoxes(entity, drawX, drawY);
+    }
+
+    this.ctx.restore();
+  }
+
+  // Draw custom shapes (circles, polygons, etc.)
+  drawCustomShape(entity, options = {}) {
+    const zOffset = this.getZOffset(entity);
+    const drawX = entity.x;
+    const drawY = entity.y - entity.h - zOffset;
+
+    this.ctx.save();
+
+    // Apply transformations
+    this.applyEntityTransformations(entity, drawX, drawY);
+
+    // Set style
+    this.ctx.fillStyle = entity.color || options.fillColor || '#FFFFFF';
+    this.ctx.strokeStyle = entity.strokeColor || options.strokeColor || '#000000';
+    this.ctx.lineWidth = entity.lineWidth || options.lineWidth || 1;
+
+    // Draw based on shape type
+    switch (entity.shape) {
+      case 'circle':
+        this.drawCircle(entity, drawX, drawY);
+        break;
+      case 'triangle':
+        this.drawTriangle(entity, drawX, drawY);
+        break;
+      case 'polygon':
+        this.drawPolygon(entity, drawX, drawY);
+        break;
+      default:
+        // Default to rectangle
+        this.ctx.fillRect(drawX, drawY, entity.w, entity.h);
+        break;
+    }
+
+    this.ctx.restore();
+  }
+
+  // Helper methods for custom shapes
+  drawCircle(entity, drawX, drawY) {
+    const centerX = drawX + (entity.w || entity.radius * 2) / 2;
+    const centerY = drawY + (entity.h || entity.radius * 2) / 2;
+    const radius = entity.radius || Math.min(entity.w, entity.h) / 2;
+
+    this.ctx.beginPath();
+    this.ctx.arc(centerX, centerY, radius, 0, Math.PI * 2);
+    this.ctx.fill();
+    if (entity.strokeColor) this.ctx.stroke();
+  }
+
+  drawTriangle(entity, drawX, drawY) {
+    const centerX = drawX + entity.w / 2;
+    const bottomY = drawY + entity.h;
+    const topY = drawY;
+
+    this.ctx.beginPath();
+    this.ctx.moveTo(centerX, topY);
+    this.ctx.lineTo(drawX, bottomY);
+    this.ctx.lineTo(drawX + entity.w, bottomY);
+    this.ctx.closePath();
+    this.ctx.fill();
+    if (entity.strokeColor) this.ctx.stroke();
+  }
+
+  drawPolygon(entity, drawX, drawY) {
+    if (!entity.points || entity.points.length < 3) return;
+
+    this.ctx.beginPath();
+    entity.points.forEach((point, index) => {
+      const x = drawX + point.x;
+      const y = drawY + point.y;
+      if (index === 0) {
+        this.ctx.moveTo(x, y);
+      } else {
+        this.ctx.lineTo(x, y);
+      }
+    });
+    this.ctx.closePath();
+    this.ctx.fill();
+    if (entity.strokeColor) this.ctx.stroke();
+  }
+
+  // Apply common entity transformations
+  applyEntityTransformations(entity, drawX, drawY) {
+    // Facing direction
+    if (entity.facing === 'left' || (entity.animation && entity.animation.facingDirection === 'left')) {
+      this.ctx.scale(-1, 1);
+      this.ctx.translate(-drawX * 2 - (entity.collisionW || entity.w), 0);
+    }
+
+    // Rotation
+    if (entity.rotation) {
+      const centerX = drawX + entity.w / 2;
+      const centerY = drawY + entity.h / 2;
+      this.ctx.translate(centerX, centerY);
+      this.ctx.rotate(entity.rotation * Math.PI / 180);
+      this.ctx.translate(-centerX, -centerY);
+    }
+
+    // Scale
+    if (entity.scaleX || entity.scaleY) {
+      const scaleX = entity.scaleX || 1;
+      const scaleY = entity.scaleY || 1;
+      const centerX = drawX + entity.w / 2;
+      const centerY = drawY + entity.h / 2;
+      this.ctx.translate(centerX, centerY);
+      this.ctx.scale(scaleX, scaleY);
+      this.ctx.translate(-centerX, -centerY);
+    }
+  }
+
+  // Enhanced batch drawing with entity type detection
+  drawGenericEntities(entities, options = {}) {
+    if (!entities || entities.length === 0) return;
+
+    let entitiesToDraw = entities;
+
+    // Sort by effective Y position unless disabled
+    if (!options.skipSorting) {
+      entitiesToDraw = entities.sort((a, b) => {
+        const aEffectiveY = a.y - this.getZOffset(a);
+        const bEffectiveY = b.y - this.getZOffset(b);
+        return aEffectiveY - bEffectiveY;
+      });
+    }
+
+    // Apply camera offset if provided
+    const cameraX = options.cameraX || 0;
+    const cameraY = options.cameraY || 0;
+
+    // Draw each entity based on its type
+    entitiesToDraw.forEach(entity => {
+      // Skip invisible entities
+      if (entity.visible === false) return;
+
+      // Apply camera offset
+      const adjustedEntity = {
+        ...entity,
+        x: entity.x - cameraX,
+        y: entity.y - cameraY
+      };
+
+      // Check visibility if camera is used
+      if (cameraX !== 0 || cameraY !== 0) {
+        if (!this.isEntityVisible(adjustedEntity, 0, 0)) return;
+      }
+
+      // Draw based on entity type
+      this.drawGenericEntity(adjustedEntity, options);
+    });
   }
 
   // Batch draw multiple entities with camera

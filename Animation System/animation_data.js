@@ -1,7 +1,12 @@
 // Animation Data Configuration
-// Contains all animation definitions, frame data, and sprite configurations
+// Pure data definitions - no logic, only static data structures
+// All helper functions moved to animation_utils.js
+// Phase 1: Data consolidation completed ✅
 
-// Animation Types
+// ===========================================
+// ANIMATION TYPES CONSTANTS
+// ===========================================
+
 const ANIMATION_TYPES = {
   IDLE: 'idle',
   WALK: 'walk',
@@ -16,7 +21,10 @@ const ANIMATION_TYPES = {
   DEAD: 'dead'
 };
 
-// Sprite Sheet Configurations
+// ===========================================
+// SPRITE CONFIGURATIONS
+// ===========================================
+
 const SPRITE_CONFIGS = {
   knight: {
     frameWidth: 128,
@@ -1012,8 +1020,10 @@ const ANIMATION_DEFINITIONS = {
   }
 };
 
-// Keyframe definitions for CSS animations
-// These match the keyframes from the reference HTML
+// ===========================================
+// KEYFRAME DEFINITIONS
+// ===========================================
+
 const KEYFRAME_DEFINITIONS = {
   'static-1-frame': { to: { backgroundPosition: '0 0' } }, // Static frame
   'sprite-2-frames': { to: { backgroundPosition: '-256px 0' } },
@@ -1023,6 +1033,51 @@ const KEYFRAME_DEFINITIONS = {
   'sprite-7-frames': { to: { backgroundPosition: '-896px 0' } },
   'sprite-8-frames': { to: { backgroundPosition: '-1024px 0' } }
 };
+
+// ===========================================
+// ANIMATION PRIORITIES
+// ===========================================
+
+const ANIMATION_PRIORITIES = {
+  [ANIMATION_TYPES.DEAD]: 100,
+  [ANIMATION_TYPES.HURT]: 90,
+  [ANIMATION_TYPES.ATTACK_1]: 80,
+  [ANIMATION_TYPES.ATTACK_2]: 80,
+  [ANIMATION_TYPES.ATTACK_3]: 80,
+  [ANIMATION_TYPES.RUN_ATTACK]: 80,
+  [ANIMATION_TYPES.DEFEND]: 70,
+  [ANIMATION_TYPES.JUMP]: 60,
+  [ANIMATION_TYPES.RUN]: 50,
+  [ANIMATION_TYPES.WALK]: 40,
+  [ANIMATION_TYPES.IDLE]: 10
+};
+
+// ===========================================
+// DATA INTEGRATION
+// ===========================================
+
+// Merge Blue Slime animations into main definitions
+Object.assign(ANIMATION_DEFINITIONS, {
+  blue_slime: BLUE_SLIME_ANIMATION_DEFINITIONS
+});
+
+// Add Blue Slime priorities to main priorities
+Object.assign(ANIMATION_PRIORITIES, {
+  [BLUE_SLIME_ANIMATION_TYPES.IDLE]: 10,
+  [BLUE_SLIME_ANIMATION_TYPES.WALK]: 20,
+  [BLUE_SLIME_ANIMATION_TYPES.RUN]: 30,
+  [BLUE_SLIME_ANIMATION_TYPES.JUMP]: 40,
+  [BLUE_SLIME_ANIMATION_TYPES.ATTACK_1]: 50,
+  [BLUE_SLIME_ANIMATION_TYPES.ATTACK_2]: 50,
+  [BLUE_SLIME_ANIMATION_TYPES.ATTACK_3]: 50,
+  [BLUE_SLIME_ANIMATION_TYPES.RUN_ATTACK]: 50,
+  [BLUE_SLIME_ANIMATION_TYPES.HURT]: 60,
+  [BLUE_SLIME_ANIMATION_TYPES.DEAD]: 100
+});
+
+// ===========================================
+// TEMPORARY: FUNCTIONS KEPT FOR BACKWARD COMPATIBILITY
+// ===========================================
 
 // Helper function to get animation definition
 function getAnimationDefinition(entityType, animationType) {
@@ -1040,52 +1095,41 @@ function getKeyframeDefinition(keyframeName) {
   return KEYFRAME_DEFINITIONS[keyframeName];
 }
 
-// Animation state priorities (higher number = higher priority)
-const ANIMATION_PRIORITIES = {
-  [ANIMATION_TYPES.DEAD]: 100,
-  [ANIMATION_TYPES.HURT]: 90,
-  [ANIMATION_TYPES.ATTACK_1]: 80,
-  [ANIMATION_TYPES.ATTACK_2]: 80,
-  [ANIMATION_TYPES.ATTACK_3]: 80,
-  [ANIMATION_TYPES.RUN_ATTACK]: 80,
-  [ANIMATION_TYPES.DEFEND]: 70,
-  [ANIMATION_TYPES.JUMP]: 60,
-  [ANIMATION_TYPES.RUN]: 50,
-  [ANIMATION_TYPES.WALK]: 40,
-  [ANIMATION_TYPES.IDLE]: 10
-};
-
-// Add to global ANIMATION_DEFINITIONS
-Object.assign(ANIMATION_DEFINITIONS, {
-  blue_slime: BLUE_SLIME_ANIMATION_DEFINITIONS
-});
-
-// Expose Blue Slime animation types separately (don't overwrite main ANIMATION_TYPES)
-window.BLUE_SLIME_ANIMATION_TYPES = BLUE_SLIME_ANIMATION_TYPES;
-
-// Add Blue Slime to animation priorities
-Object.assign(ANIMATION_PRIORITIES, {
-  [BLUE_SLIME_ANIMATION_TYPES.IDLE]: 10,
-  [BLUE_SLIME_ANIMATION_TYPES.WALK]: 20,
-  [BLUE_SLIME_ANIMATION_TYPES.RUN]: 30,
-  [BLUE_SLIME_ANIMATION_TYPES.JUMP]: 40,
-  [BLUE_SLIME_ANIMATION_TYPES.ATTACK_1]: 50,
-  [BLUE_SLIME_ANIMATION_TYPES.ATTACK_2]: 50,
-  [BLUE_SLIME_ANIMATION_TYPES.ATTACK_3]: 50,
-  [BLUE_SLIME_ANIMATION_TYPES.RUN_ATTACK]: 50,
-  [BLUE_SLIME_ANIMATION_TYPES.HURT]: 60,
-  [BLUE_SLIME_ANIMATION_TYPES.DEAD]: 100
-});
-
 // Helper function to get animation priority
 function getAnimationPriority(animationType) {
   return ANIMATION_PRIORITIES[animationType] || 0;
 }
 
-// Export for use in other modules
+// ===========================================
+// GLOBAL EXPORTS - DATA AND FUNCTIONS
+// ===========================================
+
+// Export data structures globally
 window.ANIMATION_TYPES = ANIMATION_TYPES;
+window.SPRITE_CONFIGS = SPRITE_CONFIGS;
+window.BLUE_SLIME_ANIMATION_TYPES = BLUE_SLIME_ANIMATION_TYPES;
 window.ANIMATION_DEFINITIONS = ANIMATION_DEFINITIONS;
+window.KEYFRAME_DEFINITIONS = KEYFRAME_DEFINITIONS;
+window.ANIMATION_PRIORITIES = ANIMATION_PRIORITIES;
+
+// Export functions globally (temporary - will be removed after refactoring)
 window.getAnimationDefinition = getAnimationDefinition;
 window.getSpriteConfig = getSpriteConfig;
 window.getKeyframeDefinition = getKeyframeDefinition;
 window.getAnimationPriority = getAnimationPriority;
+
+// Export for module use
+if (typeof module !== 'undefined' && module.exports) {
+  module.exports = {
+    ANIMATION_TYPES,
+    SPRITE_CONFIGS,
+    BLUE_SLIME_ANIMATION_TYPES,
+    ANIMATION_DEFINITIONS,
+    KEYFRAME_DEFINITIONS,
+    ANIMATION_PRIORITIES,
+    getAnimationDefinition,
+    getSpriteConfig,
+    getKeyframeDefinition,
+    getAnimationPriority
+  };
+}
