@@ -4,8 +4,32 @@
 
 This comprehensive guide documents every file in the Platformer Browser Game project. It serves as a reference for developers to understand existing systems and avoid creating duplicate functionality when adding new features.
 
-**Last Updated:** December 2025
+**Last Updated:** December 2025 (Entity Rendering Refactor)
 **Purpose:** Prevent code duplication, improve maintainability, guide feature development
+
+---
+
+## 🏗️ RECENT ARCHITECTURAL CHANGES (December 2025)
+
+### Entity Rendering Refactor:
+- **AnimationRenderer** now handles all game entity drawing (animated and non-animated)
+- **render.js** simplified to UI coordination only
+- Centralized Z-depth calculations across all rendering with `getZOffset()` method
+- Eliminated duplicate rectangle drawing logic
+- Unified debug visualization system
+- Single source of truth for entity rendering
+
+### Benefits Achieved:
+- **No duplication**: Z calculations and rectangle drawing on one place
+- **Centralized logic**: All entity drawing features in AnimationRenderer
+- **Maintainable**: Changes made in single location
+- **Consistent**: Unified visual effects and debug systems
+- **Performance**: Optimized rendering pipeline
+
+### Files Affected:
+- `Animation System/animation_renderer.js` - Enhanced with universal entity drawing
+- `render.js` - Streamlined to UI orchestration
+- `PROJECT_FILE_GUIDE.md` - Updated documentation
 
 ---
 
@@ -95,22 +119,21 @@ Platformer Browser Game/
 **Dependencies:** None (fundamental constants)
 **Integration Points:** Imported by most game systems
 
-### `render.js` - Rendering Engine **[RECENTLY REFACTORED]**
-**Purpose:** Handles all visual output and canvas drawing operations
+### `render.js` - UI Rendering Coordinator **[RECENTLY REFACTORED]**
+**Purpose:** Orchestrates UI rendering and coordinates game rendering pipeline
 **Responsibilities:**
-- Canvas clearing and setup
-- Entity rendering coordination
-- UI overlay rendering
-- Camera management
-- Performance optimization for drawing
+- Canvas clearing and debug visualization (Z-lines)
+- Entity rendering delegation to AnimationRenderer
+- UI overlay rendering (damage numbers, entity labels)
+- Rendering order coordination
+- Game world orientation elements
 **Key Functions:**
-- `render()` - Main render function
-- `drawEntity(entity)` - Individual entity drawing
-- `renderUI()` - Interface elements
+- `render()` - Main render coordinator
 - `renderEntityLabels()` - Entity status displays
-**Dependencies:** `entities.js`, `animation_system.js`
+- `renderEnemyLabels()`, `renderDebugLabels()` - Label rendering
+**Dependencies:** `Animation System/animation_renderer.js`, `game_state.js`
 **Integration Points:** Called every frame after update
-**Note:** Entity sorting logic moved to `game.js`
+**Note:** Entity drawing logic moved to AnimationRenderer; now focuses on UI and coordination
 
 ---
 
@@ -259,18 +282,32 @@ Platformer Browser Game/
 **Dependencies:** None (data definitions)
 **Integration Points:** Loaded by animation system
 
-### `Animation System/animation_renderer.js` - Animation Drawing
-**Purpose:** Handles the actual drawing of animated entities
+### `Animation System/animation_renderer.js` - Universal Entity Renderer **[RECENTLY ENHANCED]**
+**Purpose:** Handles drawing of all game entities (animated and non-animated) with centralized rendering logic
 **Responsibilities:**
-- Frame selection and rendering
-- Sprite positioning and scaling
-- Animation interpolation
-- Visual effect overlays
+- Universal entity drawing for all game objects
+- Sprite animation rendering and sprite sheet management
+- Debug visualization (hurt boxes, attack boxes, collision borders)
+- Z-depth calculation and management
+- Hit effects and visual feedback
+- Camera support and viewport culling
+- Performance optimizations for entity rendering
 **Key Functions:**
-- `renderAnimatedEntity(entity)` - Animation drawing
-- `getCurrentFrame(entity)` - Frame calculation
-**Dependencies:** `render.js`, `Animation System/animation_data.js`
-**Integration Points:** Called during render phase
+- `drawEntity(entity)` - Universal entity drawing **[NEW]**
+- `drawAnimatedEntity(entity, animation)` - Animated sprite rendering
+- `getZOffset(entity)` - Centralized Z-depth calculation **[NEW]**
+- `drawDebugBoxes(entity, drawX, drawY)` - Debug visualization
+- `calculateBoxPosition()` - Collision box calculations
+- `drawAnimatedEntities(entities, skipSorting)` - Batch entity rendering
+**Key Features:**
+- Centralized Z-depth logic with `getZOffset()` method
+- Unified drawing pipeline for all entity types
+- Debug visualizations for development
+- Hit effects and player collision borders
+- Camera and viewport management
+**Dependencies:** `Animation System/animation_data.js`, `constants.js`
+**Integration Points:** Core entity rendering system, called by render.js
+**Note:** Now handles ALL entity types, not just animated ones; centralized rendering logic
 
 ### `Animation System/entity_animation.js` - Entity Animation Bridge
 **Purpose:** Connects entities with animation system
