@@ -1,63 +1,4 @@
 // Rendering functions
-function drawEntity(e) {
-  const zOffset = e.z * 1.0;
-
-  // Debug logging for enemy rendering
-  if (e === window.enemy) {
-    console.log('[DRAW] Drawing enemy:', {
-      isDying: e.isDying,
-      visible: e.visible,
-      x: e.x,
-      y: e.y,
-      color: e.color,
-      zOffset: zOffset,
-      drawX: e.x,
-      drawY: e.y - e.h - zOffset,
-      drawW: e.w,
-      drawH: e.h,
-      willDraw: !(e.isDying && !e.visible)
-    });
-  }
-
-  // Handle death animation visibility
-  if (e.isDying && !e.visible) {
-    return; // Don't draw entity if it's dying and invisible
-  }
-
-  // Use animation system if available and entity has animation
-  if (window.animationSystem && e.animation) {
-    // Animation system will handle drawing
-    return;
-  }
-
-  // Fallback: Draw the normal entity rectangle for entities without animation
-  ctx.fillStyle = e.color;
-  ctx.fillRect(e.x, e.y - e.h - zOffset, e.w, e.h);
-
-  // Debug: Draw yellow collision box border for player (always visible during development)
-  if (e.entityType === 'player') {
-    ctx.strokeStyle = 'yellow';
-    ctx.lineWidth = 3;
-    ctx.strokeRect(e.x, e.y - e.h - zOffset, e.w, e.h);
-
-    // Draw collision box dimensions text
-    ctx.fillStyle = 'yellow';
-    ctx.font = '12px Arial';
-    ctx.fillText(`${e.w}x${e.h}`, e.x + e.w/2 - 20, e.y - e.h - zOffset - 5);
-  }
-
-  // Attack visualizations now handled by FSM AnimationRenderer
-
-
-
-  if (e.hit) {
-    ctx.strokeStyle = "#FFFFFF";
-    ctx.beginPath();
-    ctx.arc(e.x + e.w/2, e.y - e.h/2 - zOffset, 40, 0, Math.PI*2);
-    ctx.stroke();
-  }
-}
-
 function render() {
   ctx.clearRect(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT);
 
@@ -80,17 +21,10 @@ function render() {
   // Get sorted entities using game logic (moved from render.js to game.js)
   const entities = getSortedEntitiesForRendering();
 
-  // Render ALL entities in correct Z-order (single loop)
-  entities.forEach((entity, index) => {
-    if (entity.animation && window.animationSystem && window.animationSystem.isInitialized) {
-      // Render animated entity
-      const animatedEntities = [entity]; // Single entity array for animation system
-      window.animationSystem.renderSorted(animatedEntities);
-    } else {
-      // Render non-animated entity
-      drawEntity(entity);
-    }
-  });
+  // Render ALL entities in correct Z-order using centralized AnimationRenderer
+  if (window.animationSystem?.renderer) {
+    window.animationSystem.renderer.drawAnimatedEntities(entities, true); // skip sorting since entities are pre-sorted
+  }
 
   // Render damage numbers
   if (window.damageNumberManager) {

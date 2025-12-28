@@ -7,10 +7,15 @@ class AnimationRenderer {
     this.ctx = canvas.getContext('2d');
   }
 
+  // Centralized Z-depth offset calculation
+  getZOffset(entity) {
+    return entity.z * 1.0;
+  }
+
   // Calculate box position (centralized logic for rendering and collision)
   calculateBoxPosition(entity, boxData, boxType = 'attack') {
     // Calculate drawing position with Z-depth offset (same as in drawAnimatedEntity)
-    const zOffset = entity.z * 1.0;
+    const zOffset = this.getZOffset(entity);
     const drawX = entity.x;
     const drawY = entity.y - entity.h - zOffset;
 
@@ -169,6 +174,63 @@ class AnimationRenderer {
     }
   }
 
+  // Universal entity drawing method (handles both animated and non-animated entities)
+  drawEntity(entity) {
+    // Debug logging for enemy rendering
+    if (entity === window.enemy) {
+      console.log('[DRAW] Drawing enemy:', {
+        isDying: entity.isDying,
+        visible: entity.visible,
+        x: entity.x,
+        y: entity.y,
+        color: entity.color,
+        z: entity.z,
+        drawX: entity.x,
+        drawY: entity.y - entity.h - (entity.z * 1.0),
+        drawW: entity.w,
+        drawH: entity.h,
+        willDraw: !(entity.isDying && !entity.visible)
+      });
+    }
+
+    // Handle death animation visibility
+    if (entity.isDying && !entity.visible) {
+      return; // Don't draw entity if it's dying and invisible
+    }
+
+    // Calculate Z-depth offset
+    const zOffset = this.getZOffset(entity);
+
+    // If entity has animation, delegate to animated drawing
+    if (entity.animation) {
+      this.drawAnimatedEntity(entity, entity.animation);
+    } else {
+      // Fallback: Draw the normal entity rectangle for entities without animation
+      this.ctx.fillStyle = entity.color;
+      this.ctx.fillRect(entity.x, entity.y - entity.h - zOffset, entity.w, entity.h);
+    }
+
+    // Debug: Draw yellow collision box border for player (always visible during development)
+    if (entity.entityType === 'player') {
+      this.ctx.strokeStyle = 'yellow';
+      this.ctx.lineWidth = 3;
+      this.ctx.strokeRect(entity.x, entity.y - entity.h - zOffset, entity.w, entity.h);
+
+      // Draw collision box dimensions text
+      this.ctx.fillStyle = 'yellow';
+      this.ctx.font = '12px Arial';
+      this.ctx.fillText(`${entity.w}x${entity.h}`, entity.x + entity.w/2 - 20, entity.y - entity.h - zOffset - 5);
+    }
+
+    // Hit visualizations
+    if (entity.hit) {
+      this.ctx.strokeStyle = "#FFFFFF";
+      this.ctx.beginPath();
+      this.ctx.arc(entity.x + entity.w/2, entity.y - entity.h/2 - zOffset, 40, 0, Math.PI*2);
+      this.ctx.stroke();
+    }
+  }
+
   // Draw an animated entity
   drawAnimatedEntity(entity, animation) {
     if (!animation || !animation.currentAnimation) {
@@ -181,7 +243,7 @@ class AnimationRenderer {
     const spriteSheetInfo = animation.getCurrentSpriteSheetInfo();
 
     // Calculate drawing position with Z-depth offset
-    const zOffset = entity.z * 1.0;
+    const zOffset = this.getZOffset(entity);
     const drawX = entity.x;
     const drawY = entity.y - entity.h - zOffset;
 
@@ -253,7 +315,7 @@ class AnimationRenderer {
 
   // Fallback rectangle drawing (original behavior)
   drawFallbackRectangle(entity) {
-    const zOffset = entity.z * 1.0;
+    const zOffset = this.getZOffset(entity);
     this.ctx.fillStyle = entity.color;
     this.ctx.fillRect(entity.x, entity.y - entity.h - zOffset, entity.w, entity.h);
   }
@@ -267,19 +329,15 @@ class AnimationRenderer {
     // Only sort if not explicitly told to skip (for pre-sorted lists)
     if (!skipSorting) {
       entitiesToDraw = entities.sort((a, b) => {
-        const aEffectiveY = a.y - a.z;
-        const bEffectiveY = b.y - b.z;
+        const aEffectiveY = a.y - this.getZOffset(a);
+        const bEffectiveY = b.y - this.getZOffset(b);
         return aEffectiveY - bEffectiveY;
       });
     }
 
-    // Draw each entity in the provided order
+    // Draw each entity using the universal drawEntity method
     entitiesToDraw.forEach(entity => {
-      if (entity.animation) {
-        this.drawAnimatedEntity(entity, entity.animation);
-      } else {
-        this.drawFallbackRectangle(entity);
-      }
+      this.drawEntity(entity);
     });
   }
 
@@ -359,7 +417,7 @@ class AnimationRenderer {
   isEntityVisible(entity, cameraX = 0, cameraY = 0, viewportWidth = this.canvas.width, viewportHeight = this.canvas.height) {
     const entityLeft = entity.x - cameraX;
     const entityRight = entity.x + entity.w - cameraX;
-    const entityTop = entity.y - entity.h - entity.z - cameraY;
+    const entityTop = entity.y - entity.h - this.getZOffset(entity) - cameraY;
     const entityBottom = entity.y - cameraY;
 
     return entityRight > 0 && entityLeft < viewportWidth &&
@@ -388,8 +446,8 @@ class AnimationRenderer {
 
     // Sort by effective Y position
     const sortedEntities = entities.sort((a, b) => {
-      const aEffectiveY = a.y - a.z;
-      const bEffectiveY = b.y - b.z;
+      const aEffectiveY = a.y - this.getZOffset(a);
+      const bEffectiveY = b.y - this.getZOffset(b);
       return aEffectiveY - bEffectiveY;
     });
 

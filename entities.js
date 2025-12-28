@@ -1,5 +1,3 @@
-// Player class moved to game.js
-
 // Entity management for NPCs
 function createEntity(x, y, z, w, h, color) {
   return {
@@ -22,5 +20,4 @@ function createEntity(x, y, z, w, h, color) {
 
 // Global entities - basic entity management
 window.players = [];
-console.log('[ENTITIES] window.players initialized:', window.players);
-let enemy, ally;
+
