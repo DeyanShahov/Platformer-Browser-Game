@@ -483,11 +483,15 @@ function getBehaviorConstraints(entity) {
   if (!canMoveUp) {
     constraints.blocked.add('move_up');
     constraints.reasons.move_up = 'screen_boundary_top';
+  } else {
+    constraints.allowed.add('move_up');
   }
 
   if (!canMoveDown) {
     constraints.blocked.add('move_down');
     constraints.reasons.move_down = 'screen_boundary_bottom';
+  } else {
+    constraints.allowed.add('move_down');
   }
 
   // Check for obstacles/entities blocking movement using enemyAIUtils

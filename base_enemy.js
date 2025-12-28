@@ -59,6 +59,10 @@ class BaseEnemy {
     this.rarity = config.rarity || 'common';        // BT rarity level
     this.intelligence = config.intelligence || 'basic';   // BT intelligence level
 
+    // Script system properties (PHASE 4)
+    this.scriptConfig = config.scriptConfig || null;  // Script configuration
+    this.activeScript = null;                         // Loaded script instance
+
     // Pending command system for smooth transitions
     this.pendingCommand = null;    // Command waiting to be executed after thinking phase
     this.isThinking = true;        // Whether currently in thinking (IDLE) phase - start thinking
@@ -74,12 +78,17 @@ class BaseEnemy {
     // Initialize BT AI System (universal)
     this.initializeBT();
 
+    // Initialize script system if specified (PHASE 4)
+    if (this.scriptConfig?.scriptId) {
+      this.initializeScript();
+    }
+
     // Register with combat system
     if (window.enemyCombatManager) {
       window.enemyCombatManager.registerEnemy(this);
     }
 
-    console.log(`[BASE ENEMY] Created ${this.constructor.name} (Level ${this.level}) at (${x}, ${y}) with ${this.maxHealth} HP`);
+    console.log(`[BASE ENEMY] Created ${this.constructor.name} (Level ${this.level}) at (${x}, ${y}) with ${this.maxHealth} HP${this.activeScript ? ` [SCRIPT: ${this.activeScript.name}]` : ''}`);
   }
 
   // Initialize Behavior Tree AI System (universal system)
@@ -113,6 +122,74 @@ class BaseEnemy {
   // Create attack profile (can be overridden by subclasses)
   createAttackProfile() {
     return window.createAttackProfile ? window.createAttackProfile(["light"]) : null;
+  }
+
+  // PHASE 4: Initialize script system if specified
+  async initializeScript() {
+    if (!this.scriptConfig?.scriptId) {
+      console.log(`[SCRIPT_INIT] No script config for ${this.constructor.name}, using base system`);
+      return;
+    }
+
+    try {
+      console.log(`[SCRIPT_INIT] Initializing ${this.scriptConfig.scriptId} for ${this.constructor.name}`);
+
+      // Load script through manager
+      if (window.enemyScriptManager && window.enemyScriptManager.loadScript) {
+        this.activeScript = await window.enemyScriptManager.loadScript(this.scriptConfig.scriptId);
+
+        // Validate script type matches configuration
+        if (this.activeScript.type !== this.scriptConfig.type) {
+          throw new Error(`Script type mismatch: config says ${this.scriptConfig.type}, script is ${this.activeScript.type}`);
+        }
+
+        console.log(`[SCRIPT_INIT] Successfully loaded: ${this.activeScript.name} (${this.activeScript.type})`);
+      } else {
+        console.warn(`[SCRIPT_INIT] Script manager not available, falling back to base system`);
+      }
+
+    } catch (error) {
+      console.error(`[SCRIPT_INIT] Failed to load ${this.scriptConfig.scriptId}:`, error);
+      // Continue without script (fallback to base system)
+      this.scriptConfig = null;
+      this.activeScript = null;
+    }
+  }
+
+  // PHASE 4: Runtime script switching (for boss phases)
+  async switchScript(newScriptId) {
+    if (!newScriptId) {
+      console.log(`[SCRIPT_SWITCH] Disabling script for ${this.constructor.name}, reverting to base system`);
+      this.scriptConfig = null;
+      this.activeScript = null;
+      // Recreate base BT
+      if (window.createUniversalEnemyBehaviorTree) {
+        this.aiContext.behaviorTree = window.createUniversalEnemyBehaviorTree(this.rarity, this.intelligence);
+      }
+      return;
+    }
+
+    try {
+      console.log(`[SCRIPT_SWITCH] Switching ${this.constructor.name} to script: ${newScriptId}`);
+
+      if (window.enemyScriptManager && window.enemyScriptManager.switchScript) {
+        const newScript = await window.enemyScriptManager.switchScript(this, newScriptId);
+        console.log(`[SCRIPT_SWITCH] Switched to: ${newScript.name}`);
+
+        // Update BT context with new script BT
+        if (this.aiContext) {
+          this.aiContext.behaviorTree = newScript.behaviorTree;
+        }
+      } else {
+        throw new Error('Script manager not available');
+      }
+
+    } catch (error) {
+      console.error(`[SCRIPT_SWITCH] Failed to switch script for ${this.constructor.name}:`, error);
+      // Fallback to base system
+      this.scriptConfig = null;
+      this.activeScript = null;
+    }
   }
 
   // AI Update - FSM controls execution, BT provides strategic decisions
@@ -246,8 +323,65 @@ class BaseEnemy {
     }
   }
 
-  // Walking behavior: patrol movement with intelligent collision handling
+  // Vertical movement behavior: move exactly 50 units up/down, then return to idle
+  updateVerticalMovementBehavior(players, dt, behaviors) {
+    if (this.targetZ === undefined) {
+      console.log(`[BASE ENEMY VERTICAL] ERROR: targetZ not set, exiting vertical movement`);
+      this.transitionToBehavior({ type: 'idle', duration: 0.5 }, behaviors);
+      return;
+    }
+
+    // Calculate distance moved so far
+    const distanceMoved = Math.abs(this.z - this.verticalMovementStartZ);
+    const targetDistance = 50; // Exactly 50 units
+
+    console.log(`[BASE ENEMY VERTICAL] Moving: current=${this.z.toFixed(1)}, target=${this.targetZ.toFixed(1)}, moved=${distanceMoved.toFixed(1)}, targetDistance=${targetDistance}`);
+
+    // Check if we've reached or exceeded the target distance
+    if (distanceMoved >= targetDistance) {
+      console.log(`[BASE ENEMY VERTICAL] Target distance reached (${distanceMoved.toFixed(1)} >= ${targetDistance}), stopping movement`);
+
+      // Apply boundary enforcement to ensure we're within limits
+      const boundaryResult = window.applyScreenBoundaries ? window.applyScreenBoundaries(this) : { wasLimited: false };
+      if (boundaryResult.wasLimited) {
+        console.log(`[BASE ENEMY VERTICAL] Boundary enforced after movement`);
+      }
+
+      // Stop movement and clear vertical movement state
+      this.vz = 0;
+      this.targetZ = undefined;
+      delete this.verticalMovementStartZ;
+
+      // Go to idle (thinking phase) for next decision
+      this.transitionToBehavior({ type: 'idle', duration: 0.5 }, behaviors);
+      return;
+    }
+
+    // Continue moving - apply velocity
+    this.z += this.vz * dt;
+
+    // Apply boundary enforcement during movement (safety check)
+    const boundaryResult = window.applyScreenBoundaries ? window.applyScreenBoundaries(this) : { wasLimited: false };
+    if (boundaryResult.wasLimited) {
+      console.log(`[BASE ENEMY VERTICAL] Boundary hit during movement, stopping early`);
+      // Stop movement if we hit a boundary
+      this.vz = 0;
+      this.targetZ = undefined;
+      delete this.verticalMovementStartZ;
+      this.transitionToBehavior({ type: 'idle', duration: 0.5 }, behaviors);
+      return;
+    }
+
+    console.log(`[BASE ENEMY VERTICAL] Continuing movement: vz=${this.vz}, new_z=${this.z.toFixed(1)}`);
+  }
+
+  // Walking behavior: patrol movement with intelligent collision handling OR vertical movement
   updateWalkingBehavior(players, dt, behaviors) {
+    // Check if we're in vertical movement mode (has targetZ set)
+    if (this.targetZ !== undefined) {
+      return this.updateVerticalMovementBehavior(players, dt, behaviors);
+    }
+
     const patrolSpeed = behaviors.patrol?.speed || 50;
     const patrolRadius = behaviors.patrol?.radiusX || 200;
 
@@ -416,6 +550,58 @@ class BaseEnemy {
 
   // Consult BT for strategic behavior decision with context
   consultBTForBehavior(players, context = {}) {
+    // SCRIPT SYSTEM: Handle script integration based on type (PHASE 4)
+    if (this.activeScript) {
+      // FULL script: Complete override - ignore base system entirely
+      if (this.scriptConfig.type === window.enemyAIConfig.SCRIPT_TYPE.FULL) {
+        const scriptCommand = this.getScriptCommand(context);
+        if (scriptCommand) {
+          console.log(`%c[SCRIPT_OVERRIDE] ${this.constructor.name} using FULL script: ${scriptCommand.type}`, 'color: #ff00ff; font-weight: bold; font-size: 14px;');
+          return scriptCommand;
+        }
+        // Script didn't provide command - this shouldn't happen for FULL scripts
+        console.warn(`[SCRIPT_SYSTEM] FULL script didn't provide command, falling back to base system`);
+      }
+
+      // PARTIAL/BONUS script: Always consult both script and base system, then merge
+      if (this.scriptConfig.type === window.enemyAIConfig.SCRIPT_TYPE.PARTIAL ||
+          this.scriptConfig.type === window.enemyAIConfig.SCRIPT_TYPE.BONUS) {
+
+        const scriptCommand = this.getScriptCommand(context);
+        const baseCommand = this.getBaseCommand(context);
+
+        // Merge script and base commands
+        const mergedCommand = window.mergeCommands(baseCommand, scriptCommand, this.scriptConfig.type);
+
+        if (scriptCommand) {
+          console.log(`%c[SCRIPT_MERGE] ${this.constructor.name} merging ${this.scriptConfig.type.toUpperCase()} script (${scriptCommand.type}) with base (${baseCommand?.type || 'none'})`, 'color: #00ff88; font-weight: bold; font-size: 14px;');
+        }
+
+        return mergedCommand;
+      }
+    }
+
+    // No script or unsupported script type - use base BT system only
+    return this.getBaseCommand(context);
+  }
+
+  // Get command from active script
+  getScriptCommand(context) {
+    if (!this.activeScript?.behaviorTree) {
+      return null;
+    }
+
+    // Create script execution context
+    const scriptContext = this.createScriptContext(context);
+
+    // Execute script BT
+    this.activeScript.behaviorTree.tick(scriptContext);
+
+    return scriptContext.command;
+  }
+
+  // Get command from base BT system
+  getBaseCommand(context) {
     // Get fresh behavior constraints based on current physical environment
     const constraints = window.getBehaviorConstraints ? window.getBehaviorConstraints(this) : null;
     if (constraints) {
@@ -463,6 +649,17 @@ class BaseEnemy {
     delete this.aiContext.consultationContext;
 
     return command;
+  }
+
+  // Create script execution context
+  createScriptContext(baseContext) {
+    return {
+      ...baseContext,
+      self: this.aiContext?.self || { hp: this.health, maxHp: this.maxHealth, x: this.x, y: this.y, z: this.z },
+      targets: this.aiContext?.targets || [],
+      behaviors: this.activeScript.behaviors,
+      command: null
+    };
   }
 
   // Transition to new behavior based on BT command (execute immediately - arcade style)
@@ -596,6 +793,7 @@ class BaseEnemy {
           console.log(`[DEBUG] executePendingCommand: idle changeState result =`, result);
         }
         this.vx = 0;
+        this.vz = 0; // Stop vertical movement too
         // Set idle timer for custom duration if specified
         if (command.duration) {
           this.aiTimer = -command.duration; // Negative to count up to 0
@@ -635,6 +833,32 @@ class BaseEnemy {
         console.log(`[BASE ENEMY TRANSITION] Reversing patrol direction to: ${this.patrolDirection}`);
         break;
 
+      case 'move_up':
+        console.log(`[DEBUG] executePendingCommand: executing move_up command`);
+        if (this.stateMachine) {
+          const result = this.stateMachine.changeState('enemy_walking');
+          console.log(`[DEBUG] executePendingCommand: move_up changeState result =`, result);
+        }
+        // Move up by exactly 50 units using Z_SPEED velocity
+        this.targetZ = this.z + 50; // Target position
+        this.vz = Z_SPEED; // Movement velocity (positive Z = up)
+        this.verticalMovementStartZ = this.z; // Track starting position
+        console.log(`[BASE ENEMY VERTICAL] Starting move_up: from ${this.z} to ${this.targetZ}`);
+        break;
+
+      case 'move_down':
+        console.log(`[DEBUG] executePendingCommand: executing move_down command`);
+        if (this.stateMachine) {
+          const result = this.stateMachine.changeState('enemy_walking');
+          console.log(`[DEBUG] executePendingCommand: move_down changeState result =`, result);
+        }
+        // Move down by exactly 50 units using Z_SPEED velocity
+        this.targetZ = this.z - 50; // Target position
+        this.vz = -Z_SPEED; // Movement velocity (negative Z = down)
+        this.verticalMovementStartZ = this.z; // Track starting position
+        console.log(`[BASE ENEMY VERTICAL] Starting move_down: from ${this.z} to ${this.targetZ}`);
+        break;
+
       case 'chase':
         this.stateMachine.changeState('enemy_running');
         // vx will be set in updateRunningBehavior
@@ -647,11 +871,13 @@ class BaseEnemy {
                             command.attackType === 'heavy' ? '3' : '1';
         this.stateMachine.handleAction(`attack_${attackNumber}`);
         this.vx = 0; // Stop moving during attack
+        this.vz = 0; // Stop vertical movement during attack
         break;
 
       default:
         this.stateMachine.changeState('enemy_idle');
         this.vx = 0;
+        this.vz = 0;
         break;
     }
 
@@ -953,7 +1179,13 @@ class BlueSlime extends BaseEnemy {
       animationEntityType: 'blue_slime',
 
       // Level for rewards
-      level: level
+      level: level,
+
+      // TEST SCRIPT: Vertical ping-pong movement
+      scriptConfig: {
+        scriptId: 'blue_slime_vertical_test',
+        type: window.enemyAIConfig?.SCRIPT_TYPE?.FULL || 'full'
+      }
     };
 
     // Call BaseEnemy constructor with position and config

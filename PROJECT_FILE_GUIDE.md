@@ -422,19 +422,88 @@ Platformer Browser Game/
 **Dependencies:** `Behavior Tree/enemy_ai_config.js`
 **Integration Points:** Used by BT system and game logic **[INTEGRATED]**
 
-### `Behavior Tree/enemy_ai_config.js` - AI Configuration **[NEWLY CREATED]**
-**Purpose:** Centralized AI configuration and constants
+### `Behavior Tree/enemy_scripts.js` - Script Definitions **[NEW FILE]**
+**Purpose:** Registry and definitions for all enemy behavior scripts
 **Responsibilities:**
-- AI timing configurations
-- Behavior parameters
-- Performance settings
-- Rarity/intelligence multipliers **[NEW SYSTEM]**
+- Script storage in Map-based registry
+- Boss, elite, and mini-boss script templates
+- Test scripts for development
+- Auto-initialization and validation
 **Key Features:**
-- `calculateThinkingDuration()` - Dynamic timing **[NEW]**
-- Intelligence/rarity multipliers
-- Caching configurations
+- `ENEMY_SCRIPTS` - Map registry for all scripts
+- `BOSS_SCRIPTS` - Phase-based boss behaviors
+- `ELITE_SCRIPTS` - Advanced enemy behaviors
+- `TEST_SCRIPTS` - Development testing scripts
+- Auto-registration on load
+**Dependencies:** `Behavior Tree/enemy_ai_config.js` (SCRIPT_TYPE)
+**Integration Points:** Loaded by script manager, used by enemy initialization
+
+### `Behavior Tree/enemy_script_manager.js` - Script Manager **[NEW FILE]**
+**Purpose:** Loading, caching, and runtime management of enemy scripts
+**Responsibilities:**
+- Async script loading with caching
+- Performance monitoring and optimization
+- Runtime script switching for boss phases
+- Memory management with LRU eviction
+**Key Features:**
+- `loadScript()` - Async loading with cache
+- `switchScript()` - Runtime script changes
+- `getPerformanceStats()` - Monitoring metrics
+- `preloadScripts()` - Batch loading optimization
+- Debug interface (`window.debugEnemyScripts`)
+**Dependencies:** `Behavior Tree/enemy_scripts.js`, `Behavior Tree/enemy_ai_config.js`
+**Integration Points:** Used by BaseEnemy for script loading/switching
+
+### `Behavior Tree/enemyAI_BT.js` - Behavior Tree Implementation **[RECENTLY ENHANCED]**
+**Purpose:** Behavior Tree system for enemy AI decision making with script integration
+**Responsibilities:**
+- BT node implementations (Selector, Sequence, etc.)
+- Enemy behavior coordination
+- Decision tree execution
+- **Script-aware BT nodes and merge logic** **[NEW]**
+**Key Classes:**
+- `BTNode` - Base node class
+- `Selector`, `Sequence` - Composite nodes
+- `ScriptNode`, `ScriptSelector` - **Script-aware nodes** **[NEW]**
+- `Condition`, `Action` - Leaf nodes
+**Key Functions:**
+- `tickEnemyAI(tree, context)` - BT execution
+- `mergeCommands()` - **Script command merging** **[NEW]**
+- `createScriptEnabledBT()` - **Script-integrated BT factory** **[NEW]**
+**Dependencies:** `Behavior Tree/enemy_ai_utils.js`, `base_enemy.js`
+**Integration Points:** Enemy AI decision making, script execution
+
+### `Behavior Tree/enemy_ai_utils.js` - AI Utility Functions **[RECENTLY REFACTORED]**
+**Purpose:** Shared utility functions for AI operations
+**Responsibilities:**
+- Collision detection utilities
+- Boundary checking functions
+- Pathfinding helpers
+- Distance and range calculations **[ENHANCED WITH OPTIMIZATIONS]**
+**Key Functions:**
+- `checkScreenBoundaries(entity)` - Boundary detection
+- `detectEntityCollisions()` - Collision checking
+- `getEntitiesInRange()` - Range queries
+- `calculateDistanceOptimized()` - Performance distance calc **[NEW]**
+- `batchCollisionDetection()` - Efficient batch processing **[NEW]**
+**Dependencies:** `Behavior Tree/enemy_ai_config.js`
+**Integration Points:** Used by BT system and game logic **[INTEGRATED]**
+
+### `Behavior Tree/enemy_ai_config.js` - AI Configuration **[RECENTLY ENHANCED]**
+**Purpose:** Centralized AI configuration and constants with script system support
+**Responsibilities:**
+- AI timing configurations and behavior parameters
+- Performance settings and rarity/intelligence multipliers
+- **Script system types and validation** **[NEW]**
+- **Script constants (cache size, timeouts, size limits)** **[NEW]**
+**Key Features:**
+- `calculateThinkingDuration()` - Dynamic timing based on enemy properties
+- Intelligence/rarity multipliers for behavior complexity
+- Caching configurations for performance
+- **SCRIPT_TYPE enum (FULL/PARTIAL/BONUS)** **[NEW]**
+- **Script validation functions** **[NEW]**
 **Dependencies:** None (configuration)
-**Integration Points:** Used by all AI systems
+**Integration Points:** Used by all AI systems and script manager
 
 ### `base_enemy.js` - Enemy Base Class **[RECENTLY ENHANCED]**
 **Purpose:** Foundation class for all enemy types

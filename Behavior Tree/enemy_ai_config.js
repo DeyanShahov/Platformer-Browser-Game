@@ -48,6 +48,12 @@ const ENEMY_AI_CONSTANTS = {
   // BT integration
   BT_CONSTRAINT_CHECK_DISTANCE_X: 100, // Horizontal distance for constraint checks
   BT_CONSTRAINT_CHECK_DISTANCE_Z: 50,  // Vertical distance for constraint checks
+
+  // Script system constants (PHASE 1)
+  MAX_SCRIPT_CACHE_SIZE: 20,      // Maximum cached scripts
+  SCRIPT_LOAD_TIMEOUT: 5000,      // Script load timeout (ms)
+  MAX_SCRIPT_SIZE: 102400,        // Maximum script size (100KB)
+  VALIDATION_STRICT_MODE: true,   // Strict validation enabled
 };
 
 /* =========================
@@ -119,3 +125,54 @@ window.enemyAIConfig = {
 
 // Legacy support - export constants directly for backwards compatibility
 window.ENEMY_AI_CONSTANTS = ENEMY_AI_CONSTANTS;
+
+/* =========================
+   SCRIPT SYSTEM TYPES & VALIDATION (PHASE 1)
+   ========================= */
+
+// Script types enum
+const SCRIPT_TYPE = {
+  FULL: 'full',     // Complete behavior override (100%)
+  PARTIAL: 'partial', // Selective behavior override (30-70%)
+  BONUS: 'bonus'    // Extension/additional behaviors (10-30%)
+};
+
+// Script validation functions
+function validateScriptType(type) {
+  return Object.values(SCRIPT_TYPE).includes(type);
+}
+
+function validateScriptStructure(script) {
+  const required = ['id', 'type', 'name'];
+  for (const field of required) {
+    if (!script.hasOwnProperty(field)) {
+      throw new Error(`Script missing required field: ${field}`);
+    }
+  }
+
+  // Type-specific validation
+  switch(script.type) {
+    case SCRIPT_TYPE.FULL:
+      if (!script.behaviorTree) {
+        throw new Error('FULL scripts must have behaviorTree');
+      }
+      break;
+    case SCRIPT_TYPE.PARTIAL:
+      if (!script.overrides || !Array.isArray(script.overrides)) {
+        throw new Error('PARTIAL scripts must have overrides array');
+      }
+      break;
+    case SCRIPT_TYPE.BONUS:
+      if (!script.bonusBehaviorTree) {
+        throw new Error('BONUS scripts must have bonusBehaviorTree');
+      }
+      break;
+  }
+
+  return true;
+}
+
+// Export script system extensions
+window.enemyAIConfig.SCRIPT_TYPE = SCRIPT_TYPE;
+window.enemyAIConfig.validateScriptType = validateScriptType;
+window.enemyAIConfig.validateScriptStructure = validateScriptStructure;

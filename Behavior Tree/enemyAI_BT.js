@@ -128,6 +128,14 @@ const COMMAND = {
   PATROL_TO_IDLE: "patrol_to_idle",
   PATROL_TO_CHASE: "patrol_to_chase",
 
+  // Vertical movement commands
+  MOVE_UP: "move_up",
+  MOVE_DOWN: "move_down",
+  VERTICAL_MOVEMENT: "vertical_movement",
+
+  // Script system commands (PHASE 3)
+  SCRIPT_COMMAND: "script_command",
+
   // Contextual commands
   SPAWN_IDLE: "spawn_idle",
 };
@@ -588,6 +596,42 @@ function selectTarget(ctx) {
 }
 
 /* =========================
+   VERTICAL MOVEMENT SUBTREE
+   Handles vertical movement decisions with boundary checking
+   ========================= */
+function createVerticalMovementSubtree(config) {
+  return new Sequence([
+    // Check if vertical movement is available in constraints
+    new Condition(ctx => {
+      const constraints = ctx.behaviorConstraints;
+      return constraints?.allowed?.has('move_up') || constraints?.allowed?.has('move_down');
+    }),
+    // Randomly choose between up/down, respecting constraints
+    new Action(ctx => {
+      const constraints = ctx.behaviorConstraints;
+      const canMoveUp = constraints?.allowed?.has('move_up');
+      const canMoveDown = constraints?.allowed?.has('move_down');
+
+      if (canMoveUp && canMoveDown) {
+        // Both directions available - random choice
+        return Math.random() > 0.5 ?
+          { type: COMMAND.MOVE_UP } :
+          { type: COMMAND.MOVE_DOWN };
+      } else if (canMoveUp) {
+        // Only up available
+        return { type: COMMAND.MOVE_UP };
+      } else if (canMoveDown) {
+        // Only down available
+        return { type: COMMAND.MOVE_DOWN };
+      } else {
+        // No vertical movement possible
+        return { type: COMMAND.IDLE, duration: 0.5 };
+      }
+    }),
+  ]);
+}
+
+/* =========================
    ENEMY BEHAVIOR TREE FACTORY - Universal
    Creates BT based on rarity/intelligence configuration
    ========================= */
@@ -613,7 +657,10 @@ function createUniversalEnemyBehaviorTree(rarity, intelligence) {
     // Priority 3: Special attacks (if available)
     createSpecialAttackSubTree(),
 
-    // Priority 4: Intelligent patrol behavior (context-aware)
+    // Priority 4: Vertical movement (random up/down within boundaries)
+    createVerticalMovementSubtree(config),
+
+    // Priority 5: Intelligent patrol behavior (context-aware)
     createPatrolDecisionSubtree(config),
 
     // Fallback - basic patrol
@@ -720,3 +767,130 @@ window.createUniversalEnemyBehaviorTree = createUniversalEnemyBehaviorTree;
 window.createFallbackBehaviorTree = createFallbackBehaviorTree;
 window.BossPhaseManager = BossPhaseManager;
 window.tickEnemyAI = tickEnemyAI;
+
+/* =========================
+   SCRIPT-AWARE BT NODES (PHASE 3)
+   ========================= */
+
+// Script execution node
+class ScriptNode extends BTNode {
+  constructor(scriptAction) {
+    super();
+    this.scriptAction = scriptAction; // Function that returns command
+  }
+
+  tick(ctx) {
+    try {
+      return this.scriptAction(ctx);
+    } catch (error) {
+      console.error('[SCRIPT_NODE] Error executing script action:', error);
+      return BT_STATUS.FAILURE;
+    }
+  }
+}
+
+// Script-aware selector (prioritizes scripted behaviors)
+class ScriptSelector extends Selector {
+  constructor(children = [], scriptPriority = false) {
+    super(children);
+    this.scriptPriority = scriptPriority;
+  }
+
+  tick(ctx) {
+    // If script priority enabled, check for script commands first
+    if (this.scriptPriority && ctx.activeScript) {
+      const scriptResult = this.checkScriptCommands(ctx);
+      if (scriptResult !== BT_STATUS.FAILURE) {
+        return scriptResult;
+      }
+    }
+
+    // Fall back to normal selector behavior
+    return super.tick(ctx);
+  }
+
+  checkScriptCommands(ctx) {
+    // Script-specific logic here
+    return BT_STATUS.FAILURE; // Continue with base behaviors
+  }
+}
+
+// Script merge utility for PARTIAL/BONUS scripts
+function mergeCommands(baseCommand, scriptCommand, scriptType) {
+  switch(scriptType) {
+    case SCRIPT_TYPE.PARTIAL:
+      // Script command takes priority for overridden behaviors
+      return scriptCommand || baseCommand;
+
+    case SCRIPT_TYPE.BONUS:
+      // Execute both if possible, prefer script for conflicts
+      if (!scriptCommand) return baseCommand;
+      if (!baseCommand) return scriptCommand;
+
+      // For BONUS scripts, create composite command
+      return {
+        type: 'composite',
+        base: baseCommand,
+        bonus: scriptCommand,
+        execute: function(ctx) {
+          // Execute both commands
+          this.base.execute?.(ctx);
+          this.bonus.execute?.(ctx);
+        }
+      };
+
+    default:
+      return scriptCommand || baseCommand;
+  }
+}
+
+// Extended BT factory with script support
+function createScriptEnabledBT(rarity, intelligence, scriptConfig = null) {
+  const config = ENEMY_BEHAVIORS[rarity]?.[intelligence];
+
+  if (!config) {
+    console.warn(`[BT_FACTORY] Unknown rarity/intelligence: ${rarity}/${intelligence}, using fallback BT`);
+    return createFallbackBehaviorTree();
+  }
+
+  // Create base behavior tree
+  let behaviorTree;
+
+  if (scriptConfig?.type === SCRIPT_TYPE.FULL && scriptConfig.script) {
+    // FULL script override
+    behaviorTree = scriptConfig.script.behaviorTree;
+  } else {
+    // Base system with potential script integration
+    behaviorTree = new ScriptSelector([
+      // Priority 1: Defensive reactions
+      new Sequence([canEvade, evadeAction]),
+      new Sequence([canBlock, blockAction]),
+
+      // Priority 2: Combat behaviors
+      new Sequence([hasTarget, targetInAttackRange, attackAction]),
+      new Sequence([hasTarget, targetInChaseRange, chaseAction]),
+
+      // Priority 3: Special attacks
+      createSpecialAttackSubTree(),
+
+      // Priority 4: Script behaviors (if BONUS type)
+      ...(scriptConfig?.type === SCRIPT_TYPE.BONUS && scriptConfig.script?.bonusBehaviorTree ?
+          [scriptConfig.script.bonusBehaviorTree] : []),
+
+      // Priority 5: Movement behaviors
+      createVerticalMovementSubtree(config),
+      createPatrolDecisionSubtree(config),
+
+      // Fallback
+      patrolAction,
+    ], true); // Enable script priority
+  }
+
+  return behaviorTree;
+}
+
+// Export script-enabled BT functions
+window.createScriptEnabledBT = createScriptEnabledBT;
+window.ScriptNode = ScriptNode;
+window.ScriptSelector = ScriptSelector;
+window.mergeCommands = mergeCommands;
