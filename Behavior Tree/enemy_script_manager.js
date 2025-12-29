@@ -36,11 +36,11 @@ class EnemyScriptManager {
 
   // Compile script (validation, optimization)
   async compileScript(script) {
-    // Deep clone to avoid modifying original
-    const compiled = JSON.parse(JSON.stringify(script));
+    // Deep clone to avoid modifying original (preserve getters)
+    const compiled = this.deepCloneWithGetters(script);
 
-    // Validate behavior tree structure
-    if (compiled.behaviorTree) {
+    // Validate behavior tree structure (only if it's not a getter)
+    if (compiled.behaviorTree && typeof compiled.behaviorTree !== 'function') {
       this.validateBehaviorTree(compiled.behaviorTree);
     }
 
@@ -55,6 +55,46 @@ class EnemyScriptManager {
     };
 
     return compiled;
+  }
+
+  // Deep clone that preserves getters
+  deepCloneWithGetters(obj, visited = new WeakMap()) {
+    // Handle primitives and null
+    if (obj === null || typeof obj !== 'object') {
+      return obj;
+    }
+
+    // Handle circular references
+    if (visited.has(obj)) {
+      return visited.get(obj);
+    }
+
+    // Handle arrays
+    if (Array.isArray(obj)) {
+      const clonedArray = [];
+      visited.set(obj, clonedArray);
+      for (let i = 0; i < obj.length; i++) {
+        clonedArray[i] = this.deepCloneWithGetters(obj[i], visited);
+      }
+      return clonedArray;
+    }
+
+    // Handle objects (including getters)
+    const clonedObj = Object.create(Object.getPrototypeOf(obj));
+    visited.set(obj, clonedObj);
+
+    // Copy all properties including getters
+    const descriptors = Object.getOwnPropertyDescriptors(obj);
+    for (const [key, descriptor] of Object.entries(descriptors)) {
+      try {
+        Object.defineProperty(clonedObj, key, descriptor);
+      } catch (e) {
+        // If we can't define the property, skip it (e.g., some native properties)
+        console.warn(`[SCRIPT_MANAGER] Could not clone property ${key}:`, e.message);
+      }
+    }
+
+    return clonedObj;
   }
 
   // Cache management

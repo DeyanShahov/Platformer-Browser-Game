@@ -194,8 +194,8 @@ function createStartScreen() {
       startScreen.style.display = 'none';
     }
 
-    // Set game state
-    window.gameState = 'playing';
+    // Set game state using new game state system (don't overwrite GameState instance!)
+    window.setGameState(window.GAME_STATE.PLAYING, 'start game button clicked');
 
     // Call game initialization from game.js
     if (typeof initGameWithSelections === 'function') {

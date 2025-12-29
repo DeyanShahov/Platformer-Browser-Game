@@ -889,8 +889,83 @@ function createScriptEnabledBT(rarity, intelligence, scriptConfig = null) {
   return behaviorTree;
 }
 
+// SEQUENCE-AWARE SCRIPT BEHAVIOR TREE (PHASE 4 EXTENDED)
+/* =========================
+   SEQUENCE BEHAVIOR TREE FACTORY
+   Creates BT that handles multi-step sequences with state persistence
+   ========================= */
+
+function createSequenceBehaviorTree(sequenceConfig) {
+  return new Selector([
+    // Priority 1: Ако има активен sequence, върни следваща стъпка
+    new Sequence([
+      new Condition(ctx => ctx.sequenceState?.isExecuting && ctx.sequenceState?.sequenceId === sequenceConfig.id),
+      new Action(ctx => {
+        const sequence = ctx.behaviors[sequenceConfig.sequenceKey];
+        const currentStep = ctx.sequenceState.currentStep;
+
+        console.log(`[SEQUENCE_BT] Executing step ${currentStep + 1}/${ctx.sequenceState.totalSteps} of ${sequenceConfig.id}`);
+
+        // Ако sequence е завършен
+        if (currentStep >= ctx.sequenceState.totalSteps) {
+          if (sequenceConfig.loop) {
+            // Restart sequence
+            ctx.sequenceState.currentStep = 0;
+            ctx.sequenceState.completedSteps = 0;
+            console.log(`[SEQUENCE_BT] Sequence ${sequenceConfig.id} looped`);
+          } else {
+            // End sequence
+            ctx.sequenceState.isExecuting = false;
+            ctx.sequenceState.sequenceId = null;
+            return { type: 'idle', duration: 1.0 };
+          }
+        }
+
+        const step = sequence.steps[currentStep];
+
+        return {
+          type: step.type,
+          ...step.params,
+          sequenceId: sequenceConfig.id,
+          stepId: step.id,
+          isSequenceStep: true,
+          stepIndex: currentStep
+        };
+      })
+    ]),
+
+    // Priority 2: Start нов sequence
+    new Action(ctx => {
+      const sequence = ctx.behaviors[sequenceConfig.sequenceKey];
+
+      // Initialize sequence state
+      ctx.sequenceState.isExecuting = true;
+      ctx.sequenceState.currentStep = 0;
+      ctx.sequenceState.totalSteps = sequence.steps.length;
+      ctx.sequenceState.sequenceId = sequenceConfig.id;
+      ctx.sequenceState.canInterrupt = sequence.canInterrupt || true;
+      ctx.sequenceState.idleBetweenSteps = sequence.idleBetweenSteps !== false;
+      ctx.sequenceState.completedSteps = 0;
+
+      console.log(`[SEQUENCE_BT] Starting sequence: ${sequenceConfig.id} (${sequence.steps.length} steps)`);
+
+      // Return first step
+      const firstStep = sequence.steps[0];
+      return {
+        type: firstStep.type,
+        ...firstStep.params,
+        sequenceId: sequenceConfig.id,
+        stepId: firstStep.id,
+        isSequenceStep: true,
+        stepIndex: 0
+      };
+    })
+  ]);
+}
+
 // Export script-enabled BT functions
 window.createScriptEnabledBT = createScriptEnabledBT;
+window.createSequenceBehaviorTree = createSequenceBehaviorTree;
 window.ScriptNode = ScriptNode;
 window.ScriptSelector = ScriptSelector;
 window.mergeCommands = mergeCommands;

@@ -63,6 +63,17 @@ class BaseEnemy {
     this.scriptConfig = config.scriptConfig || null;  // Script configuration
     this.activeScript = null;                         // Loaded script instance
 
+    // Sequence state tracking (PHASE 4 EXTENDED)
+    this.sequenceState = {
+      isExecuting: false,        // Whether currently executing a sequence
+      currentStep: 0,           // Current step index in sequence (0-based)
+      totalSteps: 0,            // Total steps in current sequence
+      sequenceId: null,         // ID of current sequence
+      canInterrupt: true,       // Whether sequence can be interrupted
+      idleBetweenSteps: true,   // Whether to insert IDLE between steps
+      completedSteps: 0         // Number of completed steps
+    };
+
     // Pending command system for smooth transitions
     this.pendingCommand = null;    // Command waiting to be executed after thinking phase
     this.isThinking = true;        // Whether currently in thinking (IDLE) phase - start thinking
@@ -126,6 +137,11 @@ class BaseEnemy {
 
   // PHASE 4: Initialize script system if specified
   async initializeScript() {
+    console.log(`[SCRIPT_INIT_DEBUG] initializeScript called for ${this.constructor.name}`);
+    console.log(`[SCRIPT_INIT_DEBUG] scriptConfig:`, this.scriptConfig);
+    console.log(`[SCRIPT_INIT_DEBUG] enemyScriptManager available:`, !!window.enemyScriptManager);
+    console.log(`[SCRIPT_INIT_DEBUG] loadScript method available:`, !!(window.enemyScriptManager && window.enemyScriptManager.loadScript));
+
     if (!this.scriptConfig?.scriptId) {
       console.log(`[SCRIPT_INIT] No script config for ${this.constructor.name}, using base system`);
       return;
@@ -133,13 +149,18 @@ class BaseEnemy {
 
     try {
       console.log(`[SCRIPT_INIT] Initializing ${this.scriptConfig.scriptId} for ${this.constructor.name}`);
+      console.log(`[SCRIPT_INIT_DEBUG] SCRIPT_TYPE.FULL:`, window.enemyAIConfig?.SCRIPT_TYPE?.FULL);
+      console.log(`[SCRIPT_INIT_DEBUG] scriptConfig.type:`, this.scriptConfig.type);
 
       // Load script through manager
       if (window.enemyScriptManager && window.enemyScriptManager.loadScript) {
+        console.log(`[SCRIPT_INIT_DEBUG] Calling enemyScriptManager.loadScript...`);
         this.activeScript = await window.enemyScriptManager.loadScript(this.scriptConfig.scriptId);
+        console.log(`[SCRIPT_INIT_DEBUG] loadScript returned:`, this.activeScript);
 
         // Validate script type matches configuration
         if (this.activeScript.type !== this.scriptConfig.type) {
+          console.log(`[SCRIPT_INIT_DEBUG] Type mismatch: script=${this.activeScript.type}, config=${this.scriptConfig.type}`);
           throw new Error(`Script type mismatch: config says ${this.scriptConfig.type}, script is ${this.activeScript.type}`);
         }
 
@@ -196,6 +217,9 @@ class BaseEnemy {
   updateAI(players, dt) {
     if (this.isDying) return;
 
+    // Store current players for use in sequence completion
+    this.currentPlayers = players;
+
     // Update BT context with current game state (for when BT is consulted)
     this.updateBTContext(players);
 
@@ -209,6 +233,16 @@ class BaseEnemy {
     if (!this.stateMachine) {
       console.log('[BASE ENEMY FSM] No stateMachine available');
       return;
+    }
+
+    // 🚫 BLOCK: Don't start any behavior until script is loaded for FULL scripts
+    if (this.scriptConfig?.type === window.enemyAIConfig?.SCRIPT_TYPE?.FULL && !this.activeScript) {
+      console.log(`[SCRIPT_BLOCK] Waiting for FULL script to load before starting any behavior`);
+      // Force idle state while waiting for script
+      this.stateMachine.changeState('enemy_idle');
+      this.vx = 0;
+      this.vz = 0;
+      return; // Block all behavior until script is loaded
     }
 
     // Check if this is the first update cycle and we need to start thinking
@@ -316,30 +350,44 @@ class BaseEnemy {
     if (this.aiTimer >= idleDuration) {
       console.log(`[BASE ENEMY IDLE] Timer expired, consulting BT for next behavior`);
       // Idle duration expired - consult BT for next behavior
-      const nextBehavior = this.consultBTForBehavior(players, { reason: 'idle_timeout' });
+      const nextBehavior = this.consultBTForBehavior(players, dt, { reason: 'idle_timeout' });
       console.log(`[BASE ENEMY IDLE] BT returned:`, nextBehavior);
       this.transitionToBehavior(nextBehavior, behaviors);
       this.aiTimer = 0;
     }
   }
 
-  // Vertical movement behavior: move exactly 50 units up/down, then return to idle
+  // Vertical movement behavior: move until reaching targetZ, then return to idle
+  // OR continuous patrol with boundary interrupt
   updateVerticalMovementBehavior(players, dt, behaviors) {
+    // Handle continuous patrol mode
+    if (this.isContinuousPatrol && this.currentPatrolData) {
+      return this.updateContinuousVerticalPatrol(players, dt, behaviors);
+    }
+
+    // Handle normal single movement
     if (this.targetZ === undefined) {
       console.log(`[BASE ENEMY VERTICAL] ERROR: targetZ not set, exiting vertical movement`);
       this.transitionToBehavior({ type: 'idle', duration: 0.5 }, behaviors);
       return;
     }
 
-    // Calculate distance moved so far
-    const distanceMoved = Math.abs(this.z - this.verticalMovementStartZ);
-    const targetDistance = 50; // Exactly 50 units
+    console.log(`[BASE ENEMY VERTICAL] Moving: current=${this.z.toFixed(1)}, target=${this.targetZ.toFixed(1)}, vz=${this.vz}`);
 
-    console.log(`[BASE ENEMY VERTICAL] Moving: current=${this.z.toFixed(1)}, target=${this.targetZ.toFixed(1)}, moved=${distanceMoved.toFixed(1)}, targetDistance=${targetDistance}`);
+    // Check if we've reached or passed the target position in the direction of movement
+    let reachedTarget = false;
+    if (this.vz > 0) {
+      // Moving up - check if we've reached or exceeded the target
+      reachedTarget = this.z >= this.targetZ;
+      console.log(`[BASE ENEMY VERTICAL] Moving UP: ${this.z.toFixed(1)} >= ${this.targetZ.toFixed(1)} ? ${reachedTarget}`);
+    } else if (this.vz < 0) {
+      // Moving down - check if we've reached or gone below the target
+      reachedTarget = this.z <= this.targetZ;
+      console.log(`[BASE ENEMY VERTICAL] Moving DOWN: ${this.z.toFixed(1)} <= ${this.targetZ.toFixed(1)} ? ${reachedTarget}`);
+    }
 
-    // Check if we've reached or exceeded the target distance
-    if (distanceMoved >= targetDistance) {
-      console.log(`[BASE ENEMY VERTICAL] Target distance reached (${distanceMoved.toFixed(1)} >= ${targetDistance}), stopping movement`);
+    if (reachedTarget) {
+      console.log(`[BASE ENEMY VERTICAL] Target position reached, stopping movement`);
 
       // Apply boundary enforcement to ensure we're within limits
       const boundaryResult = window.applyScreenBoundaries ? window.applyScreenBoundaries(this) : { wasLimited: false };
@@ -352,8 +400,14 @@ class BaseEnemy {
       this.targetZ = undefined;
       delete this.verticalMovementStartZ;
 
-      // Go to idle (thinking phase) for next decision
-      this.transitionToBehavior({ type: 'idle', duration: 0.5 }, behaviors);
+      // For FULL scripts, let script timer handle next action - don't override with idle
+      if (this.activeScript && this.scriptConfig?.type === window.enemyAIConfig.SCRIPT_TYPE.FULL) {
+        console.log(`[SCRIPT_VERTICAL] Movement complete, letting script timer handle next action`);
+        // Don't transition to idle - let script timer handle it
+      } else {
+        // Go to idle (thinking phase) for next decision (normal behavior)
+        this.transitionToBehavior({ type: 'idle', duration: 0.5 }, behaviors);
+      }
       return;
     }
 
@@ -373,6 +427,89 @@ class BaseEnemy {
     }
 
     console.log(`[BASE ENEMY VERTICAL] Continuing movement: vz=${this.vz}, new_z=${this.z.toFixed(1)}`);
+  }
+
+  // Continuous vertical patrol with boundary interrupt
+  updateContinuousVerticalPatrol(players, dt, behaviors) {
+    const patrol = this.currentPatrolData;
+
+    console.log(`[CONTINUOUS_PATROL] Position: ${this.z.toFixed(1)}, Direction: ${patrol.direction > 0 ? 'UP' : 'DOWN'}`);
+
+    // Check for minimum movement distance (at least 50 units)
+    if (!this.movementStartZ) {
+      this.movementStartZ = this.z; // Track start position
+    }
+    const movementDistance = Math.abs(this.z - this.movementStartZ);
+    const minDistance = 50; // Minimum 50 units movement
+
+    if (movementDistance < minDistance) {
+      console.log(`[CONTINUOUS_PATROL] Movement too short (${movementDistance.toFixed(1)} < ${minDistance}), continuing...`);
+      // Continue movement until minimum distance is reached
+    }
+
+    // Check boundaries for interrupt
+    let shouldInterrupt = false;
+    if (patrol.direction > 0 && this.z >= patrol.boundaries.max) {
+      console.log(`[CONTINUOUS_PATROL] Hit TOP boundary at Z=${this.z.toFixed(1)}, interrupting movement`);
+      shouldInterrupt = true;
+    } else if (patrol.direction < 0 && this.z <= patrol.boundaries.min) {
+      console.log(`[CONTINUOUS_PATROL] Hit BOTTOM boundary at Z=${this.z.toFixed(1)}, interrupting movement`);
+      shouldInterrupt = true;
+    }
+
+    if (shouldInterrupt) {
+      // Stop continuous movement
+      this.vz = 0;
+      this.isContinuousPatrol = false;
+      this.currentPatrolData = null;
+
+      // For sequence scripts, handle step completion
+      if (this.activeScript && this.scriptConfig?.type === window.enemyAIConfig.SCRIPT_TYPE.FULL) {
+        // This is part of a sequence - signal completion
+        this.handleSequenceStepCompletion({
+          sequenceId: 'ping_pong_with_idle',
+          stepId: 'move_continuous'
+        });
+      } else {
+        // Normal behavior - go to idle
+        this.transitionToBehavior({ type: 'idle', duration: 0.5 }, behaviors);
+      }
+      return;
+    }
+
+    // Check for vertical collision
+    if (this.checkVerticalCollision()) {
+      console.log(`[CONTINUOUS_PATROL] Vertical collision detected, interrupting`);
+      this.vz = 0;
+      this.isContinuousPatrol = false;
+      this.currentPatrolData = null;
+
+      if (this.activeScript && this.scriptConfig?.type === window.enemyAIConfig.SCRIPT_TYPE.FULL) {
+        this.handleSequenceStepCompletion({
+          sequenceId: 'ping_pong_with_idle',
+          stepId: 'move_continuous'
+        });
+      } else {
+        this.transitionToBehavior({ type: 'idle', duration: 0.5 }, behaviors);
+      }
+      return;
+    }
+
+    // Continue movement
+    this.z += this.vz * dt;
+
+    // Safety boundary enforcement
+    const boundaryResult = window.applyScreenBoundaries ? window.applyScreenBoundaries(this) : { wasLimited: false };
+    if (boundaryResult.wasLimited) {
+      console.log(`[CONTINUOUS_PATROL] Safety boundary hit, stopping patrol`);
+      this.vz = 0;
+      this.isContinuousPatrol = false;
+      this.currentPatrolData = null;
+      this.transitionToBehavior({ type: 'idle', duration: 0.5 }, behaviors);
+      return;
+    }
+
+    console.log(`[CONTINUOUS_PATROL] Continuing: vz=${this.vz}, new_z=${this.z.toFixed(1)}`);
   }
 
   // Walking behavior: patrol movement with intelligent collision handling OR vertical movement
@@ -550,17 +687,40 @@ class BaseEnemy {
 
   // Consult BT for strategic behavior decision with context
   consultBTForBehavior(players, context = {}) {
+    console.log(`[BT_DEBUG] ${this.constructor.name} consultBTForBehavior called with context:`, context);
+    console.log(`[BT_DEBUG] activeScript exists: ${!!this.activeScript}, scriptConfig:`, this.scriptConfig);
+
     // SCRIPT SYSTEM: Handle script integration based on type (PHASE 4)
     if (this.activeScript) {
+      console.log(`[BT_DEBUG] Active script found: ${this.activeScript.name} (${this.activeScript.type})`);
+
       // FULL script: Complete override - ignore base system entirely
-      if (this.scriptConfig.type === window.enemyAIConfig.SCRIPT_TYPE.FULL) {
+      if (this.scriptConfig.type === window.enemyAIConfig.SCRIPT_TYPE.FULL) {    
+
+        console.log(`[BT_DEBUG] FULL script detected, calling getScriptCommand...`);
         const scriptCommand = this.getScriptCommand(context);
+        console.log(`[BT_DEBUG] Script command result:`, scriptCommand);
+
         if (scriptCommand) {
+          // За FULL scripts - изпълняваме командите веднага (не през pendingCommand система)
           console.log(`%c[SCRIPT_OVERRIDE] ${this.constructor.name} using FULL script: ${scriptCommand.type}`, 'color: #ff00ff; font-weight: bold; font-size: 14px;');
-          return scriptCommand;
+
+          // Execute script commands immediately for responsive behavior
+          if (scriptCommand.type === 'idle') {
+            // IDLE commands go through pending system for timing
+            return scriptCommand;
+          } else {
+            // Other commands execute immediately
+            this.pendingCommand = scriptCommand;
+            this.executePendingCommand(this.aiContext?.behaviors || {});
+            // Return null to prevent double execution
+            return null;
+          }
         }
         // Script didn't provide command - this shouldn't happen for FULL scripts
         console.warn(`[SCRIPT_SYSTEM] FULL script didn't provide command, falling back to base system`);
+      } else {
+        console.log(`[BT_DEBUG] Script type ${this.scriptConfig.type} is not FULL, using base system`);
       }
 
       // PARTIAL/BONUS script: Always consult both script and base system, then merge
@@ -651,13 +811,14 @@ class BaseEnemy {
     return command;
   }
 
-  // Create script execution context
+  // Create script execution context with sequence state persistence
   createScriptContext(baseContext) {
     return {
       ...baseContext,
       self: this.aiContext?.self || { hp: this.health, maxHp: this.maxHealth, x: this.x, y: this.y, z: this.z },
       targets: this.aiContext?.targets || [],
       behaviors: this.activeScript.behaviors,
+      sequenceState: this.sequenceState,  // Persistent sequence state
       command: null
     };
   }
@@ -709,7 +870,9 @@ class BaseEnemy {
 
       const situation = situationMap[context] || 'idle_timeout';
 
-      return window.enemyAIConfig.calculateThinkingDuration(baseDuration, this.intelligence, this.rarity, situation);
+      // calculateThinkingDuration returns MILLISECONDS - convert to seconds
+      const milliseconds = window.enemyAIConfig.calculateThinkingDuration(baseDuration, this.intelligence, this.rarity, situation);
+      return milliseconds / 1000;
     }
 
     // Fallback to original implementation if config not available
@@ -769,6 +932,91 @@ class BaseEnemy {
     return Math.max(1000, baseDuration) / 1000; // Minimum 1 second, convert to seconds
   }
 
+  // Get sequence idle duration based on rarity/intelligence (for between steps)
+  getSequenceIdleDuration() {
+    // Use same logic as getThinkingDuration but shorter for sequences
+    const baseThinkingDuration = this.getThinkingDuration();
+    const sequenceIdleDuration = baseThinkingDuration * 0.7; // 70% of normal thinking time
+
+    // Ensure minimum idle time for smooth transitions
+    return Math.max(0.3, sequenceIdleDuration);
+  }
+
+  // Handle sequence step completion - advances sequence state
+  handleSequenceStepCompletion(command) {
+    if (!this.sequenceState.isExecuting || command.sequenceId !== this.sequenceState.sequenceId) {
+      return; // Not part of active sequence
+    }
+
+    this.sequenceState.completedSteps++;
+    console.log(`[SEQUENCE_STEP] Completed step ${this.sequenceState.currentStep + 1}/${this.sequenceState.totalSteps} of ${this.sequenceState.sequenceId}`);
+
+    // Special handling за ping-pong sequence
+    if (command.sequenceId === 'ping_pong_with_idle') {
+      if (command.stepId === 'move_continuous') {
+        // ✅ Рестартирай sequence от началото след movement завърши
+        console.log(`[PING_PONG_SEQUENCE] Movement completed, restarting sequence from IDLE (step 0)`);
+
+        this.sequenceState.currentStep = 0; // Рестартирай към step 0 (IDLE)
+
+        // 🚀 ЗАДЕЙСТВАЙ нова BT консултация за step 0 (IDLE)
+        const players = this.currentPlayers || [];
+        const nextCommand = this.consultBTForBehavior(players, {
+          reason: 'sequence_restart',
+          sequenceId: command.sequenceId,
+          stepIndex: 0
+        });
+
+        if (nextCommand) {
+          this.pendingCommand = nextCommand;
+          console.log(`[PING_PONG_SEQUENCE] BT returned command for step 0:`, nextCommand);
+        }
+
+        return;
+      }
+    }
+
+    // Normal sequence logic за други sequences
+    // Check if there are more steps in sequence
+    if (this.sequenceState.currentStep + 1 < this.sequenceState.totalSteps) {
+      // More steps remain - increment to next step and consult BT
+      this.sequenceState.currentStep++;
+
+      // Консултирай BT за command на новия step
+      const players = this.currentPlayers || [];
+      const nextCommand = this.consultBTForBehavior(players, {
+        reason: 'sequence_next_step',
+        sequenceId: this.sequenceState.sequenceId,
+        stepIndex: this.sequenceState.currentStep
+      });
+
+      if (nextCommand) {
+        this.pendingCommand = nextCommand;
+        console.log(`[SEQUENCE_STEP] Moving to step ${this.sequenceState.currentStep}, BT returned:`, nextCommand.type);
+      } else {
+        console.log(`[SEQUENCE_STEP] Moving to step ${this.sequenceState.currentStep}, no command from BT`);
+      }
+    } else {
+      // Sequence completed
+      console.log(`[SEQUENCE_COMPLETE] Sequence ${this.sequenceState.sequenceId} finished (${this.sequenceState.completedSteps} steps completed)`);
+
+      // Reset sequence state
+      this.sequenceState.isExecuting = false;
+      this.sequenceState.sequenceId = null;
+
+      // Insert final IDLE after sequence completion (longer than between steps)
+      const finalIdleDuration = this.getSequenceIdleDuration() * 1.5;
+      this.pendingCommand = {
+        type: 'sequence_idle',
+        sequenceId: null,
+        isSequenceStep: false,
+        duration: finalIdleDuration
+      };
+
+      console.log(`[SEQUENCE_COMPLETE] Final IDLE: ${finalIdleDuration.toFixed(1)}s`);
+    }
+  }
+
   // Execute pending command (called from updateIdleBehavior when thinking is done)
   executePendingCommand(behaviors) {
     console.log(`[DEBUG] executePendingCommand: START - pendingCommand=`, this.pendingCommand);
@@ -794,10 +1042,26 @@ class BaseEnemy {
         }
         this.vx = 0;
         this.vz = 0; // Stop vertical movement too
+
+        // Handle duration logic
+        let resolvedIdleDuration = command.duration;
+        if (resolvedIdleDuration === 'auto') {
+          // За sequence IDLE използваме sequence idle duration
+          resolvedIdleDuration = command.isSequenceStep ?
+            this.getSequenceIdleDuration() :
+            this.getThinkingDuration();
+          console.log(`[IDLE_DURATION] Resolved 'auto' to ${resolvedIdleDuration.toFixed(1)}s for ${command.isSequenceStep ? 'sequence' : 'normal'} idle`);
+        }
+
         // Set idle timer for custom duration if specified
-        if (command.duration) {
-          this.aiTimer = -command.duration; // Negative to count up to 0
+        if (resolvedIdleDuration) {
+          this.aiTimer = -resolvedIdleDuration; // Negative to count up to 0
           this.isThinking = false; // Important: NOT thinking for idle command
+        }
+
+        // Sequence handling for idle steps
+        if (command.isSequenceStep) {
+          this.handleSequenceStepCompletion(command);
         }
         break;
 
@@ -834,29 +1098,53 @@ class BaseEnemy {
         break;
 
       case 'move_up':
-        console.log(`[DEBUG] executePendingCommand: executing move_up command`);
+        console.log(`[VERTICAL_TEST] Executing MOVE_UP command`);
         if (this.stateMachine) {
-          const result = this.stateMachine.changeState('enemy_walking');
-          console.log(`[DEBUG] executePendingCommand: move_up changeState result =`, result);
+          this.stateMachine.changeState('enemy_walking');
         }
-        // Move up by exactly 50 units using Z_SPEED velocity
-        this.targetZ = this.z + 50; // Target position
-        this.vz = Z_SPEED; // Movement velocity (positive Z = up)
-        this.verticalMovementStartZ = this.z; // Track starting position
-        console.log(`[BASE ENEMY VERTICAL] Starting move_up: from ${this.z} to ${this.targetZ}`);
+
+        // Calculate target position (current + displacement, clamped to boundaries)
+        this.targetZ = Math.min(this.z + command.displacement, Z_MAX);
+        this.vz = command.speed; // Positive Z = up
+        this.verticalMovementStartZ = this.z;
+
+        console.log(`[VERTICAL_TEST] Moving UP: ${this.z.toFixed(1)} → ${this.targetZ.toFixed(1)}`);
         break;
 
       case 'move_down':
-        console.log(`[DEBUG] executePendingCommand: executing move_down command`);
+        console.log(`[VERTICAL_TEST] Executing MOVE_DOWN command`);
         if (this.stateMachine) {
-          const result = this.stateMachine.changeState('enemy_walking');
-          console.log(`[DEBUG] executePendingCommand: move_down changeState result =`, result);
+          this.stateMachine.changeState('enemy_walking');
         }
-        // Move down by exactly 50 units using Z_SPEED velocity
-        this.targetZ = this.z - 50; // Target position
-        this.vz = -Z_SPEED; // Movement velocity (negative Z = down)
-        this.verticalMovementStartZ = this.z; // Track starting position
-        console.log(`[BASE ENEMY VERTICAL] Starting move_down: from ${this.z} to ${this.targetZ}`);
+
+        // Calculate target position (current - displacement, clamped to boundaries)
+        this.targetZ = Math.max(this.z - command.displacement, Z_MIN);
+        this.vz = -command.speed; // Negative Z = down
+        this.verticalMovementStartZ = this.z;
+
+        console.log(`[VERTICAL_TEST] Moving DOWN: ${this.z.toFixed(1)} → ${this.targetZ.toFixed(1)}`);
+        break;
+
+      case 'move_vertical':
+        console.log(`[VERTICAL_MOVE] Executing MOVE_VERTICAL command: ${command.direction}`);
+        if (this.stateMachine) {
+          this.stateMachine.changeState('enemy_walking');
+        }
+
+        // Setup continuous vertical patrol
+        this.isContinuousPatrol = true;
+        this.continuousPatrolDirection = command.direction === 'up' ? 1 : -1;
+        this.vz = command.speed * this.continuousPatrolDirection;
+
+        // Store patrol data за boundary/collision checking
+        this.currentPatrolData = {
+          direction: this.continuousPatrolDirection,
+          boundaries: command.boundaries,
+          speed: command.speed,
+          continuous: command.continuous
+        };
+
+        console.log(`[VERTICAL_MOVE] Starting continuous ${command.direction} movement (vz: ${this.vz})`);
         break;
 
       case 'chase':
@@ -872,12 +1160,37 @@ class BaseEnemy {
         this.stateMachine.handleAction(`attack_${attackNumber}`);
         this.vx = 0; // Stop moving during attack
         this.vz = 0; // Stop vertical movement during attack
+
+        // Sequence handling for attack steps
+        if (command.isSequenceStep) {
+          this.handleSequenceStepCompletion(command);
+        }
+        break;
+
+      case 'sequence_idle':
+        // Special IDLE for sequences - базирано на rarity/intelligence
+        this.stateMachine.changeState('enemy_idle');
+        const idleDuration = this.getSequenceIdleDuration();
+        this.aiTimer = -idleDuration; // Negative за thinking phase
+        this.isThinking = true;
+
+        console.log(`[SEQUENCE_IDLE] IDLE between steps for ${idleDuration.toFixed(1)}s (rarity:${this.rarity}, intelligence:${this.intelligence})`);
+
+        // Sequence handling - increment step after IDLE
+        if (command.isSequenceStep) {
+          this.sequenceState.currentStep++;
+        }
         break;
 
       default:
         this.stateMachine.changeState('enemy_idle');
         this.vx = 0;
         this.vz = 0;
+
+        // Handle sequence completion for unknown commands
+        if (command.isSequenceStep) {
+          this.handleSequenceStepCompletion(command);
+        }
         break;
     }
 
@@ -998,6 +1311,7 @@ class BaseEnemy {
     this.aiContext.self.maxHp = this.maxHealth;
     this.aiContext.self.x = this.x;
     this.aiContext.self.y = this.y;
+    this.aiContext.self.z = this.z; // Add Z position for script access
 
     // Update targets (players) - Use X-Z distance for 2.5D detection
     this.aiContext.targets = players.map(player => ({

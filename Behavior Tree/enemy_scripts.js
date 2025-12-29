@@ -137,67 +137,100 @@ const MINI_BOSS_SCRIPTS = {
 
 // TEST SCRIPTS - For development and testing
 const TEST_SCRIPTS = {
-  // Blue Slime Vertical Ping-Pong Test
+  // Blue Slime Vertical Ping-Pong Test - IDLE before every movement
   blueSlimeVerticalPingPong: {
     id: "blue_slime_vertical_test",
     type: SCRIPT_TYPE.FULL,
-    name: "Blue Slime - Vertical Ping-Pong Test",
+    name: "Blue Slime - Vertical Ping-Pong with IDLE",
 
     behaviors: {
-      verticalPingPong: {
-        // Movement parameters
-        displacement: 50,           // Units to move each time (exactly 50 as requested)
-        speed: Z_SPEED,            // Use player movement speed (200 units/sec)
-
-        // Boundary settings
-        boundaries: {
-          min: Z_MIN,             // -450 (bottom limit)
-          max: Z_MAX              // 200 (top limit)
-        },
-
-        // Movement logic
-        directionLogic: "boundary_based",  // Auto-switch at boundaries
-        hysteresis: 10,           // Prevent rapid switching near boundaries
+      pingPongSequence: {
+        // Sequence: IDLE → Continuous Movement → IDLE → Continuous Movement → ...
+        steps: [
+          // Step 1: IDLE преди движение (duration: 'auto' = базирано на характеристики)
+          {
+            id: 'think_before_move',
+            type: 'idle',
+            params: { duration: 'auto' }
+          },
+          // Step 2: Непрекъснато вертикално движение докато не hit boundary/collision
+          {
+            id: 'move_continuous',
+            type: 'move_vertical',
+            params: {
+              direction: 'auto', // Определя се динамично
+              speed: Z_SPEED,
+              continuous: true,
+              boundaries: { min: Z_MIN - 100, max: Z_MAX + 100 } // Увеличено разстояние 650→850
+            }
+          }
+        ],
+        canInterrupt: false,     // Не може да се прекъсне
+        idleBetweenSteps: false, // IDLE е част от sequence
+        loop: true,              // Повтаря се безкрайно
+        dynamicDirection: true   // Направлението се определя динамично
       }
     },
 
-    // Behavior Tree - single action that determines movement direction
-    behaviorTree: new Selector([
-      new Action(ctx => {
-        const config = ctx.behaviors.verticalPingPong;
-        const currentZ = ctx.self.z;
+    // Behavior Tree - sequence-aware с dynamic direction logic
+    get behaviorTree() {
+      return createSequenceBehaviorTree({
+        id: 'ping_pong_with_idle',
+        sequenceKey: 'pingPongSequence',
 
-        // Calculate effective boundaries with displacement
-        const topBoundary = config.boundaries.max - config.displacement;
-        const bottomBoundary = config.boundaries.min + config.displacement;
+        // Custom logic за dynamic direction determination
+        onStepStart: function(ctx, stepId) {
+          if (stepId === 'move_continuous') {
+            // Определи направление базирано на текуща позиция
+            const currentZ = ctx.self.z;
+            const middle = (Z_MAX + Z_MIN) / 2;
 
-        // Determine movement direction based on current position
-        let direction;
+            // Ако сме над средата -> надолу, иначе нагоре
+            const direction = currentZ > middle ? 'down' : 'up';
 
-        if (currentZ >= topBoundary) {
-          // At or near top boundary - move down
-          direction = "down";
-          console.log(`[VERTICAL_TEST] At top boundary (${currentZ.toFixed(1)}), switching to DOWN`);
-        } else if (currentZ <= bottomBoundary) {
-          // At or near bottom boundary - move up
-          direction = "up";
-          console.log(`[VERTICAL_TEST] At bottom boundary (${currentZ.toFixed(1)}), switching to UP`);
-        } else {
-          // In middle zone - continue current direction or choose based on position
-          const middlePoint = (config.boundaries.max + config.boundaries.min) / 2;
-          direction = currentZ > middlePoint ? "down" : "up";
-          console.log(`[VERTICAL_TEST] In middle zone (${currentZ.toFixed(1)}), continuing ${direction.toUpperCase()}`);
+            // Update step params динамично
+            const sequence = ctx.behaviors.pingPongSequence;
+            const step = sequence.steps.find(s => s.id === stepId);
+            step.params.direction = direction;
+
+            console.log(`[PING_PONG] Starting ${direction} from Z=${currentZ.toFixed(1)} (middle: ${middle.toFixed(1)})`);
+          }
         }
+      });
+    }
+  },
 
-        // Return movement command
-        return {
-          type: direction === "up" ? COMMAND.MOVE_UP : COMMAND.MOVE_DOWN,
-          displacement: config.displacement,
-          speed: config.speed,
-          boundaries: config.boundaries
-        };
-      })
-    ])
+  // Alternative: Simple Vertical Movement (non-sequence)
+  blueSlimeSimpleVertical: {
+    id: "blue_slime_simple_vertical",
+    type: SCRIPT_TYPE.FULL,
+    name: "Blue Slime - Simple Vertical Movement",
+
+    behaviors: {
+      verticalMovement: {
+        displacement: 50,
+        speed: Z_SPEED,
+        boundaries: { min: Z_MIN, max: Z_MAX }
+      }
+    },
+
+    get behaviorTree() {
+      return new Selector([
+        new Action(ctx => {
+          const config = ctx.behaviors.verticalMovement;
+          const currentZ = ctx.self.z;
+
+          // Simple up/down logic
+          const direction = currentZ > 0 ? "down" : "up";
+
+          return {
+            type: direction === "up" ? COMMAND.MOVE_UP : COMMAND.MOVE_DOWN,
+            displacement: config.displacement,
+            speed: config.speed
+          };
+        })
+      ]);
+    }
   }
 };
 
@@ -231,12 +264,19 @@ function registerScript(script) {
 function initializeScriptRegistry() {
   console.log('[SCRIPT_REGISTRY] Initializing...');
 
-  // Register boss scripts
-  Object.values(BOSS_SCRIPTS).forEach(phaseScripts => {
-    if (Array.isArray(phaseScripts)) {
-      phaseScripts.forEach(registerScript);
+  // Register boss scripts - handle nested structures
+  Object.values(BOSS_SCRIPTS).forEach(bossContainer => {
+    // Check if this is a direct script (has id) or a container (phase1, phase2, etc.)
+    if (bossContainer.id) {
+      // Direct script like dragonBoss
+      registerScript(bossContainer);
     } else {
-      registerScript(phaseScripts);
+      // Container with multiple phases like megaBoss
+      Object.values(bossContainer).forEach(script => {
+        if (script && script.id) {
+          registerScript(script);
+        }
+      });
     }
   });
 
@@ -269,6 +309,34 @@ window.enemyScripts = {
   hasScript: (id) => ENEMY_SCRIPTS.has(id),
   listScripts: () => Array.from(ENEMY_SCRIPTS.keys())
 };
+
+// Placeholder functions for boss behavior trees (to be implemented later)
+// These prevent script loading errors during development/testing
+
+function createMegaBossPhase1BT() {
+  console.warn('[PLACEHOLDER] createMegaBossPhase1BT() not implemented');
+  return new Selector([new Action(() => ({ type: 'idle', duration: 2.0 }))]);
+}
+
+function createMegaBossPhase2BT() {
+  console.warn('[PLACEHOLDER] createMegaBossPhase2BT() not implemented');
+  return new Selector([new Action(() => ({ type: 'idle', duration: 2.0 }))]);
+}
+
+function createDragonBossBT() {
+  console.warn('[PLACEHOLDER] createDragonBossBT() not implemented');
+  return new Selector([new Action(() => ({ type: 'idle', duration: 2.0 }))]);
+}
+
+function createTeleportAssassinBT() {
+  console.warn('[PLACEHOLDER] createTeleportAssassinBT() not implemented');
+  return new Selector([new Action(() => ({ type: 'idle', duration: 1.0 }))]);
+}
+
+function createFlameElementalBT() {
+  console.warn('[PLACEHOLDER] createFlameElementalBT() not implemented');
+  return new Selector([new Action(() => ({ type: 'idle', duration: 1.5 }))]);
+}
 
 // Auto-initialize when loaded
 initializeScriptRegistry();

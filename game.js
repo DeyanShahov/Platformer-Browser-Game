@@ -1081,34 +1081,39 @@ function update(dt) {
   handleSkillTreeKeys();
   handleCharacterStatsKeys();
 
-  // Ако имаме активно меню, не ъпдейтвай играчите и враговете.
-  // Това ефективно "паузира" играта.
-  if (!menuActive) {
-    // Централизирана обработка на смърт за всички умиращи елементи
-    updateDeathSequences(dt);
+  // Game State-based pause system - replaces simple menuActive check
+  if (window.shouldPauseGame()) {
+    console.log('%c[GAME_LOOP] PAUSED in state: ' + window.currentGameState, 'color: #ffff00; font-weight: bold; font-size: 14px;');
+    return; // Full pause - no entity updates
+  }
 
-    // Обновяване на всички играчи
-    if (window.gameState) {
-      window.gameState.players.forEach((player, index) => {
-        updatePlayer(player, index, dt);
-      });
+  console.log('%c[GAME_LOOP] RUNNING in state: ' + window.currentGameState, 'color: #00ff00; font-weight: bold; font-size: 14px;');
 
-      // Обновяване на всички противници (само живи и не умиращи)
-      const enemies = window.gameState.getEntitiesByType('enemy');
-      enemies.forEach(enemy => {
-        if (!enemy.isDying) { // Не обновяваме AI за умиращи противници
-          updateEnemyAI(enemy, dt);
-          // Apply enemy physics (similar to player movement)
-          handleEnemyMovement(enemy, dt);
-        }
-      });
-    } else {
-      // Fallback към старата система за backwards compatibility
-      players.forEach((player, index) => {
-        updatePlayer(player, index, dt);
-      });
-      updateEnemyAI(dt);
-    }
+  // Game is active - update all entities
+  // Централизирана обработка на смърт за всички умиращи елементи
+  updateDeathSequences(dt);
+
+  // Обновяване на всички играчи
+  if (window.gameState) {
+    window.gameState.players.forEach((player, index) => {
+      updatePlayer(player, index, dt);
+    });
+
+    // Обновяване на всички противници (само живи и не умиращи)
+    const enemies = window.gameState.getEntitiesByType('enemy');
+    enemies.forEach(enemy => {
+      if (!enemy.isDying) { // Не обновяваме AI за умиращи противници
+        updateEnemyAI(enemy, dt);
+        // Apply enemy physics (similar to player movement)
+        handleEnemyMovement(enemy, dt);
+      }
+    });
+  } else {
+    // Fallback към старата система за backwards compatibility
+    players.forEach((player, index) => {
+      updatePlayer(player, index, dt);
+    });
+    updateEnemyAI(dt);
   }
 }
 
@@ -1182,8 +1187,10 @@ function handleEnemyMovement(enemy, dt) {
   }
 
   // Reset velocity after movement (AI will set it again next frame)
-  // Keep vx for continuous movement, reset vz
-  enemy.vz = 0;
+  // Keep vx for continuous movement, reset vz unless in vertical movement mode
+  if (enemy.targetZ === undefined) {
+    enemy.vz = 0;
+  }
 }
 
 function updateDeathSequences(dt) {
@@ -1204,6 +1211,12 @@ function updateDeathSequences(dt) {
 // Game loop
 let last = 0;
 function loop(ts) {
+  // Check if game loop should be stopped (for character selection, etc.)
+  if (window.gameLoopRunning === false) {
+    console.log('[GAME_LOOP] Game loop stopped by gameLoopRunning flag');
+    return; // Stop the loop
+  }
+
   const dt = (ts - last) / 1000;
   last = ts;
 
@@ -1719,11 +1732,15 @@ function initGameWithSelections() {
       window.initMenu();
     }
 
-    // Set game state to playing
-    window.gameStateString = 'playing';
-
-    // Start game loop
+    // Start game loop first (but it will be paused until state changes)
+    window.gameLoopRunning = true;
     requestAnimationFrame(loop);
+
+    // Set game state to playing AFTER everything is ready (using new game state system)
+    window.setGameState(window.GAME_STATE.PLAYING, 'game initialization complete');
+
+    // Keep legacy game state for backwards compatibility
+    window.gameStateString = 'playing';
 
     console.log('[GAME] Game initialization completed successfully');
   }).catch(error => {

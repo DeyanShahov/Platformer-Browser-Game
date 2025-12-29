@@ -448,6 +448,26 @@ function checkScreenBoundariesCached(enemy, margin = (window.enemyAIConfig?.CONS
   };
 }
 
+/**
+ * Check for vertical (Z-axis) collisions with other entities
+ * @param {Object} entity - Entity to check collisions for
+ * @returns {boolean} True if vertical collision detected
+ */
+function checkVerticalCollision(entity) {
+  // Check for Z-axis collisions with other entities
+  const entities = window.gameState?.getAllEntities() || [];
+  const nearbyEntities = entities.filter(e =>
+    e !== entity &&                    // Not self
+    Math.abs(e.x - entity.x) < 150 &&  // Within horizontal range
+    Math.abs(e.z - entity.z) < 100     // Within vertical range
+  );
+
+  console.log(`[VERTICAL_COLLISION] Checking ${nearbyEntities.length} nearby entities for vertical collision`);
+
+  // Return true if any nearby entities found (basic collision detection)
+  return nearbyEntities.length > 0;
+}
+
 /* =========================
    GLOBAL EXPORTS (following project pattern)
    ========================= */

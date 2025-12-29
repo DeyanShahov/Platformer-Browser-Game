@@ -1,3 +1,97 @@
+/* =========================
+   GAME STATE MANAGEMENT SYSTEM
+   Entity management + Game lifecycle states
+   ========================= */
+
+// Game State Enum - Controls game pause/resume behavior
+const GAME_STATE = {
+  CHARACTER_SELECTION: 'character_selection',  // Character select screen - FULL PAUSE
+  PLAYING: 'playing',                          // Active gameplay - NO PAUSE
+  PAUSED: 'paused',                           // Game paused (ESC menu) - FULL PAUSE
+  MENU: 'menu',                               // In-game menus (skill tree) - UI PAUSE
+  GAME_OVER: 'game_over'                      // Game over screen - FULL PAUSE
+};
+
+// Current game state - starts with character selection
+window.currentGameState = GAME_STATE.CHARACTER_SELECTION;
+
+// Game state transition functions
+window.setGameState = function(newState, context = '') {
+  const oldState = window.currentGameState;
+  window.currentGameState = newState;
+
+  console.log(`[GAME_STATE] ${oldState} → ${newState}${context ? ` (${context})` : ''}`);
+
+  // Execute state-specific logic
+  onGameStateChanged(oldState, newState);
+};
+
+// State change handler - executes appropriate logic for state transitions
+function onGameStateChanged(oldState, newState) {
+  switch(newState) {
+    case GAME_STATE.CHARACTER_SELECTION:
+      // Ensure no entities exist during character selection
+      if (window.gameState) {
+        console.log('[GAME_STATE] Clearing entities during character selection');
+        window.gameState.clear();
+      }
+      // Stop any running game loop during character selection
+      console.log('[GAME_STATE] Stopping game loop during character selection');
+      window.gameLoopRunning = false;
+      // Yellow log for pause start
+      console.log('%c[PAUSE] Game paused: CHARACTER_SELECTION', 'color: #ffaa00; font-weight: bold; font-size: 16px;');
+      break;
+
+    case GAME_STATE.PLAYING:
+      // Game is now active - entities can be updated
+      console.log('[GAME_STATE] Game started - entities active');
+      // Yellow log for pause stop
+      console.log('%c[RESUME] Game resumed: PLAYING', 'color: #ffaa00; font-weight: bold; font-size: 16px;');
+      break;
+
+    case GAME_STATE.PAUSED:
+      // Full pause - no entity updates
+      console.log('[GAME_STATE] Game paused - entities frozen');
+      // Yellow log for pause start
+      console.log('%c[PAUSE] Game paused: PAUSED', 'color: #ffaa00; font-weight: bold; font-size: 16px;');
+      break;
+
+    case GAME_STATE.MENU:
+      // UI pause - menus active, game entities may still animate
+      console.log('[GAME_STATE] Menu opened - UI active, entities may update');
+      // Yellow log for pause start (partial pause)
+      console.log('%c[PAUSE] Game paused: MENU (partial)', 'color: #ffaa00; font-weight: bold; font-size: 16px;');
+      break;
+
+    case GAME_STATE.GAME_OVER:
+      // Game over - full pause
+      console.log('[GAME_STATE] Game over - entities frozen');
+      // Yellow log for pause start
+      console.log('%c[PAUSE] Game paused: GAME_OVER', 'color: #ffaa00; font-weight: bold; font-size: 16px;');
+      break;
+  }
+}
+
+// Pause logic based on current game state
+window.shouldPauseGame = function() {
+  switch(window.currentGameState) {
+    case GAME_STATE.CHARACTER_SELECTION:
+    case GAME_STATE.PAUSED:
+    case GAME_STATE.GAME_OVER:
+      return true; // Full pause - no updates
+
+    case GAME_STATE.MENU:
+      return false; // Allow some updates (menu animations)
+
+    case GAME_STATE.PLAYING:
+    default:
+      return false; // Normal gameplay
+  }
+};
+
+// Export game state enum for use in other files
+window.GAME_STATE = GAME_STATE;
+
 // Game State Management System
 // Manages all entities on screen for a given level/game state
 
