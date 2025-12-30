@@ -103,7 +103,7 @@ class BaseEnemy {
       name: `${this.constructor.name}_${this.level}`,
       rarity: this.rarity,
       intelligence: this.intelligence,
-      self: { hp: this.health, maxHp: this.maxHealth, x: this.x, y: this.y },
+      self: { hp: this.health, maxHp: this.maxHp, x: this.x, y: this.y, z: this.z },
       targets: [], // Will be updated in updateAI
       capabilities: { canBlock: false, canEvade: false },
       attackProfile: this.createAttackProfile(), // Subclasses can override
@@ -194,6 +194,7 @@ class BaseEnemy {
 
   // AI Update - FSM controls execution, BT provides strategic decisions
   updateAI(players, dt) {
+    console.log(`[BASE ENEMY UPDATE] Before update: vz=${this.vz}, targetZ=${this.targetZ}`);
     if (this.isDying) return;
 
     // Update BT context with current game state (for when BT is consulted)
@@ -202,6 +203,8 @@ class BaseEnemy {
     // FSM handles all movement and animation logic
     // BT is consulted only for strategic decisions (behavior transitions)
     this.updateFSMBehavior(players, dt);
+
+    console.log(`[BASE ENEMY UPDATE] After update: vz=${this.vz}, targetZ=${this.targetZ}`);
   }
 
   // FSM-based behavior control - consults BT for strategic decisions
@@ -323,23 +326,43 @@ class BaseEnemy {
     }
   }
 
-  // Vertical movement behavior: move exactly 50 units up/down, then return to idle
+  // Vertical movement behavior: move to target Z position, then return to idle
   updateVerticalMovementBehavior(players, dt, behaviors) {
+    console.log(`[VZ_DEBUG] updateVerticalMovementBehavior START - vz=${this.vz}, targetZ=${this.targetZ}`);
+
     if (this.targetZ === undefined) {
       console.log(`[BASE ENEMY VERTICAL] ERROR: targetZ not set, exiting vertical movement`);
       this.transitionToBehavior({ type: 'idle', duration: 0.5 }, behaviors);
       return;
     }
 
+    // Check if we're stuck at boundary (vz = 0 and target is outside bounds)
+    const isStuckAtBoundary = this.vz === 0 && (
+      (this.targetZ < Z_MIN && this.z <= Z_MIN) ||
+      (this.targetZ > Z_MAX && this.z >= Z_MAX)
+    );
+
+    if (isStuckAtBoundary) {
+      console.log(`[VERTICAL STUCK] Stuck at boundary (z=${this.z}, targetZ=${this.targetZ}), immediate BT consultation`);
+      this.vz = 0;
+      this.targetZ = undefined;
+      this.verticalMovementStartZ = undefined;
+
+      // Immediate BT consultation instead of idle delay
+      const nextBehavior = this.consultBTForBehavior([], { reason: 'vertical_stuck' });
+      this.transitionToBehavior(nextBehavior, behaviors);
+      return;
+    }
+
     // Calculate distance moved so far
     const distanceMoved = Math.abs(this.z - this.verticalMovementStartZ);
-    const targetDistance = 50; // Exactly 50 units
+    const targetDistance = Math.abs(this.targetZ - this.verticalMovementStartZ); // Dynamic distance to target
 
-    console.log(`[BASE ENEMY VERTICAL] Moving: current=${this.z.toFixed(1)}, target=${this.targetZ.toFixed(1)}, moved=${distanceMoved.toFixed(1)}, targetDistance=${targetDistance}`);
+    console.log(`[BASE ENEMY VERTICAL] Moving: current=${this.z.toFixed(1)}, target=${this.targetZ.toFixed(1)}, moved=${distanceMoved.toFixed(1)}, targetDistance=${targetDistance.toFixed(1)}`);
 
     // Check if we've reached or exceeded the target distance
     if (distanceMoved >= targetDistance) {
-      console.log(`[BASE ENEMY VERTICAL] Target distance reached (${distanceMoved.toFixed(1)} >= ${targetDistance}), stopping movement`);
+      console.log(`[BASE ENEMY VERTICAL] Target reached (${distanceMoved.toFixed(1)} >= ${targetDistance}), immediate BT consultation`);
 
       // Apply boundary enforcement to ensure we're within limits
       const boundaryResult = window.applyScreenBoundaries ? window.applyScreenBoundaries(this) : { wasLimited: false };
@@ -347,27 +370,38 @@ class BaseEnemy {
         console.log(`[BASE ENEMY VERTICAL] Boundary enforced after movement`);
       }
 
-      // Stop movement and clear vertical movement state
+      // Stop movement and clear ALL vertical movement state
       this.vz = 0;
       this.targetZ = undefined;
-      delete this.verticalMovementStartZ;
+      this.verticalMovementStartZ = undefined;
 
-      // Go to idle (thinking phase) for next decision
-      this.transitionToBehavior({ type: 'idle', duration: 0.5 }, behaviors);
+      // Dynamic IDLE duration based on rarity/intelligence
+      const idleDuration = this.aiContext?.behaviors?.idle?.duration || 0.2;
+
+      // ADD IDLE THINKING instead of immediate BT
+      this.transitionToBehavior({ type: 'idle', duration: idleDuration }, behaviors); // 0.3 sec мислене
       return;
+
+      // Immediate BT consultation instead of idle delay
+      // const nextBehavior = this.consultBTForBehavior([], { reason: 'vertical_complete' });
+      // this.transitionToBehavior(nextBehavior, behaviors);
+      // return;
     }
 
     // Continue moving - apply velocity
     this.z += this.vz * dt;
 
     // Apply boundary enforcement during movement (safety check)
+    // Debug boundary check
+    console.log(`[VZ_DEBUG] Before boundary check: z=${this.z}, vz=${this.vz}`);
     const boundaryResult = window.applyScreenBoundaries ? window.applyScreenBoundaries(this) : { wasLimited: false };
+    console.log(`[VZ_DEBUG] After boundary check: wasLimited=${boundaryResult.wasLimited}, z=${this.z}, vz=${this.vz}`);
     if (boundaryResult.wasLimited) {
-      console.log(`[BASE ENEMY VERTICAL] Boundary hit during movement, stopping early`);
+      console.log(`[BASE ENEMY VERTICAL] Boundary hit during movement, resetting movement state`);
       // Stop movement if we hit a boundary
       this.vz = 0;
       this.targetZ = undefined;
-      delete this.verticalMovementStartZ;
+      this.verticalMovementStartZ = undefined; // ← RESET THIS TOO!
       this.transitionToBehavior({ type: 'idle', duration: 0.5 }, behaviors);
       return;
     }
@@ -550,6 +584,23 @@ class BaseEnemy {
 
   // Consult BT for strategic behavior decision with context
   consultBTForBehavior(players, context = {}) {
+    // ADD THIS: Script system debug logging
+    console.log(`%c[BT_DEBUG] consultBTForBehavior called for ${this.constructor.name}`, 'color: #ffa500; font-weight: bold;');
+    console.log('[BT_DEBUG] Has activeScript:', !!this.activeScript);
+    console.log('[BT_DEBUG] scriptConfig:', this.scriptConfig);
+    console.log('[BT_DEBUG] Context reason:', context.reason);
+
+    if (this.activeScript) {
+      console.log('[BT_DEBUG] Script type:', this.scriptConfig?.type);
+      console.log('[BT_DEBUG] Script details:', this.activeScript);
+
+      if (this.scriptConfig?.type === window.enemyAIConfig?.SCRIPT_TYPE?.FULL) {
+        console.log('%c[BT_DEBUG] FULL SCRIPT OVERRIDE - should use script BT', 'color: #ff00ff; font-weight: bold;');
+      }
+    } else {
+      console.log('%c[BT_DEBUG] NO ACTIVE SCRIPT - using base BT system', 'color: #ff0000; font-weight: bold;');
+    }
+
     // SCRIPT SYSTEM: Handle script integration based on type (PHASE 4)
     if (this.activeScript) {
       // FULL script: Complete override - ignore base system entirely
@@ -839,24 +890,27 @@ class BaseEnemy {
           const result = this.stateMachine.changeState('enemy_walking');
           console.log(`[DEBUG] executePendingCommand: move_up changeState result =`, result);
         }
-        // Move up by exactly 50 units using Z_SPEED velocity
-        this.targetZ = this.z + 50; // Target position
-        this.vz = Z_SPEED; // Movement velocity (positive Z = up)
+        // Move up by command displacement using command speed
+        this.targetZ = this.z + command.displacement; // Use dynamic displacement
+        this.vz = command.speed; // Movement velocity (positive Z = up)
         this.verticalMovementStartZ = this.z; // Track starting position
         console.log(`[BASE ENEMY VERTICAL] Starting move_up: from ${this.z} to ${this.targetZ}`);
         break;
 
       case 'move_down':
         console.log(`[DEBUG] executePendingCommand: executing move_down command`);
+        // Move down by command displacement using command speed
+        this.targetZ = this.z - command.displacement; // Use dynamic displacement
+        this.vz = -command.speed; // Movement velocity (negative Z = down)
+        this.verticalMovementStartZ = this.z; // Track starting position
+        console.log(`[VZ_DEBUG] executePendingCommand set vz=${this.vz}, command.speed=${command.speed}`);
+        console.log(`[BASE ENEMY VERTICAL] Starting move_down: from ${this.z} to ${this.targetZ}`);
+
+        // Change state AFTER setting targetZ (so EnemyWalkingState.enter() sees it)
         if (this.stateMachine) {
           const result = this.stateMachine.changeState('enemy_walking');
           console.log(`[DEBUG] executePendingCommand: move_down changeState result =`, result);
         }
-        // Move down by exactly 50 units using Z_SPEED velocity
-        this.targetZ = this.z - 50; // Target position
-        this.vz = -Z_SPEED; // Movement velocity (negative Z = down)
-        this.verticalMovementStartZ = this.z; // Track starting position
-        console.log(`[BASE ENEMY VERTICAL] Starting move_down: from ${this.z} to ${this.targetZ}`);
         break;
 
       case 'chase':
@@ -998,6 +1052,7 @@ class BaseEnemy {
     this.aiContext.self.maxHp = this.maxHealth;
     this.aiContext.self.x = this.x;
     this.aiContext.self.y = this.y;
+    this.aiContext.self.z = this.z; // ← ADD THIS: Update Z position for scripts!
 
     // Update targets (players) - Use X-Z distance for 2.5D detection
     this.aiContext.targets = players.map(player => ({
@@ -1190,6 +1245,36 @@ class BlueSlime extends BaseEnemy {
 
     // Call BaseEnemy constructor with position and config
     super(x, y, z, config);
+
+    // ADD THIS: Comprehensive script debugging
+    console.log(`%c[BLUE SLIME DEBUG] Constructor - Script System Check`, 'color: #ff6b6b; font-weight: bold; font-size: 14px;');
+    console.log('[BLUE SLIME DEBUG] scriptConfig:', this.scriptConfig);
+    console.log('[BLUE SLIME DEBUG] window.enemyScripts exists:', !!window.enemyScripts);
+    console.log('[BLUE SLIME DEBUG] window.enemyScriptManager exists:', !!window.enemyScriptManager);
+    console.log('[BLUE SLIME DEBUG] window.enemyAIConfig exists:', !!window.enemyAIConfig);
+    console.log('[BLUE SLIME DEBUG] SCRIPT_TYPE available:', !!window.enemyAIConfig?.SCRIPT_TYPE);
+
+    if (this.scriptConfig?.scriptId) {
+      console.log(`[BLUE SLIME DEBUG] Looking for script: ${this.scriptConfig.scriptId}`);
+      const scriptExists = window.enemyScripts?.hasScript(this.scriptConfig.scriptId);
+      console.log(`[BLUE SLIME DEBUG] Script exists in registry: ${scriptExists}`);
+
+      if (scriptExists) {
+        const script = window.enemyScripts.getScript(this.scriptConfig.scriptId);
+        console.log(`[BLUE SLIME DEBUG] Script loaded:`, script);
+        console.log(`[BLUE SLIME DEBUG] Script type: ${script.type}`);
+        console.log(`[BLUE SLIME DEBUG] Has behaviorTree: ${!!script.behaviorTree}`);
+      }
+    }
+
+    // Check if async initialization happened
+    setTimeout(() => {
+      console.log(`%c[BLUE SLIME DEBUG] Post-constructor check (100ms delay)`, 'color: #4ecdc4; font-weight: bold;');
+      console.log('[BLUE SLIME DEBUG] activeScript:', !!this.activeScript);
+      if (this.activeScript) {
+        console.log('[BLUE SLIME DEBUG] activeScript details:', this.activeScript);
+      }
+    }, 100);
 
     // Blue Slime specific properties
     this.level = level;

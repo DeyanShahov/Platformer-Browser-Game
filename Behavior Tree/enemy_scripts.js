@@ -11,6 +11,8 @@ const ENEMY_SCRIPTS = new Map();
 
 // Boss Script Templates
 const BOSS_SCRIPTS = {
+  // TEMPORARILY COMMENTED OUT - functions not defined yet
+  /*
   // Phase-based boss scripts
   megaBoss: {
     phase1: {
@@ -74,10 +76,13 @@ const BOSS_SCRIPTS = {
     },
     behaviorTree: createDragonBossBT()
   }
+  */
 };
 
 // Elite Enemy Scripts
 const ELITE_SCRIPTS = {
+  // TEMPORARILY COMMENTED OUT - functions not defined yet
+  /*
   chargingKnight: {
     id: "charging_knight",
     type: SCRIPT_TYPE.PARTIAL,
@@ -119,10 +124,13 @@ const ELITE_SCRIPTS = {
     },
     bonusBehaviorTree: createTeleportAssassinBT()
   }
+  */
 };
 
 // Mini-boss Scripts
 const MINI_BOSS_SCRIPTS = {
+  // TEMPORARILY COMMENTED OUT - functions not defined yet
+  /*
   flameElemental: {
     id: "flame_elemental",
     type: SCRIPT_TYPE.FULL,
@@ -133,6 +141,7 @@ const MINI_BOSS_SCRIPTS = {
     },
     behaviorTree: createFlameElementalBT()
   }
+  */
 };
 
 // TEST SCRIPTS - For development and testing
@@ -146,8 +155,8 @@ const TEST_SCRIPTS = {
     behaviors: {
       verticalPingPong: {
         // Movement parameters
-        displacement: 50,           // Units to move each time (exactly 50 as requested)
-        speed: Z_SPEED,            // Use player movement speed (200 units/sec)
+        displacement: 100,           // Units to move each time (exactly 50 as requested)
+        speed: 50, //Z_SPEED,            // Use player movement speed (200 units/sec)
 
         // Boundary settings
         boundaries: {
@@ -167,32 +176,43 @@ const TEST_SCRIPTS = {
         const config = ctx.behaviors.verticalPingPong;
         const currentZ = ctx.self.z;
 
-        // Calculate effective boundaries with displacement
+        // Calculate effective boundaries (don't add displacement to prevent overshoot)
         const topBoundary = config.boundaries.max - config.displacement;
-        const bottomBoundary = config.boundaries.min + config.displacement;
+        const bottomBoundary = config.boundaries.min;
+
+        // Initialize direction state if not exists (persistent in aiContext)
+        if (!ctx.self.lastDirection) {
+          ctx.self.lastDirection = "down"; // Start going down
+        }
 
         // Determine movement direction based on current position
         let direction;
 
+        // DEBUG: Add boundary value logging
+        console.log(`[VERTICAL_TEST] DEBUG: currentZ=${currentZ}, topBoundary=${topBoundary}, bottomBoundary=${bottomBoundary}, lastDirection=${ctx.self.lastDirection}`);
+        console.log(`[VERTICAL_TEST] DEBUG: currentZ >= topBoundary: ${currentZ >= topBoundary}`);
+        console.log(`[VERTICAL_TEST] DEBUG: currentZ <= bottomBoundary: ${currentZ <= bottomBoundary}`);
+
         if (currentZ >= topBoundary) {
-          // At or near top boundary - move down
+          // At or near top boundary - switch to DOWN
           direction = "down";
+          ctx.self.lastDirection = "down";
           console.log(`[VERTICAL_TEST] At top boundary (${currentZ.toFixed(1)}), switching to DOWN`);
         } else if (currentZ <= bottomBoundary) {
-          // At or near bottom boundary - move up
+          // At or near bottom boundary - switch to UP
           direction = "up";
+          ctx.self.lastDirection = "up";
           console.log(`[VERTICAL_TEST] At bottom boundary (${currentZ.toFixed(1)}), switching to UP`);
         } else {
-          // In middle zone - continue current direction or choose based on position
-          const middlePoint = (config.boundaries.max + config.boundaries.min) / 2;
-          direction = currentZ > middlePoint ? "down" : "up";
+          // In middle zone - continue in last direction
+          direction = ctx.self.lastDirection;
           console.log(`[VERTICAL_TEST] In middle zone (${currentZ.toFixed(1)}), continuing ${direction.toUpperCase()}`);
         }
 
-        // Return movement command
+        // Return movement command with fixed displacement
         return {
           type: direction === "up" ? COMMAND.MOVE_UP : COMMAND.MOVE_DOWN,
-          displacement: config.displacement,
+          displacement: config.displacement, // Fixed 50 units
           speed: config.speed,
           boundaries: config.boundaries
         };

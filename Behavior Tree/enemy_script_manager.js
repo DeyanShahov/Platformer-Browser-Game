@@ -36,8 +36,8 @@ class EnemyScriptManager {
 
   // Compile script (validation, optimization)
   async compileScript(script) {
-    // Deep clone to avoid modifying original
-    const compiled = JSON.parse(JSON.stringify(script));
+    // Shallow clone to avoid modifying original (functions can't be deep cloned)
+    const compiled = { ...script };
 
     // Validate behavior tree structure
     if (compiled.behaviorTree) {

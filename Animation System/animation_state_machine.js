@@ -130,6 +130,11 @@ class WalkingState extends AnimationState {
   }
 
   update(entity, dt) {
+    // DEBUG: Добави тези логи
+    console.log(`[WALKING UPDATE] vx=${entity.vx}, vz=${entity.vz}, targetZ=${entity.targetZ}`);
+    const hasMovement = this.hasMovementInput(entity);
+    console.log(`[WALKING UPDATE] hasMovementInput=${hasMovement}`);
+
     // Skip transition on the first update after entering
     if (this.justEntered) {
       this.justEntered = false;
@@ -137,7 +142,7 @@ class WalkingState extends AnimationState {
     }
 
     // Transition to idle if no movement, but prevent immediate oscillation
-    if (!this.hasMovementInput(entity) && performance.now() - this.lastTransitionTime > 100) {
+    if (!hasMovement && performance.now() - this.lastTransitionTime > 100) {
       console.log(`[FSM] Walking: no movement detected, vx=${entity.vx}, vz=${entity.vz}, transitioning to idle`);
       return 'idle';
     }
@@ -848,6 +853,18 @@ class EnemyWalkingState extends AnimationState {
     const walkType = this.getEntityAnimationType(entity, 'WALK');
     if (entity.animation && walkType) {
       entity.animation.setAnimation(walkType, true);
+    }
+
+    // DEBUG: Добави тези логи
+    console.log(`[ENEMY WALKING ENTER] targetZ=${entity.targetZ}, vz before=${entity.vz}`);
+    
+    // Don't reset vz if we're in vertical movement mode (has targetZ)
+    // This allows vertical movement commands to work properly
+    if (!entity.targetZ) {
+      entity.vz = 0;
+      console.log(`[ENEMY WALKING ENTER] Reset vz to 0 (no targetZ)`);
+    } else {
+      console.log(`[ENEMY WALKING ENTER] Kept vz=${entity.vz} (has targetZ)`);
     }
   }
 
