@@ -59,6 +59,18 @@ function getCurrentHitBoxPosition(entity) {
   boxX = drawX + hitBoxData.x;
   boxY = drawY + entity.h/2 - hitBoxData.y;
 
+  // MIRROR HIT BOX FOR COLLISION when facing left (same as attack collision)
+  if (entity.animation && entity.animation.facingDirection === 'left') {
+    // Calculate the center of the entity for mirroring
+    const entityCenterX = entity.x + (entity.collisionW || entity.w) / 2;
+
+    // Mirror the hit box around the entity center
+    const distanceFromCenter = boxX + hitBoxData.width / 2 - entityCenterX;
+    const mirroredCenterX = entityCenterX - distanceFromCenter;
+
+    boxX = mirroredCenterX - hitBoxData.width / 2;
+  }
+
   return {
     x: boxX,
     y: boxY,

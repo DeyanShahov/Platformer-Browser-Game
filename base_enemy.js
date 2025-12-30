@@ -1237,10 +1237,10 @@ class BlueSlime extends BaseEnemy {
       level: level,
 
       // TEST SCRIPT: Vertical ping-pong movement
-      scriptConfig: {
-        scriptId: 'blue_slime_vertical_test',
-        type: window.enemyAIConfig?.SCRIPT_TYPE?.FULL || 'full'
-      }
+      // scriptConfig: {
+      //   scriptId: 'blue_slime_vertical_test',
+      //   type: window.enemyAIConfig?.SCRIPT_TYPE?.FULL || 'full'
+      // }
     };
 
     // Call BaseEnemy constructor with position and config
