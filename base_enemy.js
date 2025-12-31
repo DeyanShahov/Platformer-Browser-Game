@@ -744,7 +744,7 @@ class BaseEnemy {
 
     // Red log - BT decision
     const decisionText = this.getDecisionText(command, context);
-    console.log(`%c[BT_DECISION] ${this.constructor.name} #${this.level} from ${situationText} → ${decisionText}`, 'color: #ff0000; font-weight: bold; font-size: 14px;');
+    // console.log(`%c[BT_DECISION] ${this.constructor.name} #${this.level} from ${situationText} → ${decisionText}`, 'color: #ff0000; font-weight: bold; font-size: 14px;');
 
     // Clear context after consultation
     delete this.aiContext.consultationContext;
@@ -787,7 +787,7 @@ class BaseEnemy {
     this.aiTimer = -thinkingDuration; // Negative to count up to 0
 
     // Orange log - enemy is thinking
-    console.log(`%c[BASE ENEMY THINKING] ${this.constructor.name} is in thinking state for ${thinkingDuration} seconds`, 'color: #ffa500; font-weight: bold; font-size: 14px;');
+    // console.log(`%c[BASE ENEMY THINKING] ${this.constructor.name} is in thinking state for ${thinkingDuration} seconds`, 'color: #ffa500; font-weight: bold; font-size: 14px;');
   }
 
   // Get thinking duration based on enemy type and situation
@@ -1318,34 +1318,34 @@ class BlueSlime extends BaseEnemy {
     super(x, y, z, config);
 
     // ADD THIS: Comprehensive script debugging
-    console.log(`%c[BLUE SLIME DEBUG] Constructor - Script System Check`, 'color: #ff6b6b; font-weight: bold; font-size: 14px;');
-    console.log('[BLUE SLIME DEBUG] scriptConfig:', this.scriptConfig);
-    console.log('[BLUE SLIME DEBUG] window.enemyScripts exists:', !!window.enemyScripts);
-    console.log('[BLUE SLIME DEBUG] window.enemyScriptManager exists:', !!window.enemyScriptManager);
-    console.log('[BLUE SLIME DEBUG] window.enemyAIConfig exists:', !!window.enemyAIConfig);
-    console.log('[BLUE SLIME DEBUG] SCRIPT_TYPE available:', !!window.enemyAIConfig?.SCRIPT_TYPE);
+    // console.log(`%c[BLUE SLIME DEBUG] Constructor - Script System Check`, 'color: #ff6b6b; font-weight: bold; font-size: 14px;');
+    // console.log('[BLUE SLIME DEBUG] scriptConfig:', this.scriptConfig);
+    // console.log('[BLUE SLIME DEBUG] window.enemyScripts exists:', !!window.enemyScripts);
+    // console.log('[BLUE SLIME DEBUG] window.enemyScriptManager exists:', !!window.enemyScriptManager);
+    // console.log('[BLUE SLIME DEBUG] window.enemyAIConfig exists:', !!window.enemyAIConfig);
+    // console.log('[BLUE SLIME DEBUG] SCRIPT_TYPE available:', !!window.enemyAIConfig?.SCRIPT_TYPE);
 
-    if (this.scriptConfig?.scriptId) {
-      console.log(`[BLUE SLIME DEBUG] Looking for script: ${this.scriptConfig.scriptId}`);
-      const scriptExists = window.enemyScripts?.hasScript(this.scriptConfig.scriptId);
-      console.log(`[BLUE SLIME DEBUG] Script exists in registry: ${scriptExists}`);
+    // if (this.scriptConfig?.scriptId) {
+    //   console.log(`[BLUE SLIME DEBUG] Looking for script: ${this.scriptConfig.scriptId}`);
+    //   const scriptExists = window.enemyScripts?.hasScript(this.scriptConfig.scriptId);
+    //   console.log(`[BLUE SLIME DEBUG] Script exists in registry: ${scriptExists}`);
 
-      if (scriptExists) {
-        const script = window.enemyScripts.getScript(this.scriptConfig.scriptId);
-        console.log(`[BLUE SLIME DEBUG] Script loaded:`, script);
-        console.log(`[BLUE SLIME DEBUG] Script type: ${script.type}`);
-        console.log(`[BLUE SLIME DEBUG] Has behaviorTree: ${!!script.behaviorTree}`);
-      }
-    }
+    //   if (scriptExists) {
+    //     const script = window.enemyScripts.getScript(this.scriptConfig.scriptId);
+    //     console.log(`[BLUE SLIME DEBUG] Script loaded:`, script);
+    //     console.log(`[BLUE SLIME DEBUG] Script type: ${script.type}`);
+    //     console.log(`[BLUE SLIME DEBUG] Has behaviorTree: ${!!script.behaviorTree}`);
+    //   }
+    // }
 
     // Check if async initialization happened
-    setTimeout(() => {
-      console.log(`%c[BLUE SLIME DEBUG] Post-constructor check (100ms delay)`, 'color: #4ecdc4; font-weight: bold;');
-      console.log('[BLUE SLIME DEBUG] activeScript:', !!this.activeScript);
-      if (this.activeScript) {
-        console.log('[BLUE SLIME DEBUG] activeScript details:', this.activeScript);
-      }
-    }, 100);
+    // setTimeout(() => {
+    //   console.log(`%c[BLUE SLIME DEBUG] Post-constructor check (100ms delay)`, 'color: #4ecdc4; font-weight: bold;');
+    //   console.log('[BLUE SLIME DEBUG] activeScript:', !!this.activeScript);
+    //   if (this.activeScript) {
+    //     console.log('[BLUE SLIME DEBUG] activeScript details:', this.activeScript);
+    //   }
+    // }, 100);
 
     // Blue Slime specific properties
     this.level = level;

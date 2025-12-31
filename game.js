@@ -495,24 +495,48 @@ function updatePlayer(player, playerIndex, dt) {
   const enemyEntities = window.gameState ? window.gameState.getEntitiesByType('enemy') : [window.enemy].filter(e => e);
 
   for (const enemy of enemyEntities) {
-    if (!enemy || !enemy.stateMachine || !enemy.stateMachine.isInAttackState()) continue;
+    // console.log(`[ENEMY_ATTACK_DEBUG] Checking enemy ${enemy?.id}: state=${enemy?.stateMachine?.getCurrentStateName()}, isInAttackState=${enemy?.stateMachine?.isInAttackState()}, damageDealt=${enemy?.damageDealt}`);
+
+    if (!enemy || !enemy.stateMachine || !enemy.stateMachine.isInAttackState() || enemy.damageDealt) {
+      // console.log(`[ENEMY_ATTACK_DEBUG] Enemy ${enemy?.id} skipped:`, {
+      //   exists: !!enemy,
+      //   hasStateMachine: !!enemy?.stateMachine,
+      //   isInAttackState: enemy?.stateMachine?.isInAttackState(),
+      //   damageDealt: enemy?.damageDealt
+      // });
+      continue;
+    }
+
+    // console.log(`[ENEMY_ATTACK_DEBUG] Enemy ${enemy.id} passed checks, checking collision...`);
 
     // Check collision for enemy attack
     const hit = checkHitboxCollision(enemy, player, {
       zTolerance: 10
     });
 
+    // console.log(`[ENEMY_ATTACK_DEBUG] Collision result: ${hit}`);
+
     if (hit) {
+      // console.log(`[ENEMY_ATTACK_DEBUG] HIT! Getting attack type...`);
       // Use combat system to calculate and apply damage
       const enemyAttackType = enemy.stateMachine.getCurrentAttackType();
+      // console.log(`[ENEMY_ATTACK_DEBUG] Attack type: ${enemyAttackType}`);
+
       if (enemyAttackType) {
+        // console.log(`[ENEMY_ATTACK_DEBUG] Resolving attack...`);
         const combatEvent = window.combatResolver.resolveAttack(enemy, player, enemyAttackType);
+        // console.log(`[ENEMY_ATTACK_DEBUG] Combat event:`, combatEvent);
 
         // Add damage number for visual feedback
         if (combatEvent && combatEvent.actualDamage > 0) {
           const damageX = player.x + player.w / 2;
           const damageY = player.y - 10;
           window.damageNumberManager.addDamageNumber(damageX, damageY, combatEvent.actualDamage, combatEvent.damageResult.isCritical);
+        }
+
+        // Set damageDealt flag to prevent multiple damage per attack (unified with player system)
+        if (combatEvent && combatEvent.actualDamage > 0) {
+          enemy.damageDealt = true;
         }
 
         // Set visual hit flag for player

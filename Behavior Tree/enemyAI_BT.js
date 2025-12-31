@@ -348,19 +348,19 @@ function createAttackProfile(allowedAttacks) {
    ========================= */
 const hasTarget = new Condition(ctx => {
   const result = !!ctx.target;
-  console.log(`[BT_CONDITION] hasTarget: ${result}, target distance: ${ctx.target?.distance?.toFixed(1) || 'none'}`);
+  // console.log(`[BT_CONDITION] hasTarget: ${result}, target distance: ${ctx.target?.distance?.toFixed(1) || 'none'}`);
   return result;
 });
 
 const targetInAttackRange = new Condition(ctx => {
   const result = ctx.target?.distance <= 100;
-  console.log(`[BT_CONDITION] targetInAttackRange: ${result}, distance: ${ctx.target?.distance?.toFixed(1) || 'none'}`);
+  // console.log(`[BT_CONDITION] targetInAttackRange: ${result}, distance: ${ctx.target?.distance?.toFixed(1) || 'none'}`);
   return result;
 });
 
 const targetInChaseRange = new Condition(ctx => {
   const result = ctx.target?.distance <= (ctx.behaviors?.chase?.radiusX || 300);
-  console.log(`[BT_CONDITION] targetInChaseRange: ${result}, distance: ${ctx.target?.distance?.toFixed(1) || 'none'}, range: ${ctx.behaviors?.chase?.radiusX || 300}`);
+  // console.log(`[BT_CONDITION] targetInChaseRange: ${result}, distance: ${ctx.target?.distance?.toFixed(1) || 'none'}, range: ${ctx.behaviors?.chase?.radiusX || 300}`);
   return result;
 });
 const canBlock = new Condition(ctx => ctx.capabilities.canBlock && Math.random() < (ctx.intelligence.blockChance || 0));
@@ -568,48 +568,48 @@ function generateContextualPatrolCommand(ctx, config) {
    Now uses centralized enemy AI utilities for consistency
    ========================= */
 function selectTarget(ctx) {
-  console.log(`[SELECT_TARGET_DEBUG] === SELECT TARGET DEBUG ===`);
-  console.log(`[SELECT_TARGET_DEBUG] ctx.self exists:`, !!ctx.self);
-  console.log(`[SELECT_TARGET_DEBUG] ctx.targets exists:`, !!ctx.targets);
-  console.log(`[SELECT_TARGET_DEBUG] ctx.targets length:`, ctx.targets?.length || 0);
+  // console.log(`[SELECT_TARGET_DEBUG] === SELECT TARGET DEBUG ===`);
+  // console.log(`[SELECT_TARGET_DEBUG] ctx.self exists:`, !!ctx.self);
+  // console.log(`[SELECT_TARGET_DEBUG] ctx.targets exists:`, !!ctx.targets);
+  // console.log(`[SELECT_TARGET_DEBUG] ctx.targets length:`, ctx.targets?.length || 0);
 
   if (!ctx.self || !ctx.targets || ctx.targets.length === 0) {
-    console.log(`[SELECT_TARGET] No targets available - self: ${!!ctx.self}, targets: ${ctx.targets?.length || 0}`);
+    // console.log(`[SELECT_TARGET] No targets available - self: ${!!ctx.self}, targets: ${ctx.targets?.length || 0}`);
     return null;
   }
 
-  console.log(`[SELECT_TARGET_DEBUG] ctx.self position:`, { x: ctx.self.x?.toFixed(1), y: ctx.self.y?.toFixed(1), z: ctx.self.z?.toFixed(1) });
+  // console.log(`[SELECT_TARGET_DEBUG] ctx.self position:`, { x: ctx.self.x?.toFixed(1), y: ctx.self.y?.toFixed(1), z: ctx.self.z?.toFixed(1) });
 
   const awarenessRadius = ctx.behaviors?.meta?.awarenessRadius || 150;
-  console.log(`[SELECT_TARGET_DEBUG] awarenessRadius: ${awarenessRadius}`);
-  console.log(`[SELECT_TARGET_DEBUG] ctx.behaviors?.meta:`, ctx.behaviors?.meta);
+  // console.log(`[SELECT_TARGET_DEBUG] awarenessRadius: ${awarenessRadius}`);
+  // console.log(`[SELECT_TARGET_DEBUG] ctx.behaviors?.meta:`, ctx.behaviors?.meta);
 
-  console.log(`[SELECT_TARGET_DEBUG] Raw ctx.targets:`, ctx.targets);
-  console.log(`[SELECT_TARGET_DEBUG] Target distances:`, ctx.targets.map(t => ({
-    distance: t.distance,
-    hasEntity: !!t.entity,
-    entityType: t.entity?.entityType
-  })));
+  // console.log(`[SELECT_TARGET_DEBUG] Raw ctx.targets:`, ctx.targets);
+  // console.log(`[SELECT_TARGET_DEBUG] Target distances:`, ctx.targets.map(t => ({
+  //   distance: t.distance,
+  //   hasEntity: !!t.entity,
+  //   entityType: t.entity?.entityType
+  // })));
 
   // Use centralized getEntitiesInRange utility for consistency
   if (window.enemyAIUtils && window.enemyAIUtils.getEntitiesInRange) {
-    console.log(`[SELECT_TARGET_DEBUG] Using enemyAIUtils.getEntitiesInRange`);
+    // console.log(`[SELECT_TARGET_DEBUG] Using enemyAIUtils.getEntitiesInRange`);
 
     // Convert targets array to entities array format expected by utility
     const targetEntities = ctx.targets
       .map(t => {
-        console.log(`[SELECT_TARGET_DEBUG] Processing target:`, {
-          original: t,
-          entity: t.entity || t,
-          distance: t.distance,
-          hasEntity: !!t.entity,
-          entityType: t.entity?.entityType
-        });
+        // console.log(`[SELECT_TARGET_DEBUG] Processing target:`, {
+        //   original: t,
+        //   entity: t.entity || t,
+        //   distance: t.distance,
+        //   hasEntity: !!t.entity,
+        //   entityType: t.entity?.entityType
+        // });
 
         // FIXED: Properly extract entity and validate it has required properties
         const entity = t.entity || t;
         if (!entity || entity.x === undefined || entity.y === undefined) {
-          console.log(`[SELECT_TARGET_DEBUG] Invalid entity found, skipping:`, entity);
+          // console.log(`[SELECT_TARGET_DEBUG] Invalid entity found, skipping:`, entity);
           return null;
         }
 
@@ -617,22 +617,22 @@ function selectTarget(ctx) {
       })
       .filter(entity => entity !== null); // Remove invalid entities
 
-    console.log(`[SELECT_TARGET_DEBUG] targetEntities array:`, targetEntities);
-    console.log(`[SELECT_TARGET_DEBUG] targetEntities positions:`, targetEntities.map(e => ({
-      x: e?.x?.toFixed(1),
-      y: e?.y?.toFixed(1),
-      z: e?.z?.toFixed(1),
-      entityType: e?.entityType
-    })));
+    // console.log(`[SELECT_TARGET_DEBUG] targetEntities array:`, targetEntities);
+    // console.log(`[SELECT_TARGET_DEBUG] targetEntities positions:`, targetEntities.map(e => ({
+    //   x: e?.x?.toFixed(1),
+    //   y: e?.y?.toFixed(1),
+    //   z: e?.z?.toFixed(1),
+    //   entityType: e?.entityType
+    // })));
 
     // Get entities within range using utility
-    console.log(`[SELECT_TARGET_DEBUG] Calling getEntitiesInRange with radius: ${awarenessRadius}`);
+    // console.log(`[SELECT_TARGET_DEBUG] Calling getEntitiesInRange with radius: ${awarenessRadius}`);
     const entitiesInRange = window.enemyAIUtils.getEntitiesInRange(ctx.self, targetEntities, awarenessRadius);
-    console.log(`[SELECT_TARGET_DEBUG] getEntitiesInRange returned:`, entitiesInRange);
-    console.log(`[SELECT_TARGET] Entities in range (${awarenessRadius}px): ${entitiesInRange.length}`);
+    // console.log(`[SELECT_TARGET_DEBUG] getEntitiesInRange returned:`, entitiesInRange);
+    // console.log(`[SELECT_TARGET] Entities in range (${awarenessRadius}px): ${entitiesInRange.length}`);
 
     if (entitiesInRange.length === 0) {
-      console.log(`[SELECT_TARGET_DEBUG] No entities in range, returning null`);
+      // console.log(`[SELECT_TARGET_DEBUG] No entities in range, returning null`);
       return null;
     }
 
@@ -642,21 +642,21 @@ function selectTarget(ctx) {
     for (const t of entitiesInRange) {
       // Calculate score based on distance and health
       let score = (1000 - t.distance) + (100 - (t.entity?.hpPercent || t.hpPercent || 100));
-      console.log(`[SELECT_TARGET_DEBUG] Target score for ${t.entity?.entityType || 'unknown'}: distance=${t.distance.toFixed(1)}, score=${score.toFixed(1)}`);
+      // console.log(`[SELECT_TARGET_DEBUG] Target score for ${t.entity?.entityType || 'unknown'}: distance=${t.distance.toFixed(1)}, score=${score.toFixed(1)}`);
       if (score > bestScore) {
         bestScore = score;
         best = t;
       }
     }
-    console.log(`[SELECT_TARGET] Selected target at distance: ${best.distance.toFixed(1)}`);
+    // console.log(`[SELECT_TARGET] Selected target at distance: ${best.distance.toFixed(1)}`);
     return best;
   } else {
-    console.log(`[SELECT_TARGET_DEBUG] enemyAIUtils.getEntitiesInRange not available, using fallback`);
+    // console.log(`[SELECT_TARGET_DEBUG] enemyAIUtils.getEntitiesInRange not available, using fallback`);
 
     // Fallback to original implementation
     const validTargets = ctx.targets.filter(t => t.distance <= awarenessRadius);
-    console.log(`[SELECT_TARGET_DEBUG] Fallback validTargets:`, validTargets);
-    console.log(`[SELECT_TARGET] Valid targets within ${awarenessRadius}px: ${validTargets.length}`);
+    // console.log(`[SELECT_TARGET_DEBUG] Fallback validTargets:`, validTargets);
+    // console.log(`[SELECT_TARGET] Valid targets within ${awarenessRadius}px: ${validTargets.length}`);
 
     if (validTargets.length === 0) return null;
 
@@ -670,7 +670,7 @@ function selectTarget(ctx) {
         best = t;
       }
     }
-    console.log(`[SELECT_TARGET] Selected target at distance: ${best.distance.toFixed(1)}`);
+    // console.log(`[SELECT_TARGET] Selected target at distance: ${best.distance.toFixed(1)}`);
     return best;
   }
 }
