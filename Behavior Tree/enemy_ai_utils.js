@@ -252,13 +252,21 @@ function getEntitiesInRange(enemy, entities, range) {
   if (!entities || entities.length === 0) return [];
 
   return entities
-    .map(entity => ({
-      entity,
-      distance: Math.sqrt(
+    .map(entity => {
+      // FIXED: Include Z-coordinate in distance calculation for 2.5D gameplay
+      const distance = Math.sqrt(
         Math.pow(enemy.x - entity.x, 2) +
-        Math.pow(enemy.y - entity.y, 2)
-      )
-    }))
+        Math.pow(enemy.y - entity.y, 2) +
+        Math.pow((enemy.z || 0) - (entity.z || 0), 2)  // Include Z component!
+      );
+
+      console.log(`[GET_ENTITIES_IN_RANGE] Entity ${entity?.entityType} distance: ${distance.toFixed(1)}, range: ${range}, inRange: ${distance <= range}`);
+
+      return {
+        entity,
+        distance
+      };
+    })
     .filter(item => item.distance <= range)
     .sort((a, b) => a.distance - b.distance); // Closest first
 }

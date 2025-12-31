@@ -489,10 +489,25 @@ class BaseEnemy {
 
     // Check if movement was blocked by collision (with buffer consideration)
     if (hasSignificantCorrection) {
-      console.log(`%c[COMMAND INTERRUPTED] Patrol blocked by collision (${correctionDelta.toFixed(1)}px correction) - going to idle (thinking phase)`, 'color: #00ffff; font-weight: bold; font-size: 14px;');
-      // Go to idle state first (thinking phase) before consulting BT
-      this.transitionToBehavior({ type: 'idle', duration: 0.5 }, behaviors);
-      return;
+      // DEBUG: Log collision details
+      console.log(`[COLLISION_DEBUG] hasSignificantCorrection=true, delta: ${correctionDelta.toFixed(1)}px`);
+
+      // NEW: Check if collision is with player - if so, attack immediately!
+      const collidedEntity = this.detectCollidedEntity(proposedX, this.y, this.z);
+      console.log(`[COLLISION_DEBUG] Collided entity:`, collidedEntity ? `${collidedEntity.entityType} (${collidedEntity.x?.toFixed(1)}, ${collidedEntity.z?.toFixed(1)})` : 'none');
+
+      if (collidedEntity && collidedEntity.entityType === 'player') {
+        console.log(`%c[PLAYER COLLISION] Patrol interrupted by PLAYER collision (${correctionDelta.toFixed(1)}px correction) - ATTACKING IMMEDIATELY!`, 'color: #ff0000; font-weight: bold; font-size: 14px;');
+        // Direct attack - no idle thinking phase for player collisions
+        const attackCommand = { type: 'attack', attackType: 'light' };
+        this.transitionToBehavior(attackCommand, behaviors);
+        return;
+      } else {
+        // Collision with non-player entity - use normal idle thinking
+        console.log(`%c[COMMAND INTERRUPTED] Patrol blocked by entity collision (${correctionDelta.toFixed(1)}px correction) - going to idle (thinking phase)`, 'color: #00ffff; font-weight: bold; font-size: 14px;');
+        this.transitionToBehavior({ type: 'idle', duration: 0.5 }, behaviors);
+        return;
+      }
     } else if (correctedX !== proposedX) {
       // console.log(`[AI COLLISION DEBUG] ✅ Small correction applied (${correctionDelta.toFixed(1)}px), continuing patrol`);
     } else {
@@ -507,11 +522,21 @@ class BaseEnemy {
       return;
     }
 
-    // Check for player detection during patrol
+    // Check for player detection during patrol - BOTH distance AND collision based
     const closestPlayer = this.getClosestPlayer(players);
-    if (closestPlayer && closestPlayer.distance <= (behaviors.chase?.radiusX || 300)) {
-      console.log(`[BASE ENEMY PATROL] Player detected during patrol, consulting BT`);
-      // Player detected - consult BT for chase decision
+    const isPlayerColliding = this.detectCollidedEntity(this.x, this.y, this.z)?.entityType === 'player';
+
+    //console.log(`[DISTANCE_DEBUG] Enemy at (${this.x.toFixed(1)}, ${this.z.toFixed(1)}), Player at (${closestPlayer?.x?.toFixed(1)}, ${closestPlayer?.z?.toFixed(1)}), Distance: ${closestPlayer?.distance?.toFixed(1)}, Colliding: ${isPlayerColliding}`);
+
+    if (isPlayerColliding) {
+      // PRIORITY: Direct collision with player - attack immediately!
+      console.log(`[COLLISION DETECTED] Player collision detected - ATTACKING IMMEDIATELY!`);
+      const attackCommand = { type: 'attack', attackType: 'light' };
+      this.transitionToBehavior(attackCommand, behaviors);
+      return;
+    } else if (closestPlayer && closestPlayer.distance <= (behaviors.chase?.radiusX || 300)) {
+      // Distance-based detection
+      console.log(`[BASE ENEMY PATROL] Player detected during patrol at distance ${closestPlayer.distance.toFixed(1)}, consulting BT`);
       const nextBehavior = this.consultBTForBehavior(players, { reason: 'player_detected', playerDistance: closestPlayer.distance });
       if (nextBehavior.type === 'chase') {
         this.transitionToBehavior(nextBehavior, behaviors);
@@ -538,14 +563,17 @@ class BaseEnemy {
     const chaseSpeed = behaviors.chase?.speed || 80;
     const attackRange = behaviors.attack ? 100 : 100; // Use attack range from BT config
 
-    if (closestPlayer.distance <= attackRange) {
-      // In attack range - stop chasing and attack
-      this.vx = 0; // Stop moving!
-      const nextBehavior = this.consultBTForBehavior(players);
-      if (nextBehavior.type === 'attack') {
-        this.transitionToBehavior(nextBehavior, behaviors);
-        return;
-      }
+    console.log(`[CHASE_DEBUG] Distance to player: ${closestPlayer.distance.toFixed(1)}, attack range: ${attackRange}`);
+
+    // FIXED: Check for collision with player during chase
+    const isPlayerColliding = this.detectCollidedEntity(this.x, this.y, this.z)?.entityType === 'player';
+    console.log(`[CHASE_DEBUG] Player colliding: ${isPlayerColliding}`);
+
+    if (isPlayerColliding || closestPlayer.distance <= attackRange) {
+      // GO TO IDLE FIRST - don't attack immediately (same as patrol pattern)
+      console.log(`[CHASE_COLLISION] ${isPlayerColliding ? 'Collision detected' : `Distance ${closestPlayer.distance.toFixed(1)} <= ${attackRange}`}, going to IDLE (thinking phase) first`);
+      this.transitionToBehavior({ type: 'idle', duration: 0.3 }, behaviors);
+      return;
     }
 
     if (closestPlayer.distance > (behaviors.chase?.radiusX || 300) * 1.5) {
@@ -562,10 +590,39 @@ class BaseEnemy {
 
   // Attack behavior: check for animation completion and consult BT
   updateAttackBehavior(players, dt, behaviors) {
-    // Check if attack animation has completed
+    console.log(`[ATTACK_DEBUG] Current state: ${this.stateMachine?.getCurrentStateName()}, isInAttackState: ${this.stateMachine?.isInAttackState()}, animation: ${this.animation?.currentAnimation}, frame: ${this.animation?.currentFrame}`);
+
+    // NEW: Check if animation reached the last frame (frame 3 for 4-frame animation: 0,1,2,3)
+    //const isLastFrame = this.animation?.currentFrame >= 4; // Frame 3 is the last frame
+    //const attackDuration = this.attackTimeoutStart ? performance.now() - this.attackTimeoutStart : 0; 
+    //const animationDurationMs = (this.animation?.animationDefinition?.duration || 1) * 1000;
+    
+    // Force completion after animation duration OR when animation reaches the last frame
+    const isAnimationComplete = !this.animation?.isPlaying;
+    if (isAnimationComplete) { //(attackDuration > animationDurationMs || isAnimationComplete) {
+      console.log(`%c[COMMAND INTERRUPTED] Attack completed - going to idle (thinking phase)`, 'color: #00ffff; font-weight: bold; font-size: 14px;');
+
+      // Force transition to IDLE first (like patrol does)
+      if (this.stateMachine) {
+        this.stateMachine.forceState('enemy_idle');
+      }
+      this.attackTimeoutStart = null;
+      this.vx = 0;
+      this.vz = 0;
+
+      // GO TO IDLE FIRST - don't consult BT immediately (same as patrol pattern)
+      this.transitionToBehavior({ type: 'idle', duration: 0.5 }, behaviors);
+      return;
+    }
+
+    // Initialize timeout tracking
+    if (!this.attackTimeoutStart) {
+      this.attackTimeoutStart = performance.now();
+    }
+
+    // Fallback: Check if attack animation has completed (state machine transition)
     if (this.stateMachine && !this.stateMachine.isInAttackState()) {
-      // Attack animation completed - consult BT for next action
-      console.log(`%c[COMMAND INTERRUPTED] Attack completed - consulting BT for next action`, 'color: #00ffff; font-weight: bold; font-size: 14px;');
+      console.log(`%c[COMMAND INTERRUPTED] Attack completed via state machine - consulting BT for next action`, 'color: #00ffff; font-weight: bold; font-size: 14px;');
       const nextBehavior = this.consultBTForBehavior(players, { reason: 'attack_complete' });
       this.transitionToBehavior(nextBehavior, behaviors);
       return;
@@ -1025,6 +1082,20 @@ class BaseEnemy {
     }
   }
 
+  // Helper: Detect which entity caused the collision at proposed position
+  detectCollidedEntity(proposedX, proposedY, proposedZ) {
+    const allEntities = window.gameState ? window.gameState.getAllEntities() : [];
+    for (const entity of allEntities) {
+      if (entity === this) continue;
+      const hasCollision = window.checkEntityCollision ?
+        window.checkEntityCollision(this, entity, 'movement', {
+          entity1Pos: { x: proposedX, y: proposedY, z: proposedZ }
+        }) : false;
+      if (hasCollision) return entity;
+    }
+    return null;
+  }
+
   // Helper: Get closest player
   getClosestPlayer(players) {
     if (!players || players.length === 0) return null;
@@ -1053,8 +1124,9 @@ class BaseEnemy {
     this.aiContext.self.y = this.y;
     this.aiContext.self.z = this.z; // ← ADD THIS: Update Z position for scripts!
 
-    // Update targets (players) - Use X-Z distance for 2.5D detection
+  // Update targets (players) - Use X-Z distance for 2.5D detection
     this.aiContext.targets = players.map(player => ({
+      entity: player,  // FIXED: Include the actual player entity for target selection
       distance: Math.sqrt(  // ✅ X-Z distance for 2.5D
         Math.pow(this.x - player.x, 2) +
         Math.pow(this.z - player.z, 2)

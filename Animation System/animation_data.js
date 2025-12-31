@@ -264,24 +264,24 @@ const BLUE_SLIME_ANIMATION_DEFINITIONS = {
     frameWidth: 120,
     frameHeight: 128,
     frameStarts: [0, 128, 256, 384],
-    duration: 0.8,
-    frameDurations: [0.200, 0.200, 0.200, 0.200],
+    duration: 1.3,
+    frameDurations: [0.200, 0.200, 0.300, 0.400],
     frameData: [
       {
-        hitBox: { x: 20, y: 0, width: 80, height: 80 },
+        hitBox: { x: 80, y: 0, width: 80, height: 80 },
         attackBox: null
       },
       {
-        hitBox: { x: 20, y: 0, width: 80, height: 80 },
+        hitBox: { x: 80, y: 0, width: 80, height: 80 },
         attackBox: null
       },
       {
-        hitBox: { x: 20, y: 0, width: 80, height: 80 },
-        attackBox: { x: 25, yRatio: 0.5, width: 30, heightRatio: 0.6 }
+        hitBox: { x: 80, y: 0, width: 80, height: 80 },
+        attackBox: null//{ x: 25, yRatio: 0.5, width: 30, heightRatio: 0.6 }
       },
       {
-        hitBox: { x: 20, y: 0, width: 80, height: 80 },
-        attackBox: { x: 25, yRatio: 0.5, width: 30, heightRatio: 0.6 }
+        hitBox: { x: 80, y: 0, width: 80, height: 80 },
+        attackBox: { x: -85, yRatio: 0.70, width: 55, heightRatio: 0.3 }
       }
     ],
     loop: false,
