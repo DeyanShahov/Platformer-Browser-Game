@@ -1150,7 +1150,7 @@ function updateEnemyAI(enemy, dt) {
 // Централизирана обработка на смърт за всички умиращи елементи
 // Handle enemy physics and movement (similar to player handleMovement)
 function handleEnemyMovement(enemy, dt) {
-  console.log(`[HANDLE ENEMY MOVEMENT] START - x=${enemy.x}, z=${enemy.z}, vx=${enemy.vx}, vz=${enemy.vz}`);
+  // console.log(`[HANDLE ENEMY MOVEMENT] START - x=${enemy.x}, z=${enemy.z}, vx=${enemy.vx}, vz=${enemy.vz}`);
 
   // Prevent movement during attack animations (like players)
   if (enemy.stateMachine && enemy.stateMachine.isInAttackState()) {
@@ -1179,10 +1179,10 @@ function handleEnemyMovement(enemy, dt) {
 
   // Apply screen boundaries and check for interruption
   const boundaryResult = applyScreenBoundaries(enemy);
-  console.log(`[HANDLE ENEMY MOVEMENT] boundary check: wasLimited=${boundaryResult.wasLimited}`);
+  // console.log(`[HANDLE ENEMY MOVEMENT] boundary check: wasLimited=${boundaryResult.wasLimited}`);
 
   if (boundaryResult.wasLimited) {
-    console.log(`[HANDLE ENEMY MOVEMENT] Boundary hit - stopping movement!`);
+    // console.log(`[HANDLE ENEMY MOVEMENT] Boundary hit - stopping movement!`);
     // Signal that boundary was hit - AI will handle BT consultation
     enemy.boundaryInterrupted = true;
   }
@@ -1192,12 +1192,12 @@ function handleEnemyMovement(enemy, dt) {
   enemy.vx = 0;  // Always reset vx (horizontal)
 
   // Only reset vz if not in vertical movement mode
-  console.log(`[HANDLE ENEMY MOVEMENT] Before vz reset: vz=${enemy.vz}, targetZ=${enemy.targetZ}`);
+  // console.log(`[HANDLE ENEMY MOVEMENT] Before vz reset: vz=${enemy.vz}, targetZ=${enemy.targetZ}`);
   if (!enemy.targetZ) {
     enemy.vz = 0;  // Only reset vz if not doing vertical movement
-    console.log(`[HANDLE ENEMY MOVEMENT] Reset vz to 0 (no vertical movement)`);
+    // console.log(`[HANDLE ENEMY MOVEMENT] Reset vz to 0 (no vertical movement)`);
   } else {
-    console.log(`[HANDLE ENEMY MOVEMENT] Kept vz=${enemy.vz} (vertical movement active)`);
+    // console.log(`[HANDLE ENEMY MOVEMENT] Kept vz=${enemy.vz} (vertical movement active)`);
   }
 }
 
