@@ -57,7 +57,7 @@ function getCurrentHitBoxPosition(entity) {
 
   // Position relative to sprite coordinates (same as AnimationRenderer)
   boxX = drawX + hitBoxData.x;
-  boxY = drawY + entity.h/2 - hitBoxData.y;
+  boxY = drawY + entity.h / 2 - hitBoxData.y;
 
   // MIRROR HIT BOX FOR COLLISION when facing left (same as attack collision)
   if (entity.animation && entity.animation.facingDirection === 'left') {
@@ -188,7 +188,7 @@ function applyCollisionCorrection(entity, proposedX, proposedY, proposedZ, axis,
   const buffer = options.buffer || 0; // Allow custom buffer for AI vs player movement
   // Get all other entities
   const allEntities = window.gameState ? window.gameState.getAllEntities() :
-                     [...players, window.enemy, window.ally].filter(e => e !== null && e !== undefined);
+    [...players, window.enemy, window.ally].filter(e => e !== null && e !== undefined);
   const others = allEntities.filter(e => e !== entity && e !== null && e !== undefined);
 
   //console.log(`[COLLISION_CORRECTION] Checking ${entity.entityType} movement on ${axis}-axis. Others: ${others.length}`);
@@ -396,7 +396,7 @@ function getCurrentHitBoxDimensions(entity) {
 function canMoveTo(entity, proposedX, proposedY, proposedZ) {
   // Get all other entities
   const allEntities = window.gameState ? window.gameState.getAllEntities() :
-                     [...players, window.enemy, window.ally].filter(e => e !== null && e !== undefined);
+    [...players, window.enemy, window.ally].filter(e => e !== null && e !== undefined);
   const others = allEntities.filter(e => e !== entity && e !== null && e !== undefined);
 
   // Check collision with each other entity using unified system
@@ -499,15 +499,11 @@ function getBehaviorConstraints(entity) {
   if (!canMoveUp) {
     constraints.blocked.add('move_up');
     constraints.reasons.move_up = 'screen_boundary_top';
-  } else {
-    constraints.allowed.add('move_up');
   }
 
   if (!canMoveDown) {
     constraints.blocked.add('move_down');
     constraints.reasons.move_down = 'screen_boundary_bottom';
-  } else {
-    constraints.allowed.add('move_down');
   }
 
   // Check for obstacles/entities blocking movement using enemyAIUtils

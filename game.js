@@ -514,80 +514,80 @@ function updatePlayer(player, playerIndex, dt) {
       console.log(`[ENEMY_ATTACK_DEBUG] Enemy ${enemy.id} checking collision...`);
       console.log(`[ENEMY_ATTACK_DEBUG] damageDealt before collision check: ${enemy.damageDealt}`);
 
-    // Check collision for enemy attack
-    const hit = checkHitboxCollision(enemy, player, {
-      zTolerance: 10
-    });
-
-    console.log(`[ENEMY_ATTACK_DEBUG] Collision result: ${hit}`);
-
-    // Debug attack box position
-    if (enemy.animation && enemy.animation.animationDefinition) {
-      const currentFrame = enemy.animation.currentFrame;
-      const frameData = enemy.animation.animationDefinition.frameData?.[currentFrame];
-      console.log(`[ENEMY_ATTACK_DEBUG] Frame data:`, {
-        frame: currentFrame,
-        hasAttackBox: !!frameData?.attackBox,
-        attackBox: frameData?.attackBox
+      // Check collision for enemy attack
+      const hit = checkHitboxCollision(enemy, player, {
+        zTolerance: 10
       });
-    }
 
-    if (hit) {
-      console.log(`[ENEMY_ATTACK_DEBUG] HIT DETECTED! Getting attack type...`);
-      // Use combat system to calculate and apply damage
-      const enemyAttackType = enemy.stateMachine.getCurrentAttackType();
-      console.log(`[ENEMY_ATTACK_DEBUG] Attack type: ${enemyAttackType}`);
+      console.log(`[ENEMY_ATTACK_DEBUG] Collision result: ${hit}`);
 
-      if (enemyAttackType) {
-        console.log(`[ENEMY_ATTACK_DEBUG] Resolving attack with combat system...`);
-
-        // Map enemy animation attack types to combat skill types
-        let combatSkillType;
-        switch (enemyAttackType) {
-          case 'ATTACK_1':
-            combatSkillType = 'basic_attack_light'; // Use player's basic attack for damage calculation
-            break;
-          case 'ATTACK_2':
-            combatSkillType = 'secondary_attack_light';
-            break;
-          case 'ATTACK_3':
-          case 'RUN_ATTACK':
-            combatSkillType = 'basic_attack_medium';
-            break;
-          default:
-            combatSkillType = 'basic_attack_light'; // Default fallback
-        }
-
-        console.log(`[ENEMY_ATTACK_DEBUG] Mapped ${enemyAttackType} to combat skill: ${combatSkillType}`);
-        const combatEvent = window.combatResolver.resolveAttackNoResourceCheck(enemy, player, combatSkillType);
-        console.log(`[ENEMY_ATTACK_DEBUG] Combat event:`, combatEvent);
-
-        // Add damage number for visual feedback
-        if (combatEvent && combatEvent.actualDamage > 0) {
-          const damageX = player.x + player.w / 2;
-          const damageY = player.y - 10;
-          window.damageNumberManager.addDamageNumber(damageX, damageY, combatEvent.actualDamage, combatEvent.damageResult.isCritical);
-        }
-
-        // Set damageDealt flag to prevent multiple damage per attack (unified with player system)
-        if (combatEvent && combatEvent.actualDamage > 0) {
-          enemy.damageDealt = true;
-          console.log(`[ENEMY_ATTACK_DEBUG] Damage applied (${combatEvent.actualDamage}), set damageDealt=true`);
-        } else {
-          console.log(`[ENEMY_ATTACK_DEBUG] No damage applied, keeping damageDealt=false`);
-        }
-
-        // Set visual hit flag for player
-        player.hit = true;
-        console.log(`[ENEMY_ATTACK_DEBUG] Player hit flag set to true`);
-        break; // Only one enemy attack per player per frame
-      } else {
-        console.log(`[ENEMY_ATTACK_DEBUG] No attack type found, skipping damage`);
+      // Debug attack box position
+      if (enemy.animation && enemy.animation.animationDefinition) {
+        const currentFrame = enemy.animation.currentFrame;
+        const frameData = enemy.animation.animationDefinition.frameData?.[currentFrame];
+        console.log(`[ENEMY_ATTACK_DEBUG] Frame data:`, {
+          frame: currentFrame,
+          hasAttackBox: !!frameData?.attackBox,
+          attackBox: frameData?.attackBox
+        });
       }
-    } else {
+
+      if (hit) {
+        console.log(`[ENEMY_ATTACK_DEBUG] HIT DETECTED! Getting attack type...`);
+        // Use combat system to calculate and apply damage
+        const enemyAttackType = enemy.stateMachine.getCurrentAttackType();
+        console.log(`[ENEMY_ATTACK_DEBUG] Attack type: ${enemyAttackType}`);
+
+        if (enemyAttackType) {
+          console.log(`[ENEMY_ATTACK_DEBUG] Resolving attack with combat system...`);
+
+          // Map enemy animation attack types to combat skill types
+          let combatSkillType;
+          switch (enemyAttackType) {
+            case 'ATTACK_1':
+              combatSkillType = 'basic_attack_light'; // Use player's basic attack for damage calculation
+              break;
+            case 'ATTACK_2':
+              combatSkillType = 'secondary_attack_light';
+              break;
+            case 'ATTACK_3':
+            case 'RUN_ATTACK':
+              combatSkillType = 'basic_attack_medium';
+              break;
+            default:
+              combatSkillType = 'basic_attack_light'; // Default fallback
+          }
+
+          console.log(`[ENEMY_ATTACK_DEBUG] Mapped ${enemyAttackType} to combat skill: ${combatSkillType}`);
+          const combatEvent = window.combatResolver.resolveAttackNoResourceCheck(enemy, player, combatSkillType);
+          console.log(`[ENEMY_ATTACK_DEBUG] Combat event:`, combatEvent);
+
+          // Add damage number for visual feedback
+          if (combatEvent && combatEvent.actualDamage > 0) {
+            const damageX = player.x + player.w / 2;
+            const damageY = player.y - 10;
+            window.damageNumberManager.addDamageNumber(damageX, damageY, combatEvent.actualDamage, combatEvent.damageResult.isCritical);
+          }
+
+          // Set damageDealt flag to prevent multiple damage per attack (unified with player system)
+          if (combatEvent && combatEvent.actualDamage > 0) {
+            enemy.damageDealt = true;
+            console.log(`[ENEMY_ATTACK_DEBUG] Damage applied (${combatEvent.actualDamage}), set damageDealt=true`);
+          } else {
+            console.log(`[ENEMY_ATTACK_DEBUG] No damage applied, keeping damageDealt=false`);
+          }
+
+          // Set visual hit flag for player
+          player.hit = true;
+          console.log(`[ENEMY_ATTACK_DEBUG] Player hit flag set to true`);
+          break; // Only one enemy attack per player per frame
+        } else {
+          console.log(`[ENEMY_ATTACK_DEBUG] No attack type found, skipping damage`);
+        }
+      } else {
         console.log(`[ENEMY_ATTACK_DEBUG] No collision detected, enemy attack missed`);
+      }
     }
-  }
   }
 }
 
@@ -605,7 +605,7 @@ function handleKeyboardInput(player) {
   if (window.keys[controls.up]) {
     player.vz = Z_SPEED;
   }
-  if (window.keys[controls.down]){
+  if (window.keys[controls.down]) {
     player.vz = -Z_SPEED;
   }
 
@@ -652,7 +652,7 @@ function handleKeyboardInput(player) {
   // }
 }
 
-  // MOVED TO update() function below
+// MOVED TO update() function below
 
 // Key press tracking variables for skill trees
 let key5Pressed = false;
@@ -907,7 +907,7 @@ function handleControllerInput(player, playerIndex) {
   }
 }
 
-  // Обработка на движение и колизии
+// Обработка на движение и колизии
 function handleMovement(player, dt) {
   // Prevent movement during attack animations
   if (player.stateMachine && player.stateMachine.isInAttackState()) {
@@ -941,7 +941,7 @@ function handleMovement(player, dt) {
   player.y += player.vy * dt;
 
   // Apply screen boundaries to keep player within screen bounds
-  const boundaryResult = applyScreenBoundaries(player);
+  const boundaryResult = window.applyScreenBoundaries(player);
   if (boundaryResult.wasLimited) {
     // Stop movement if we hit a boundary
     player.vx = 0;
@@ -998,7 +998,7 @@ function getCurrentControls(player) {
 
   const mode = player.controls.inputMode || 'keyboard';
   let controls = player.controls[mode];
-  
+
   // Ако контролер controls липсват, създай default
   if (mode === 'controller' && !controls) {
     console.log('Creating default controller controls');
@@ -1060,7 +1060,7 @@ function isButtonPressed(gamepad, buttonIndex, threshold = 0.5) {
   if (button.value !== undefined && button.value > threshold) {
     return true;
   }
-  
+
   return false;
 }
 
@@ -1251,7 +1251,7 @@ function handleEnemyMovement(enemy, dt) {
   }
 
   // Apply screen boundaries and check for interruption
-  const boundaryResult = applyScreenBoundaries(enemy);
+  const boundaryResult = window.applyScreenBoundaries(enemy);
   // console.log(`[HANDLE ENEMY MOVEMENT] boundary check: wasLimited=${boundaryResult.wasLimited}`);
 
   if (boundaryResult.wasLimited) {
@@ -1328,7 +1328,7 @@ function loop(ts) {
 function checkIfEntityIsInCollision(entity) {
   // Get all other entities
   const allEntities = window.gameState ? window.gameState.getAllEntities() :
-                     [...players, window.enemy, window.ally].filter(e => e !== null && e !== undefined);
+    [...players, window.enemy, window.ally].filter(e => e !== null && e !== undefined);
   const others = allEntities.filter(e => e !== entity && e !== null && e !== undefined);
 
   // Check collision with each other entity at current position
@@ -1349,204 +1349,13 @@ function checkIfEntityIsInCollision(entity) {
 
   return false;
 }
-
-// Behavior constraints function - determines which behaviors are physically possible
-// Now uses centralized enemy AI utilities for consistency
-function getBehaviorConstraints(entity) {
-  const constraints = {
-    allowed: new Set(['idle', 'attack', 'chase']), // Always allowed
-    blocked: new Set(),
-    reasons: {}
-  };
-
-  // Use centralized constants
-  const config = window.enemyAIConfig?.CONSTANTS || {};
-  const btCheckDistanceX = config.BT_CONSTRAINT_CHECK_DISTANCE_X || 100;
-  const btCheckDistanceZ = config.BT_CONSTRAINT_CHECK_DISTANCE_Z || 50;
-
-  // Check horizontal movement constraints using enemyAIUtils (cached version for performance)
-  if (window.enemyAIUtils && window.enemyAIUtils.checkScreenBoundariesCached) {
-    const boundaries = window.enemyAIUtils.checkScreenBoundariesCached(entity);
-
-    // Can move right? (check if not at right boundary)
-    if (boundaries.right) {
-      constraints.blocked.add('patrol_right');
-      constraints.blocked.add('move_right');
-      constraints.reasons.patrol_right = 'screen_boundary_right';
-    }
-
-    // Can move left? (check if not at left boundary)
-    if (boundaries.left) {
-      constraints.blocked.add('patrol_left');
-      constraints.blocked.add('move_left');
-      constraints.reasons.patrol_left = 'screen_boundary_left';
-    }
-  } else if (window.enemyAIUtils && window.enemyAIUtils.checkScreenBoundaries) {
-    // Fallback to non-cached version
-    const boundaries = window.enemyAIUtils.checkScreenBoundaries(entity);
-
-    // Can move right? (check if not at right boundary)
-    if (boundaries.right) {
-      constraints.blocked.add('patrol_right');
-      constraints.blocked.add('move_right');
-      constraints.reasons.patrol_right = 'screen_boundary_right';
-    }
-
-    // Can move left? (check if not at left boundary)
-    if (boundaries.left) {
-      constraints.blocked.add('patrol_left');
-      constraints.blocked.add('move_left');
-      constraints.reasons.patrol_left = 'screen_boundary_left';
-    }
-  } else {
-    // Fallback for when utils are not available
-    const entityWidth = entity.collisionW || entity.w || 50;
-    if (entity.x >= CANVAS_WIDTH - entityWidth) {
-      constraints.blocked.add('patrol_right');
-      constraints.blocked.add('move_right');
-      constraints.reasons.patrol_right = 'screen_boundary_right';
-    }
-    if (entity.x <= 0) {
-      constraints.blocked.add('patrol_left');
-      constraints.blocked.add('move_left');
-      constraints.reasons.patrol_left = 'screen_boundary_left';
-    }
-  }
-
-  // Can patrol? (needs at least one direction available)
-  const canPatrol = !constraints.blocked.has('patrol_left') || !constraints.blocked.has('patrol_right');
-  if (!canPatrol) {
-    constraints.blocked.add('patrol');
-    constraints.reasons.patrol = 'no_movement_space';
-  } else {
-    // Allow patrol if at least one direction is available
-    constraints.allowed.add('patrol');
-    constraints.allowed.add('patrol_left');
-    constraints.allowed.add('patrol_right');
-  }
-
-  // Check vertical movement constraints
-  const canMoveUp = entity.z > Z_MIN;
-  const canMoveDown = entity.z < Z_MAX;
-
-  if (!canMoveUp) {
-    constraints.blocked.add('move_up');
-    constraints.reasons.move_up = 'screen_boundary_top';
-  }
-
-  if (!canMoveDown) {
-    constraints.blocked.add('move_down');
-    constraints.reasons.move_down = 'screen_boundary_bottom';
-  }
-
-  // Check for obstacles/entities blocking movement using enemyAIUtils
-  if (window.enemyAIUtils && window.enemyAIUtils.detectEntityCollisions) {
-    const entities = window.gameState ? window.gameState.getAllEntities() : [];
-    const nearbyEntities = window.enemyAIUtils.detectEntityCollisions(entity, entities, btCheckDistanceX);
-
-    if (nearbyEntities.length > 0) {
-      constraints.blocked.add('patrol');
-      constraints.reasons.patrol = 'entities_blocking';
-    }
-  } else {
-    // Fallback entity checking
-    const entities = window.gameState ? window.gameState.getAllEntities() : [];
-    const nearbyEntities = entities.filter(e =>
-      e !== entity &&
-      Math.abs(e.x - entity.x) < btCheckDistanceX &&
-      Math.abs(e.z - entity.z) < btCheckDistanceZ
-    );
-
-    if (nearbyEntities.length > 0) {
-      constraints.blocked.add('patrol');
-      constraints.reasons.patrol = 'entities_blocking';
-    }
-  }
-
-  console.log(`[BEHAVIOR_CONSTRAINTS] ${entity.entityType} constraints:`, {
-    allowed: Array.from(constraints.allowed),
-    blocked: Array.from(constraints.blocked),
-    reasons: constraints.reasons
-  });
-
-  return constraints;
-}
-
-// Universal screen boundaries function - checks and applies boundaries, returns interruption info
-function applyScreenBoundaries(entity) {
-  let wasLimited = false;
-
-  // Get current per-frame hit box dimensions and position offset
-  const hitBoxData = getCurrentHitBoxDimensions(entity);
-  const hitBoxPosition = getCurrentHitBoxPosition(entity);
-
-  if (hitBoxData && hitBoxPosition) {
-    // Calculate boundaries based on actual hit box position in sprite frame
-    const hitBoxOffsetX = hitBoxPosition.x - entity.x; // How much hit box is offset from entity.x
-    const hitBoxOffsetY = hitBoxPosition.y - entity.z; // How much hit box is offset from entity.z
-
-    // Ensure full hit box visibility: entity.x + hitBoxOffsetX + hitBoxData.width <= CANVAS_WIDTH
-    const leftBoundary = -hitBoxOffsetX; // Allow entity to go left enough to show full hit box
-    const rightBoundary = CANVAS_WIDTH - (hitBoxOffsetX + hitBoxData.width);
-    const bottomBoundary = Z_MIN; // Same as before
-    const topBoundary = Z_MAX; // Same as before
-
-    //console.log(`[SCREEN_BOUNDARIES] ${entity.entityType} hit box offset X: ${hitBoxOffsetX}, width: ${hitBoxData.width}`);
-    //console.log(`[SCREEN_BOUNDARIES] ${entity.entityType} boundaries - left: ${leftBoundary}, right: ${rightBoundary}`);
-
-    // Horizontal boundaries (X-axis) - ensure full hit box visibility
-    if (entity.x < leftBoundary) {
-      console.log(`[SCREEN_BOUNDARIES] ${entity.entityType} hit left boundary, clamping X from ${entity.x} to ${leftBoundary}`);
-      entity.x = leftBoundary;
-      entity.vx = 0; // Stop horizontal movement
-      wasLimited = true;
-    } else if (entity.x > rightBoundary) {
-      console.log(`[SCREEN_BOUNDARIES] ${entity.entityType} hit right boundary, clamping X from ${entity.x} to ${rightBoundary}`);
-      entity.x = rightBoundary;
-      entity.vx = 0; // Stop horizontal movement
-      wasLimited = true;
-    }
-  } else {
-    // Fallback for entities without per-frame hit boxes
-    const entityWidth = entity.collisionW || entity.w || 50;
-    const leftBoundary = 0;
-    const rightBoundary = CANVAS_WIDTH - entityWidth;
-    const bottomBoundary = Z_MIN;
-    const topBoundary = Z_MAX;
-
-    console.log(`[SCREEN_BOUNDARIES] ${entity.entityType} fallback boundaries - left: ${leftBoundary}, right: ${rightBoundary}, width: ${entityWidth}`);
-
-    if (entity.x < leftBoundary) {
-      entity.x = leftBoundary;
-      entity.vx = 0;
-      wasLimited = true;
-    } else if (entity.x > rightBoundary) {
-      entity.x = rightBoundary;
-      entity.vx = 0;
-      wasLimited = true;
-    }
-  }
-
-  // Vertical boundaries (Z-axis) - same as before
-  if (entity.z < Z_MIN) {
-    console.log(`[SCREEN_BOUNDARIES] ${entity.entityType} hit bottom boundary, clamping Z from ${entity.z} to ${Z_MIN}`);
-    entity.z = Z_MIN;
-    entity.vz = 0; // Stop vertical movement
-    wasLimited = true;
-  } else if (entity.z > Z_MAX) {
-    console.log(`[SCREEN_BOUNDARIES] ${entity.entityType} hit top boundary, clamping Z from ${entity.z} to ${Z_MAX}`);
-    entity.z = Z_MAX;
-    entity.vz = 0; // Stop vertical movement
-    wasLimited = true;
-  }
-
-  return { wasLimited };
-}
-
-// Export behavior constraints function globally
-window.getBehaviorConstraints = getBehaviorConstraints;
-
-// COLLISION FUNCTIONS MOVED BACK TO collision.js
+// ===========================================
+// COLLISION FUNCTIONS - DEFINED IN collision.js
+// ===========================================
+// The following functions are defined in collision.js and exported to window:
+// - getBehaviorConstraints(entity) - AI behaviour constraints based on boundaries
+// - applyScreenBoundaries(entity) - Universal screen boundary enforcement
+// These functions are centralized in collision.js to avoid code duplication.
 
 // ===========================================
 // SKILL TREE FUNCTIONS - moved from menu.js
@@ -1652,7 +1461,7 @@ window.getBehaviorConstraints = getBehaviorConstraints;
 function getSortedEntitiesForRendering() {
   // Get all entities from game state or fallback to legacy system
   const entities = window.gameState ? window.gameState.getAllEntities() :
-                   [...players, window.enemy, window.ally].filter(e => e !== null && e !== undefined);
+    [...players, window.enemy, window.ally].filter(e => e !== null && e !== undefined);
 
   // Debug logging for backwards compatibility
   if (!window.gameState && window.enemy && window.enemy.isDying) {
@@ -1681,14 +1490,14 @@ function getEnemyHealthStatus(entity) {
 
   const healthPercent = entity.maxHealth > 0 ? (entity.health / entity.maxHealth) * 100 : 0;
   const healthStatus = entity.health <= 0 ? '[Мъртъв]' :
-                      healthPercent > 60 ? '[Жив]' :
-                      healthPercent > 30 ? '[Ранен]' : '[Критично]';
+    healthPercent > 60 ? '[Жив]' :
+      healthPercent > 30 ? '[Ранен]' : '[Критично]';
 
   // Color based on health
   const healthColor = entity.health <= 0 ? '#FF0000' :  // Dead - red
-                     healthPercent > 60 ? '#00FF00' :   // Healthy - green
-                     healthPercent > 30 ? '#FFFF00' :   // Wounded - yellow
-                     '#FF8800'; // Critical - orange
+    healthPercent > 60 ? '#00FF00' :   // Healthy - green
+      healthPercent > 30 ? '#FFFF00' :   // Wounded - yellow
+        '#FF8800'; // Critical - orange
 
   return { healthStatus, healthColor, healthPercent };
 }
