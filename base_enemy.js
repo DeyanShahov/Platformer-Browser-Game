@@ -228,7 +228,7 @@ class BaseEnemy {
     //console.log(`[BASE ENEMY FSM] Current state: ${currentState}, aiTimer: ${this.aiTimer}, vx: ${this.vx}`);
 
     // State-specific behavior logic
-    switch(currentState) {
+    switch (currentState) {
       case 'enemy_idle':
         this.updateIdleBehavior(players, dt, behaviors);
         break;
@@ -286,19 +286,19 @@ class BaseEnemy {
       //console.log(`[BASE ENEMY THINKING] Timer: ${this.aiTimer}/${thinkingDuration}, vx: ${this.vx}`);
 
       if (this.aiTimer >= 0 || Math.abs(this.aiTimer) < 0.001) {
-    console.log(`[BASE ENEMY THINKING] Thinking phase complete (aiTimer: ${this.aiTimer}), executing pending command`);
-    // console.log(`[DEBUG] updateIdleBehavior: checking pendingCommand, value =`, this.pendingCommand, 'exists =', !!this.pendingCommand);
+        console.log(`[BASE ENEMY THINKING] Thinking phase complete (aiTimer: ${this.aiTimer}), executing pending command`);
+        // console.log(`[DEBUG] updateIdleBehavior: checking pendingCommand, value =`, this.pendingCommand, 'exists =', !!this.pendingCommand);
 
-    // Thinking phase complete - execute pending command if available
-    if (this.pendingCommand) {
-      this.executePendingCommand(behaviors);
-    } else {
-      // No pending command - consult BT for new behavior
-      // console.log(`[DEBUG] ELSE BLOCK: Consulting BT for idle_timeout`);
-      const nextBehavior = this.consultBTForBehavior(players, { reason: 'idle_timeout' });
-      // console.log(`[BASE ENEMY THINKING] BT returned:`, nextBehavior);
-      this.transitionToBehavior(nextBehavior, behaviors);
-    }
+        // Thinking phase complete - execute pending command if available
+        if (this.pendingCommand) {
+          this.executePendingCommand(behaviors);
+        } else {
+          // No pending command - consult BT for new behavior
+          // console.log(`[DEBUG] ELSE BLOCK: Consulting BT for idle_timeout`);
+          const nextBehavior = this.consultBTForBehavior(players, { reason: 'idle_timeout' });
+          // console.log(`[BASE ENEMY THINKING] BT returned:`, nextBehavior);
+          this.transitionToBehavior(nextBehavior, behaviors);
+        }
         this.aiTimer = 0; // Reset timer after thinking
         return; // Exit - don't process normal idle behavior
       }
@@ -320,7 +320,7 @@ class BaseEnemy {
       console.log(`[BASE ENEMY IDLE] Timer expired, consulting BT for next behavior`);
       // Idle duration expired - consult BT for next behavior
       const nextBehavior = this.consultBTForBehavior(players, { reason: 'idle_timeout' });
-      console.log(`[BASE ENEMY IDLE] BT returned:`, nextBehavior);
+      console.error(`[BASE ENEMY IDLE] BT returned:`, nextBehavior);
       this.transitionToBehavior(nextBehavior, behaviors);
       this.aiTimer = 0;
     }
@@ -370,6 +370,9 @@ class BaseEnemy {
         console.log(`[BASE ENEMY VERTICAL] Boundary enforced after movement`);
       }
 
+      // Cache targetZ for logging
+      const reachedTargetZ = this.targetZ;
+
       // Stop movement and clear ALL vertical movement state
       this.vz = 0;
       this.targetZ = undefined;
@@ -378,7 +381,7 @@ class BaseEnemy {
       // Dynamic IDLE duration based on rarity/intelligence
       const idleDuration = this.aiContext?.behaviors?.idle?.duration || 0.2;
 
-      console.log(`%c[COMMAND INTERRUPTED] Vertical movement completed (reached target Z: ${this.targetZ.toFixed(1)}) - going to idle (thinking phase)`, 'color: #00ffff; font-weight: bold; font-size: 14px;');
+      console.log(`%c[COMMAND INTERRUPTED] Vertical movement completed (reached target Z: ${reachedTargetZ !== undefined ? reachedTargetZ.toFixed(1) : 'unknown'}) - going to idle (thinking phase)`, 'color: #00ffff; font-weight: bold; font-size: 14px;');
 
       // ADD IDLE THINKING instead of immediate BT
       this.transitionToBehavior({ type: 'idle', duration: idleDuration }, behaviors); // 0.3 sec мислене
@@ -390,25 +393,67 @@ class BaseEnemy {
       // return;
     }
 
-    // Continue moving - apply velocity
-    this.z += this.vz * dt;
+    // Check for player proximity during vertical movement
+    const closestPlayer = this.getClosestPlayer(players);
+    const attackRange = 100; // Use a standard attack range for now
+
+    if (closestPlayer && closestPlayer.distance <= attackRange) {
+      console.log(`%c[PLAYER DETECTED] Player in range during vertical movement - stopping move and preparing attack`, 'color: #ff0000; font-weight: bold; font-size: 14px;');
+      this.vz = 0;
+      this.targetZ = undefined;
+      this.verticalMovementStartZ = undefined;
+
+      // Idle briefly before attack (thinking phase)
+      this.transitionToBehavior({ type: 'idle', duration: 0.3 }, behaviors);
+      return;
+    }
+
+    // Calculate proposed movement
+    const proposedZ = this.z + (this.vz * dt);
+
+    // Apply collision correction for Z axis
+    const correctedZ = window.applyCollisionCorrection ?
+      window.applyCollisionCorrection(this, this.x, this.y, proposedZ, 'z') :
+      proposedZ;
+
+    // Check if vertical movement was blocked by collision
+    // Use larger epsilon (0.1) to ignore microscopic floating point corrections
+    if (Math.abs(correctedZ - proposedZ) > 0.1) {
+      // Find the entity that actually blocked us for better logging
+      const blocker = this.detectCollidedEntity(this.x, this.y, proposedZ);
+
+      console.log(`%c[COMMAND INTERRUPTED] Vertical movement blocked by ${blocker ? blocker.entityType : 'unknown obstacle'} - going to idle (thinking phase)`, 'color: #00ffff; font-weight: bold; font-size: 14px;');
+
+      // Stop movement and reset state
+      this.vz = 0;
+      this.targetZ = undefined;
+      this.verticalMovementStartZ = undefined;
+
+      if (blocker && blocker.entityType === 'player') {
+        console.log(`[PLAYER COLLISION] Vertical move hit PLAYER at Z=${proposedZ.toFixed(1)} - attacking immediately!`);
+        this.transitionToBehavior({ type: 'attack', attackType: 'light' }, behaviors);
+      } else {
+        this.transitionToBehavior({ type: 'idle', duration: 0.5 }, behaviors);
+      }
+      return;
+    }
+
+    // Apply movement
+    this.z = correctedZ;
 
     // Apply boundary enforcement during movement (safety check)
-    // Debug boundary check
-    // console.log(`[VZ_DEBUG] Before boundary check: z=${this.z}, vz=${this.vz}`);
     const boundaryResult = window.applyScreenBoundaries ? window.applyScreenBoundaries(this) : { wasLimited: false };
-    // console.log(`[VZ_DEBUG] After boundary check: wasLimited=${boundaryResult.wasLimited}, z=${this.z}, vz=${this.vz}`);
     if (boundaryResult.wasLimited) {
       console.log(`[BASE ENEMY VERTICAL] Boundary hit during movement, resetting movement state`);
       // Stop movement if we hit a boundary
       this.vz = 0;
       this.targetZ = undefined;
-      this.verticalMovementStartZ = undefined; // ← RESET THIS TOO!
+      this.verticalMovementStartZ = undefined;
       this.transitionToBehavior({ type: 'idle', duration: 0.5 }, behaviors);
       return;
     }
 
-    console.log(`[BASE ENEMY VERTICAL] Continuing movement: vz=${this.vz}, new_z=${this.z.toFixed(1)}`);
+    // console.log(`[BASE ENEMY VERTICAL] Continuing movement: vz=${this.vz.toFixed(1)}, new_z=${this.z.toFixed(1)}`);
   }
 
   // Walking behavior: patrol movement with intelligent collision handling OR vertical movement
@@ -596,7 +641,7 @@ class BaseEnemy {
     //const isLastFrame = this.animation?.currentFrame >= 4; // Frame 3 is the last frame
     //const attackDuration = this.attackTimeoutStart ? performance.now() - this.attackTimeoutStart : 0; 
     //const animationDurationMs = (this.animation?.animationDefinition?.duration || 1) * 1000;
-    
+
     // Force completion after animation duration OR when animation reaches the last frame
     const isAnimationComplete = !this.animation?.isPlaying;
     if (isAnimationComplete) { //(attackDuration > animationDurationMs || isAnimationComplete) {
@@ -666,7 +711,7 @@ class BaseEnemy {
 
       // PARTIAL/BONUS script: Always consult both script and base system, then merge
       if (this.scriptConfig.type === window.enemyAIConfig.SCRIPT_TYPE.PARTIAL ||
-          this.scriptConfig.type === window.enemyAIConfig.SCRIPT_TYPE.BONUS) {
+        this.scriptConfig.type === window.enemyAIConfig.SCRIPT_TYPE.BONUS) {
 
         const scriptCommand = this.getScriptCommand(context);
         const baseCommand = this.getBaseCommand(context);
@@ -838,7 +883,7 @@ class BaseEnemy {
     // Situation-based adjustments
     const context = this.aiContext?.consultationContext?.reason;
 
-    switch(context) {
+    switch (context) {
       case 'attack_complete':
         // Quick decision after attack
         baseDuration *= 0.8;
@@ -887,21 +932,26 @@ class BaseEnemy {
     // console.log(`[BASE ENEMY THINKING] Executing pending command:`, command);
     // console.log(`[DEBUG] executePendingCommand: command=${command.type}, stateMachine exists=${!!this.stateMachine}`);
 
-    switch(command.type) {
+    switch (command.type) {
       case 'idle':
         console.log(`%c[COMMAND START] Idle ${command.duration ? `for ${command.duration}s` : '(thinking phase)'}`, 'color: #0088ff; font-weight: bold; font-size: 14px;');
+
+        // IMPORTANT: Set timer BEFORE changing state, as state.enter/update might check it immediately
+        this.isThinking = true;
+        if (command.duration) {
+          this.aiTimer = -command.duration; // Negative to count up to 0
+          this.isThinking = false; // Important: NOT thinking for idle command, just waiting
+        } else {
+          // If no duration, it's a thinking phase? No, idle command usuall has duration.
+          // If no duration, maybe treat as 0?
+          this.aiTimer = 0;
+        }
+
         if (this.stateMachine) {
-          // const result = this.stateMachine.changeState('enemy_idle');
-          // console.log(`[DEBUG] executePendingCommand: idle changeState result =`, result);
           this.stateMachine.changeState('enemy_idle');
         }
         this.vx = 0;
         this.vz = 0; // Stop vertical movement too
-        // Set idle timer for custom duration if specified
-        if (command.duration) {
-          this.aiTimer = -command.duration; // Negative to count up to 0
-          this.isThinking = false; // Important: NOT thinking for idle command
-        }
         break;
 
       case 'patrol':
@@ -977,8 +1027,8 @@ class BaseEnemy {
         console.log(`%c[COMMAND START] Attack ${command.attackType || 'light'}`, 'color: #0088ff; font-weight: bold; font-size: 14px;');
         // Map attack type to enemy FSM action
         const attackNumber = command.attackType === 'light' ? '1' :
-                            command.attackType === 'medium' ? '2' :
-                            command.attackType === 'heavy' ? '3' : '1';
+          command.attackType === 'medium' ? '2' :
+            command.attackType === 'heavy' ? '3' : '1';
         this.stateMachine.handleAction(`attack_${attackNumber}`);
         this.vx = 0; // Stop moving during attack
         this.vz = 0; // Stop vertical movement during attack
@@ -1001,7 +1051,7 @@ class BaseEnemy {
     const closestPlayer = this.getClosestPlayer(players);
 
     // Context-aware fallback decisions
-    switch(context.reason) {
+    switch (context.reason) {
       case 'screen_boundary':
         // Hit screen boundary - reverse direction
         return { type: 'reverse_patrol' };
@@ -1038,7 +1088,7 @@ class BaseEnemy {
 
   // Helper: Get situation text for BT queries
   getSituationText(context = {}) {
-    switch(context.reason) {
+    switch (context.reason) {
       case 'idle_timeout':
         return 'Свърших с idle, какво да правя?';
       case 'patrol_end':
@@ -1064,7 +1114,7 @@ class BaseEnemy {
   getDecisionText(command, context) {
     if (!command) return 'няма решение';
 
-    switch(command.type) {
+    switch (command.type) {
       case 'idle':
         const duration = command.duration ? ` за ${command.duration} сек` : '';
         return `idle${duration}`;
@@ -1084,14 +1134,33 @@ class BaseEnemy {
 
   // Helper: Detect which entity caused the collision at proposed position
   detectCollidedEntity(proposedX, proposedY, proposedZ) {
-    const allEntities = window.gameState ? window.gameState.getAllEntities() : [];
+    // Robust fallback to find entities even if gameState is not ready
+    let allEntities = [];
+    if (window.gameState && window.gameState.getAllEntities) {
+      allEntities = window.gameState.getAllEntities();
+    } else {
+      // Fallback to globals if available (common in this project structure)
+      const globalPlayers = window.players || [];
+      const globalEnemy = window.enemy;
+      const globalAlly = window.ally;
+      allEntities = [...globalPlayers, globalEnemy, globalAlly].filter(e => e !== null && e !== undefined);
+    }
+
+    // console.log(`[COLLISION_DEBUG] detectCollidedEntity checking against ${allEntities.length} entities`);
+
     for (const entity of allEntities) {
       if (entity === this) continue;
+
       const hasCollision = window.checkEntityCollision ?
         window.checkEntityCollision(this, entity, 'movement', {
-          entity1Pos: { x: proposedX, y: proposedY, z: proposedZ }
+          entity1Pos: { x: proposedX, y: proposedY, z: proposedZ },
+          buffer: 0
         }) : false;
-      if (hasCollision) return entity;
+
+      if (hasCollision) {
+        console.log(`[COLLISION_DEBUG] Collision found with ${entity.entityType} (${entity.constructor.name})`);
+        return entity;
+      }
     }
     return null;
   }
@@ -1124,7 +1193,7 @@ class BaseEnemy {
     this.aiContext.self.y = this.y;
     this.aiContext.self.z = this.z; // ← ADD THIS: Update Z position for scripts!
 
-  // Update targets (players) - Use X-Z distance for 2.5D detection
+    // Update targets (players) - Use X-Z distance for 2.5D detection
     this.aiContext.targets = players.map(player => ({
       entity: player,  // FIXED: Include the actual player entity for target selection
       distance: Math.sqrt(  // ✅ X-Z distance for 2.5D

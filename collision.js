@@ -82,8 +82,8 @@ function getCurrentHitBoxPosition(entity) {
 // Main unified collision function
 function checkEntityCollision(entity1, entity2, collisionType, params = {}) {
   const defaults = {
-    zTolerance: collisionType === 'movement' ? 30 : 10,
-    buffer: collisionType === 'movement' ? 8 : 0, // Allow larger overlap for movement to prevent sticking
+    zTolerance: collisionType === 'movement' ? 10 : 10,
+    buffer: params.buffer !== undefined ? params.buffer : (collisionType === 'movement' ? 0 : 0), // Use 0 buffer by default for movement to match correction logic
     entity1Pos: { x: entity1.x, y: entity1.y, z: entity1.z }, // Allow custom position for entity1
     logCollisions: collisionType === 'movement' // Log movement collisions, not attacks
   };
@@ -267,15 +267,37 @@ function applyCollisionCorrection(entity, proposedX, proposedY, proposedZ, axis,
             return proposedX;
           }
         }
+      } else if (axis === 'z') {
+        // For Z-axis collision (depth), we only block if it's the PLAYER
+        // This prevents enemies from getting stuck on each other when changing depth
+        if (other.entityType !== 'player') {
+          return proposedZ;
+        }
+
+        const zDifference = proposedZ - other.z;
+        const entityThickness = entity.zThickness || 3;
+        const otherThickness = other.zThickness || 3;
+        const minZDistance = entityThickness + otherThickness + 10; // 10px buffer for player
+
+        if (Math.abs(zDifference) < minZDistance) {
+          console.log(`[COLLISION_CORRECTION] Z-axis clash with PLAYER detected. Diff: ${zDifference.toFixed(1)}`);
+          const correction = zDifference > 0 ? minZDistance : -minZDistance;
+          const correctedZ = other.z + correction;
+          return correctedZ;
+        }
       }
 
       // For now, return current position if we can't determine correction
       console.log(`[COLLISION CORRECTION] Returning current position (correction failed)`);
+      if (axis === 'z') return entity.z;
+      if (axis === 'y') return entity.y;
       return entity.x;
     }
   }
 
   // No collision, return proposed position
+  if (axis === 'z') return proposedZ;
+  if (axis === 'y') return proposedY;
   return proposedX;
 }
 
@@ -493,17 +515,21 @@ function getBehaviorConstraints(entity) {
   }
 
   // Check vertical movement constraints
-  const canMoveUp = entity.z > Z_MIN;
-  const canMoveDown = entity.z < Z_MAX;
+  const canMoveUp = entity.z < Z_MAX;   // Z increases as we move up the screen (towards background)
+  const canMoveDown = entity.z > Z_MIN; // Z decreases as we move down the screen (towards foreground)
 
   if (!canMoveUp) {
     constraints.blocked.add('move_up');
     constraints.reasons.move_up = 'screen_boundary_top';
+  } else {
+    constraints.allowed.add('move_up');
   }
 
   if (!canMoveDown) {
     constraints.blocked.add('move_down');
     constraints.reasons.move_down = 'screen_boundary_bottom';
+  } else {
+    constraints.allowed.add('move_down');
   }
 
   // Check for obstacles/entities blocking movement using enemyAIUtils

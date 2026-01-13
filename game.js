@@ -1,6 +1,7 @@
 // ===========================================
 // GLOBAL DECLARATIONS - Available immediately when file loads
 // ===========================================
+
 let playerSelections = {}; // Temporary selections
 let confirmedSelections = {}; // Confirmed/final selections
 let activePlayers = new Set(); // Track which players have joined

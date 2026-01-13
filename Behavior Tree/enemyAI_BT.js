@@ -2,6 +2,7 @@
    ENEMY AI FULL BT + UNIVERSAL BOSS PHASES
    Full HD Friendly | Single File | Browser co-op ready
    ========================================================= */
+console.error("!!! [DEBUG] enemyAI_BT.js LOADED (Version with RandomSelector & Cooldown Logs) !!!");
 
 /* =========================
    BT STATUS ENUM
@@ -39,6 +40,30 @@ class Selector extends BTNode {
   }
 }
 
+class RandomSelector extends BTNode {
+  constructor(children = []) {
+    super();
+    this.children = children;
+  }
+
+  tick(ctx) {
+    const shuffled = [...this.children];
+    for (let i = shuffled.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
+    }
+
+    console.error(`[RANDOM_SELECTOR] Ticking with order: ${shuffled.map(c => (c.name || c.constructor.name))}`);
+
+    for (const child of shuffled) {
+      const status = child.tick(ctx);
+      console.error(`[RANDOM_SELECTOR] Child ${child.name || child.constructor.name} returned ${status}`);
+      if (status !== BT_STATUS.FAILURE) return status;
+    }
+    return BT_STATUS.FAILURE;
+  }
+}
+
 class Sequence extends BTNode {
   constructor(children = []) {
     super();
@@ -48,6 +73,7 @@ class Sequence extends BTNode {
 
   tick(ctx) {
     while (this.currentIndex < this.children.length) {
+      // console.error(`[SEQUENCE] Ticking child ${this.currentIndex} (${this.children[this.currentIndex].constructor.name})`);
       const status = this.children[this.currentIndex].tick(ctx);
       if (status === BT_STATUS.RUNNING) return BT_STATUS.RUNNING;
       if (status === BT_STATUS.FAILURE) {
@@ -70,13 +96,30 @@ class Cooldown extends BTNode {
     this.child = child;
     this.cooldownTime = cooldownTime;
     this.lastTime = 0;
+    console.log(`[BT_CONSTRUCTION] Cooldown node created for ${child.constructor.name} (${cooldownTime}ms)`);
   }
 
   tick(ctx) {
     const now = performance.now();
-    if (now - this.lastTime < this.cooldownTime) return BT_STATUS.FAILURE;
+    const timeSinceLast = now - this.lastTime;
+
+    // FORCE LOG to debug
+    if (this.lastTime > 0) {
+      console.error(`[BT_COOLDOWN] Checking cooldown. Last: ${this.lastTime.toFixed(0)}, Now: ${now.toFixed(0)}, Diff: ${(timeSinceLast / 1000).toFixed(1)}s, Limit: ${this.cooldownTime}`);
+    } else {
+      console.error(`[BT_COOLDOWN] First run or reset (lastTime=0)`);
+    }
+
+    if (this.lastTime > 0 && timeSinceLast < this.cooldownTime) {
+      console.error(`[BT_COOLDOWN] BLOCKED by cooldown`);
+      return BT_STATUS.FAILURE;
+    }
+
     const status = this.child.tick(ctx);
-    if (status === BT_STATUS.SUCCESS) this.lastTime = now;
+    if (status === BT_STATUS.SUCCESS || (ctx.command && (ctx.command.type === 'move_up' || ctx.command.type === 'move_down'))) {
+      console.error(`[BT_COOLDOWN] Node ${this.child.constructor.name || 'Unknown'} EXECUTED. Starting cooldown of ${this.cooldownTime}ms.`);
+      this.lastTime = now;
+    }
     return status;
   }
 }
@@ -692,17 +735,23 @@ function createVerticalMovementSubtree(config) {
       const canMoveUp = constraints?.allowed?.has('move_up');
       const canMoveDown = constraints?.allowed?.has('move_down');
 
+      // Get speed from config (match patrol speed for walking animation) or default to 50
+      // window.Z_SPEED (200) is too fast for walking animations
+      const moveSpeed = config?.patrol?.speed || 50;
+      // Choose a random displacement between 50 and 150
+      const displacement = 50 + Math.random() * 100;
+
       if (canMoveUp && canMoveDown) {
         // Both directions available - random choice
         return Math.random() > 0.5 ?
-          { type: COMMAND.MOVE_UP } :
-          { type: COMMAND.MOVE_DOWN };
+          { type: COMMAND.MOVE_UP, speed: moveSpeed, displacement: displacement } :
+          { type: COMMAND.MOVE_DOWN, speed: moveSpeed, displacement: displacement };
       } else if (canMoveUp) {
         // Only up available
-        return { type: COMMAND.MOVE_UP };
+        return { type: COMMAND.MOVE_UP, speed: moveSpeed, displacement: displacement };
       } else if (canMoveDown) {
         // Only down available
-        return { type: COMMAND.MOVE_DOWN };
+        return { type: COMMAND.MOVE_DOWN, speed: moveSpeed, displacement: displacement };
       } else {
         // No vertical movement possible
         return { type: COMMAND.IDLE, duration: 0.5 };
@@ -737,11 +786,12 @@ function createUniversalEnemyBehaviorTree(rarity, intelligence) {
     // Priority 3: Special attacks (if available)
     createSpecialAttackSubTree(),
 
-    // Priority 4: Vertical movement (random up/down within boundaries)
-    createVerticalMovementSubtree(config),
-
-    // Priority 5: Intelligent patrol behavior (context-aware)
-    createPatrolDecisionSubtree(config),
+    // Priority 4: Movement behaviors (Random Choice between Vertical and Patrol)
+    new RandomSelector([
+      createPatrolDecisionSubtree(config),
+      // 15s cooldown on vertical movement, but when available, it competes 50/50 with patrol
+      new Cooldown(createVerticalMovementSubtree(config), 15000)
+    ]),
 
     // Fallback - basic patrol
     patrolAction,
@@ -897,7 +947,7 @@ class ScriptSelector extends Selector {
 
 // Script merge utility for PARTIAL/BONUS scripts
 function mergeCommands(baseCommand, scriptCommand, scriptType) {
-  switch(scriptType) {
+  switch (scriptType) {
     case SCRIPT_TYPE.PARTIAL:
       // Script command takes priority for overridden behaviors
       return scriptCommand || baseCommand;
@@ -912,7 +962,7 @@ function mergeCommands(baseCommand, scriptCommand, scriptType) {
         type: 'composite',
         base: baseCommand,
         bonus: scriptCommand,
-        execute: function(ctx) {
+        execute: function (ctx) {
           // Execute both commands
           this.base.execute?.(ctx);
           this.bonus.execute?.(ctx);
@@ -955,11 +1005,14 @@ function createScriptEnabledBT(rarity, intelligence, scriptConfig = null) {
 
       // Priority 4: Script behaviors (if BONUS type)
       ...(scriptConfig?.type === SCRIPT_TYPE.BONUS && scriptConfig.script?.bonusBehaviorTree ?
-          [scriptConfig.script.bonusBehaviorTree] : []),
+        [scriptConfig.script.bonusBehaviorTree] : []),
 
-      // Priority 5: Movement behaviors
-      createVerticalMovementSubtree(config),
-      createPatrolDecisionSubtree(config),
+      // Priority 5: Movement behaviors (Random Choice)
+      new RandomSelector([
+        createPatrolDecisionSubtree(config),
+        // 15s cooldown on vertical movement, but when available, it competes 50/50 with patrol
+        new Cooldown(createVerticalMovementSubtree(config), 15000)
+      ]),
 
       // Fallback
       patrolAction,
@@ -973,4 +1026,5 @@ function createScriptEnabledBT(rarity, intelligence, scriptConfig = null) {
 window.createScriptEnabledBT = createScriptEnabledBT;
 window.ScriptNode = ScriptNode;
 window.ScriptSelector = ScriptSelector;
+window.RandomSelector = RandomSelector;
 window.mergeCommands = mergeCommands;
