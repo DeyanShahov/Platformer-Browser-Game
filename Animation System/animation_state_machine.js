@@ -956,9 +956,9 @@ class EnemyAttackState extends AnimationState {
         // Animation completed, reset damage flag
         entity.damageDealt = false;
 
-        // For enemies, let AI system handle transitions - don't auto-transition
-        // This allows BaseEnemy to consult BT for next action after attack completes
-        return null;
+        // Transition to idle state (like player attacks do)
+        // This prevents enemy from staying in attack state indefinitely
+        return 'enemy_idle';
       }
     }
   }

@@ -285,9 +285,9 @@ function applyCollisionCorrection(entity, proposedX, proposedY, proposedZ, axis,
 
 // Unified attack collision function (moved from game.js - contains game logic)
 function checkHitboxCollision(attacker, target, params) {
-  // console.log(`[COLLISION_DEBUG] checkHitboxCollision: ${attacker?.entityType} attacking ${target?.entityType}`);
-  // console.log(`[COLLISION_DEBUG] Attacker state: ${attacker?.stateMachine?.getCurrentStateName()}, isInAttackState: ${attacker?.stateMachine?.isInAttackState()}`);
-  // console.log(`[COLLISION_DEBUG] Target position: (${target?.x?.toFixed(1)}, ${target?.y?.toFixed(1)}, ${target?.z?.toFixed(1)})`);
+  console.log(`[COLLISION_DEBUG] checkHitboxCollision: ${attacker?.entityType} attacking ${target?.entityType}`);
+  console.log(`[COLLISION_DEBUG] Attacker state: ${attacker?.stateMachine?.getCurrentStateName()}, isInAttackState: ${attacker?.stateMachine?.isInAttackState()}`);
+  console.log(`[COLLISION_DEBUG] Target position: (${target?.x?.toFixed(1)}, ${target?.y?.toFixed(1)}, ${target?.z?.toFixed(1)})`);
 
   // Only log when attacker is actually in attack state to reduce spam
   const isAttackerAttacking = attacker.stateMachine && attacker.stateMachine.isInAttackState();

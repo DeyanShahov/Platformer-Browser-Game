@@ -225,9 +225,37 @@ class AnimationRenderer {
 
     // Hit visualizations
     if (entity.hit) {
+      // Get current hit box position using the same logic as debug boxes
+      let hitBoxCenter = { x: entity.x + entity.w/2, y: entity.y - entity.h/2 - zOffset };
+
+      // Try to use dynamic hit box position if available
+      if (entity.animation) {
+        const currentStateName = entity.stateMachine ? entity.stateMachine.getCurrentStateName() : null;
+        const usePerFrameData = entity.stateMachine && entity.stateMachine.isInAttackState() ||
+                               currentStateName === 'idle' ||
+                               currentStateName === 'walking' ||
+                               currentStateName === 'jumping' ||
+                               currentStateName === 'enemy_idle' ||
+                               currentStateName === 'enemy_walking' ||
+                               currentStateName === 'enemy_jumping';
+
+        if (usePerFrameData) {
+          const currentFrame = entity.animation.currentFrame;
+          const animationDef = entity.animation.animationDefinition;
+
+          if (animationDef && animationDef.frameData && animationDef.frameData[currentFrame] && animationDef.frameData[currentFrame].hitBox) {
+            const hitBoxPos = this.calculateBoxPosition(entity, animationDef.frameData[currentFrame].hitBox, 'hit');
+            hitBoxCenter = {
+              x: hitBoxPos.x + hitBoxPos.width / 2,
+              y: hitBoxPos.y + hitBoxPos.height / 2
+            };
+          }
+        }
+      }
+
       this.ctx.strokeStyle = "#FFFFFF";
       this.ctx.beginPath();
-      this.ctx.arc(entity.x + entity.w/2, entity.y - entity.h/2 - zOffset, 40, 0, Math.PI*2);
+      this.ctx.arc(hitBoxCenter.x, hitBoxCenter.y, 20, 0, Math.PI*2); // Smaller radius for better visibility
       this.ctx.stroke();
     }
   }

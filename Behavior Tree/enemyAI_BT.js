@@ -731,7 +731,7 @@ function createUniversalEnemyBehaviorTree(rarity, intelligence) {
     new Sequence([canBlock, blockAction]),
 
     // Priority 2: Combat behaviors
-    new Sequence([hasTarget, targetInAttackRange, attackAction]),
+    new Sequence([hasTarget, targetInAttackRange, new Cooldown(attackAction, 1500)]), // 1.5 second cooldown between attacks
     new Sequence([hasTarget, targetInChaseRange, chaseAction]),
 
     // Priority 3: Special attacks (if available)

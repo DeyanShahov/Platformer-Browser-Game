@@ -494,38 +494,73 @@ function updatePlayer(player, playerIndex, dt) {
   // Check if any enemy is attacking this player
   const enemyEntities = window.gameState ? window.gameState.getEntitiesByType('enemy') : [window.enemy].filter(e => e);
 
-  for (const enemy of enemyEntities) {
-    // console.log(`[ENEMY_ATTACK_DEBUG] Checking enemy ${enemy?.id}: state=${enemy?.stateMachine?.getCurrentStateName()}, isInAttackState=${enemy?.stateMachine?.isInAttackState()}, damageDealt=${enemy?.damageDealt}`);
+  // Count attacking enemies first to avoid spam
+  const attackingEnemies = enemyEntities.filter(enemy =>
+    enemy && enemy.stateMachine && enemy.stateMachine.isInAttackState() && !enemy.damageDealt
+  );
 
-    if (!enemy || !enemy.stateMachine || !enemy.stateMachine.isInAttackState() || enemy.damageDealt) {
-      // console.log(`[ENEMY_ATTACK_DEBUG] Enemy ${enemy?.id} skipped:`, {
-      //   exists: !!enemy,
-      //   hasStateMachine: !!enemy?.stateMachine,
-      //   isInAttackState: enemy?.stateMachine?.isInAttackState(),
-      //   damageDealt: enemy?.damageDealt
-      // });
-      continue;
-    }
+  // Only log if there are actively attacking enemies
+  if (attackingEnemies.length > 0) {
+    console.log(`[ENEMY_ATTACK_DEBUG] ${attackingEnemies.length} enemies actively attacking player`);
 
-    // console.log(`[ENEMY_ATTACK_DEBUG] Enemy ${enemy.id} passed checks, checking collision...`);
+    for (const enemy of attackingEnemies) {
+      console.log(`[ENEMY_ATTACK_DEBUG] Enemy ${enemy?.id || 'unknown'}:`);
+      console.log(`  - currentState: ${enemy?.stateMachine?.getCurrentStateName() || 'none'}`);
+      console.log(`  - isInAttackState: ${enemy?.stateMachine?.isInAttackState() || false}`);
+      console.log(`  - damageDealt: ${enemy?.damageDealt || false}`);
+      console.log(`  - animation.currentFrame: ${enemy?.animation?.currentFrame || 'no animation'}`);
+      console.log(`  - animation.type: ${enemy?.animation?.currentAnimation || 'no animation'}`);
+
+      console.log(`[ENEMY_ATTACK_DEBUG] Enemy ${enemy.id} checking collision...`);
+      console.log(`[ENEMY_ATTACK_DEBUG] damageDealt before collision check: ${enemy.damageDealt}`);
 
     // Check collision for enemy attack
     const hit = checkHitboxCollision(enemy, player, {
       zTolerance: 10
     });
 
-    // console.log(`[ENEMY_ATTACK_DEBUG] Collision result: ${hit}`);
+    console.log(`[ENEMY_ATTACK_DEBUG] Collision result: ${hit}`);
+
+    // Debug attack box position
+    if (enemy.animation && enemy.animation.animationDefinition) {
+      const currentFrame = enemy.animation.currentFrame;
+      const frameData = enemy.animation.animationDefinition.frameData?.[currentFrame];
+      console.log(`[ENEMY_ATTACK_DEBUG] Frame data:`, {
+        frame: currentFrame,
+        hasAttackBox: !!frameData?.attackBox,
+        attackBox: frameData?.attackBox
+      });
+    }
 
     if (hit) {
-      // console.log(`[ENEMY_ATTACK_DEBUG] HIT! Getting attack type...`);
+      console.log(`[ENEMY_ATTACK_DEBUG] HIT DETECTED! Getting attack type...`);
       // Use combat system to calculate and apply damage
       const enemyAttackType = enemy.stateMachine.getCurrentAttackType();
-      // console.log(`[ENEMY_ATTACK_DEBUG] Attack type: ${enemyAttackType}`);
+      console.log(`[ENEMY_ATTACK_DEBUG] Attack type: ${enemyAttackType}`);
 
       if (enemyAttackType) {
-        // console.log(`[ENEMY_ATTACK_DEBUG] Resolving attack...`);
-        const combatEvent = window.combatResolver.resolveAttack(enemy, player, enemyAttackType);
-        // console.log(`[ENEMY_ATTACK_DEBUG] Combat event:`, combatEvent);
+        console.log(`[ENEMY_ATTACK_DEBUG] Resolving attack with combat system...`);
+
+        // Map enemy animation attack types to combat skill types
+        let combatSkillType;
+        switch (enemyAttackType) {
+          case 'ATTACK_1':
+            combatSkillType = 'basic_attack_light'; // Use player's basic attack for damage calculation
+            break;
+          case 'ATTACK_2':
+            combatSkillType = 'secondary_attack_light';
+            break;
+          case 'ATTACK_3':
+          case 'RUN_ATTACK':
+            combatSkillType = 'basic_attack_medium';
+            break;
+          default:
+            combatSkillType = 'basic_attack_light'; // Default fallback
+        }
+
+        console.log(`[ENEMY_ATTACK_DEBUG] Mapped ${enemyAttackType} to combat skill: ${combatSkillType}`);
+        const combatEvent = window.combatResolver.resolveAttackNoResourceCheck(enemy, player, combatSkillType);
+        console.log(`[ENEMY_ATTACK_DEBUG] Combat event:`, combatEvent);
 
         // Add damage number for visual feedback
         if (combatEvent && combatEvent.actualDamage > 0) {
@@ -537,13 +572,22 @@ function updatePlayer(player, playerIndex, dt) {
         // Set damageDealt flag to prevent multiple damage per attack (unified with player system)
         if (combatEvent && combatEvent.actualDamage > 0) {
           enemy.damageDealt = true;
+          console.log(`[ENEMY_ATTACK_DEBUG] Damage applied (${combatEvent.actualDamage}), set damageDealt=true`);
+        } else {
+          console.log(`[ENEMY_ATTACK_DEBUG] No damage applied, keeping damageDealt=false`);
         }
 
         // Set visual hit flag for player
         player.hit = true;
+        console.log(`[ENEMY_ATTACK_DEBUG] Player hit flag set to true`);
         break; // Only one enemy attack per player per frame
+      } else {
+        console.log(`[ENEMY_ATTACK_DEBUG] No attack type found, skipping damage`);
       }
+    } else {
+        console.log(`[ENEMY_ATTACK_DEBUG] No collision detected, enemy attack missed`);
     }
+  }
   }
 }
 
@@ -1115,6 +1159,11 @@ function update(dt) {
     if (window.gameState) {
       window.gameState.players.forEach((player, index) => {
         updatePlayer(player, index, dt);
+
+        // Reset hit flag after a short time (like enemies)
+        if (player.hit) {
+          player.hit = false;
+        }
       });
 
       // Обновяване на всички противници (само живи и не умиращи)

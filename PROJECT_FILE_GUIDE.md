@@ -4,8 +4,55 @@
 
 This comprehensive guide documents every file in the Platformer Browser Game project. It serves as a reference for developers to understand existing systems and avoid creating duplicate functionality when adding new features.
 
-**Last Updated:** December 2025 (Entity Rendering Refactor)
+**Last Updated:** January 2026 (Combat System Unification)
 **Purpose:** Prevent code duplication, improve maintainability, guide feature development
+
+---
+
+## 🏗️ RECENT ARCHITECTURAL CHANGES (January 2026)
+
+### Combat System Unification - COMPLETED ✅ **[MAJOR IMPROVEMENT]**
+**Unified combat resolution for all entities - eliminated separate enemy damage logic**
+
+#### Problem Solved:
+- **Before:** Players used `CombatResolver` with resource consumption, enemies applied damage directly
+- **Issue:** Multiple damage application bugs, inconsistent balance, code duplication
+- **Impact:** Enemy attacks were hitting multiple times, combat balance was broken
+
+#### Solution Implemented:
+- **Unified Pipeline:** All attacks now go through `CombatResolver.resolveAttackNoResourceCheck()`
+- **Skill Type Mapping:** Enemy animation types ('ATTACK_1') map to combat skill types ('basic_attack_light')
+- **Resource Abstraction:** Players consume resources, enemies skip resource checks
+- **FSM Improvements:** Enemy attack states properly transition to prevent infinite loops
+- **BT Cooldowns:** 1.5 second cooldown between enemy attacks to prevent spam
+
+#### Key Changes:
+1. **combat_system.js**: Added `resolveAttackNoResourceCheck()` for enemy attacks
+2. **game.js**: Enemy attacks now use unified combat system with skill mapping
+3. **Animation System/animation_state_machine.js**: Fixed EnemyAttackState transitions
+4. **Behavior Tree/enemyAI_BT.js**: Added attack cooldown decorators
+
+#### Benefits Achieved:
+- **Single Combat System:** No more separate damage application logic
+- **Consistent Balance:** All entities use skill tree parameters for damage calculation
+- **Bug Elimination:** Fixed multiple damage hits per attack
+- **Maintainability:** One place to modify combat balance
+- **Extensibility:** Easy to add new combat mechanics for any entity type
+
+#### Files Affected:
+- `combat_system.js` - Added unified combat resolution
+- `game.js` - Enemy attack integration and skill mapping
+- `Animation System/animation_state_machine.js` - FSM state transition fixes
+- `Behavior Tree/enemyAI_BT.js` - Attack cooldown system
+- `PROJECT_FILE_GUIDE.md` - Comprehensive documentation update
+
+#### Architectural Benefits Achieved:
+- **Unified Combat Pipeline:** Single entry point for all damage calculations eliminates code duplication
+- **Consistent Balance:** All entities use skill tree parameters for damage modifiers and critical hits
+- **Entity Type Abstraction:** Clean separation between players (with resources) and enemies (resource-free)
+- **Maintainable Codebase:** Combat balance changes made in one location affect entire game
+- **Future-Proof Design:** Easy to add new combat mechanics for any entity type
+- **Debug Capabilities:** Enhanced logging and combat event tracking across all systems
 
 ---
 
@@ -103,11 +150,12 @@ Platformer Browser Game/
 **Purpose:** Central game logic coordinator, main update/render loop, and core game mechanics
 **Responsibilities:**
 - Player updates, physics, and entity management
-- Enemy AI coordination and combat
+- Enemy AI coordination and **unified combat system integration**
 - Input processing and controller support
 - Collision resolution and boundary enforcement
 - Game state transitions and entity lifecycle
 - Player character class and behavior **[MOVED HERE]**
+- **Enemy attack resolution with skill type mapping** **[NEW - UNIFIED COMBAT]**
 **Key Functions:**
 - `update(dt)` - Main update loop
 - `handleMovement(player, dt)` - Player physics
@@ -118,10 +166,18 @@ Platformer Browser Game/
 - `initGameWithSelections()` - Game initialization **[MOVED HERE]**
 - `showSkillTreeForPlayer(playerIndex)` - Skill tree display **[MOVED HERE]**
 - `showCharacterStatsForPlayer(playerIndex)` - Stats display **[MOVED HERE]**
+- **Enemy attack processing with damageDealt flag management** **[NEW - UNIFIED COMBAT]**
+- **Skill type mapping for enemy attacks ('ATTACK_1' → 'basic_attack_light')** **[NEW - UNIFIED COMBAT]**
 **Key Classes:**
 - `Player` - Complete player character class **[MOVED FROM entities.js]**
+**Key Features:**
+- **Unified Combat Integration:** Enemy attacks use `CombatResolver.resolveAttackNoResourceCheck()` **[NEW]**
+- **Skill Type Mapping:** Maps enemy animation types to combat skill types for consistent damage **[NEW]**
+- **DamageDealt Protection:** Prevents multiple hits per attack animation **[NEW]**
+- **Debug Logging:** Enhanced enemy attack logging with collision and combat details **[NEW]**
 **Dependencies:** `game_state.js`, `input.js`, `collision.js`, `combat_system.js`, `menu.js`
 **Integration Points:** Core of game loop, called every frame; main game initialization
+**Note:** Recent unification (Jan 2026) integrated enemy attacks into unified combat system, eliminating separate damage logic
 
 ### `game_state.js` - Global State Management
 **Purpose:** Centralized storage and management of all game state
@@ -218,20 +274,30 @@ Platformer Browser Game/
 
 ## ⚔️ COMBAT SYSTEMS
 
-### `combat_system.js` - Combat Resolution Engine
-**Purpose:** Handles all combat calculations and damage resolution
+### `combat_system.js` - Unified Combat Resolution Engine **[RECENTLY UNIFIED]**
+**Purpose:** Single combat system for all entities (players and enemies) - handles all damage calculations and resolution
 **Responsibilities:**
-- Attack/defense calculations
-- Critical hit determination
-- Damage application and mitigation
-- Combat result processing
-- Death and defeat handling
+- Unified attack/defense calculations for all entity types
+- Critical hit determination and damage mitigation
+- Resource management for players (mana/energy consumption)
+- Resource-free combat for enemies (no mana/energy costs)
+- Skill-based damage modifiers through skill tree integration
+- Combat event processing and damage application
+- Death sequence handling and experience rewards
 **Key Functions:**
-- `resolveAttack(attacker, defender, attackType)` - Main combat resolution
-- `calculateDamage(attacker, defender)` - Damage computation
-- `applyCombatResult(result)` - Result application
-**Dependencies:** `character_info.js`, `entities.js`
-**Integration Points:** Called whenever combat occurs
+- `resolveAttack(attacker, defender, skillType)` - Full combat resolution with resource consumption
+- `resolveAttackNoResourceCheck(attacker, defender, skillType)` - Combat without resource checks (for enemies)
+- `calculateDamage(attacker, defender, skillType)` - Unified damage computation with skill modifiers
+- `calculateAttackPower(attacker, skillType)` - Attack power with entity type branching (player vs enemy)
+- `applyDamage(defender, damage)` - Damage application and hit feedback
+**Key Features:**
+- **Entity Type Branching:** Different logic for players (with resources) vs enemies (no resources)
+- **Skill Tree Integration:** All attacks use skill tree parameters for consistent balance
+- **Resource Abstraction:** Clean separation between combat calculation and resource management
+- **Unified Pipeline:** Single damage calculation system eliminates code duplication
+**Dependencies:** `character_info.js`, `entities.js`, `game_state.js`
+**Integration Points:** Core combat system called by all attack interactions
+**Note:** Recent unification (Jan 2026) eliminated separate enemy damage logic, now all entities use this unified system
 
 ### `skills.js` - Skill Progression & Implementation **[RECENTLY REFACTORED]**
 **Purpose:** Contains skill progression systems and individual skill implementations
