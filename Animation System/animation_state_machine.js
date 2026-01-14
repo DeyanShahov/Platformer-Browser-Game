@@ -277,7 +277,7 @@ class AttackLightState extends AnimationState {
     if (entity.animation && entity.animation.animationTime >= entity.animation.animationDefinition.duration) {
       // Reset damage dealt flag for next attacks
       entity.damageDealt = false;
-      console.log(`[FSM] Attack light completed (duration: ${entity.animation.animationDefinition.duration}s), returning to movement`);
+      console.log(`[FSM] Attack light completed (def.duration: ${entity.animation.animationDefinition.duration}s, animTime: ${entity.animation.animationTime}s), returning to movement`);
       // Return to appropriate movement state
       if (this.hasMovementInput(entity)) {
         return 'walking';
@@ -286,9 +286,11 @@ class AttackLightState extends AnimationState {
       }
     }
 
-    // Generate hitbox on frame 5 (last frame, 0-indexed as frame 4)
+    // Generate hitbox on LAST frame dynamically
     const currentFrame = entity.animation ? entity.animation.currentFrame : 0;
-    if (currentFrame === 4) { // 5th frame (0-indexed)
+    const totalFrames = entity.animation?.animationDefinition?.frames || 0;
+
+    if (totalFrames > 0 && currentFrame === totalFrames - 1) {
       // Hitbox generation will be handled in collision.js based on animation frame
       // The collision system will check currentFrame instead of currentAction
     }
@@ -857,7 +859,7 @@ class EnemyWalkingState extends AnimationState {
 
     // DEBUG: Добави тези логи
     console.log(`[ENEMY WALKING ENTER] targetZ=${entity.targetZ}, vz before=${entity.vz}`);
-    
+
     // Don't reset vz if we're in vertical movement mode (has targetZ)
     // This allows vertical movement commands to work properly
     if (!entity.targetZ) {
@@ -947,13 +949,11 @@ class EnemyAttackState extends AnimationState {
       return null;
     }
 
-    // Check if animation has completed (frame-based)
-    if (entity.animation) {
-      const currentFrame = entity.animation.currentFrame;
-      const totalFrames = entity.animation.animationDefinition?.frames || 0;
-
-      if (currentFrame >= totalFrames - 1) {
-        // Animation completed, reset damage flag
+    // Check if animation has completed (DURATION-based)
+    // FIX: Using duration check instead of frame index to allow last frame to play fully
+    if (entity.animation && entity.animation.animationDefinition) {
+      if (entity.animation.animationTime >= entity.animation.animationDefinition.duration) {
+        // Animation completed full duration, reset damage flag
         entity.damageDealt = false;
 
         // Transition to idle state (like player attacks do)
@@ -1050,7 +1050,7 @@ class EnemyAnimationStateMachine extends AnimationStateMachine {
     const originalChangeState = AnimationStateMachine.prototype.changeState;
     let skipBaseInit = true;
 
-    AnimationStateMachine.prototype.changeState = function(stateName) {
+    AnimationStateMachine.prototype.changeState = function (stateName) {
       if (skipBaseInit && stateName === 'idle') {
         // Skip the base constructor's changeState('idle') call
         return true;

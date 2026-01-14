@@ -72,35 +72,35 @@ const BLUE_SLIME_ANIMATION_DEFINITIONS = {
     frameDurations: [0.125, 0.125, 0.125, 0.125, 0.125, 0.125, 0.125, 0.125],
     frameData: [
       {
-        hitBox: { x: 80, y: 0, width: 87, height: 60 },
+        hitBox: { x: 70, y: 0, width: 98, height: 60 },
         attackBox: null
       },
       {
-        hitBox: { x: 80, y: 0, width: 87, height: 60 },
+        hitBox: { x: 70, y: 0, width: 98, height: 60 },
         attackBox: null
       },
       {
-        hitBox: { x: 80, y: 0, width: 87, height: 60 },
+        hitBox: { x: 70, y: 0, width: 98, height: 60 },
         attackBox: null
       },
       {
-        hitBox: { x: 80, y: 0, width: 87, height: 60 },
+        hitBox: { x: 70, y: 0, width: 98, height: 60 },
         attackBox: null
       },
       {
-        hitBox: { x: 80, y: 0, width: 87, height: 60 },
+        hitBox: { x: 70, y: 0, width: 98, height: 60 },
         attackBox: null
       },
       {
-        hitBox: { x: 80, y: 0, width: 87, height: 60 },
+        hitBox: { x: 70, y: 0, width: 98, height: 60 },
         attackBox: null
       },
       {
-        hitBox: { x: 80, y: 0, width: 87, height: 60 },
+        hitBox: { x: 70, y: 0, width: 98, height: 60 },
         attackBox: null
       },
       {
-        hitBox: { x: 80, y: 0, width: 87, height: 60 },
+        hitBox: { x: 70, y: 0, width: 98, height: 60 },
         attackBox: null
       }
     ],
@@ -117,35 +117,35 @@ const BLUE_SLIME_ANIMATION_DEFINITIONS = {
     frameDurations: [0.125, 0.125, 0.125, 0.125, 0.125, 0.125, 0.125, 0.125],
     frameData: [
       {
-        hitBox: { x: 80, y: 0, width: 90, height: 65 },
+        hitBox: { x: 70, y: 0, width: 96, height: 65 },
         attackBox: null
       },
       {
-        hitBox: { x: 80, y: 0, width: 90, height: 65 },
+        hitBox: { x: 70, y: 0, width: 96, height: 65 },
         attackBox: null
       },
       {
-        hitBox: { x: 80, y: 0, width: 90, height: 65 },
+        hitBox: { x: 70, y: 0, width: 96, height: 65 },
         attackBox: null
       },
       {
-        hitBox: { x: 80, y: 0, width: 90, height: 65 },
+        hitBox: { x: 70, y: 0, width: 96, height: 65 },
         attackBox: null
       },
       {
-        hitBox: { x: 80, y: 0, width: 90, height: 65 },
+        hitBox: { x: 70, y: 0, width: 96, height: 65 },
         attackBox: null
       },
       {
-        hitBox: { x: 80, y: 0, width: 90, height: 65 },
+        hitBox: { x: 70, y: 0, width: 96, height: 65 },
         attackBox: null
       },
       {
-        hitBox: { x: 80, y: 0, width: 90, height: 65 },
+        hitBox: { x: 70, y: 0, width: 96, height: 65 },
         attackBox: null
       },
       {
-        hitBox: { x: 80, y: 0, width: 90, height: 65 },
+        hitBox: { x: 70, y: 0, width: 96, height: 65 },
         attackBox: null
       }
     ],
@@ -264,8 +264,8 @@ const BLUE_SLIME_ANIMATION_DEFINITIONS = {
     frameWidth: 120,
     frameHeight: 128,
     frameStarts: [0, 128, 256, 384],
-    duration: 1.3,
-    frameDurations: [0.200, 0.200, 0.300, 0.400],
+    duration: 1.2,
+    frameDurations: [0.200, 0.200, 0.300, 0.500],
     frameData: [
       {
         hitBox: { x: 80, y: 0, width: 80, height: 80 },
@@ -478,26 +478,26 @@ const ANIMATION_DEFINITIONS = {
       frameHeight: 128,
       frameStarts: [0, 128, 256, 384], // Original frame start positions (assuming 128px original frames)
       duration: 1.5,
-       // Per-frame collision data
+      // Per-frame collision data
       frameData: [
         // Frame 0 
         {
-          hitBox: { x: 65, y: 0, width: 110, height: 260 }, // Character body from ground up
+          hitBox: { x: 80, y: 0, width: 110, height: 260 }, // Character body from ground up
           attackBox: null
         },
         // Frame 1 
         {
-          hitBox: { x: 65, y: 0, width: 110, height: 260 },
+          hitBox: { x: 80, y: 0, width: 110, height: 260 },
           attackBox: null
         },
         // Frame 2 
         {
-          hitBox: { x: 65, y: 0, width: 110, height: 260 },
+          hitBox: { x: 80, y: 0, width: 110, height: 260 },
           attackBox: null
         },
         // Frame 3 
         {
-          hitBox: { x: 65, y: 0, width: 110, height: 260 },
+          hitBox: { x: 80, y: 0, width: 110, height: 260 },
           attackBox: null
         }
       ],
@@ -511,7 +511,7 @@ const ANIMATION_DEFINITIONS = {
       frameHeight: 128,
       frameStarts: [0, 128, 256, 384, 512, 640, 768, 896], // Original frame start positions
       duration: 1.0,
-       // Per-frame collision data
+      // Per-frame collision data
       frameData: [
         // Frame 0 
         {
@@ -574,7 +574,7 @@ const ANIMATION_DEFINITIONS = {
       frameHeight: 128,
       frameStarts: [0, 128, 256, 384, 512, 640], // Original frame start positions
       duration: 1.2,
-       // Per-frame collision data
+      // Per-frame collision data
       frameData: [
         // Frame 0 
         {

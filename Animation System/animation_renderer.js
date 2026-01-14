@@ -36,7 +36,7 @@ class AnimationRenderer {
       // Blue Slime has sprite but object is at bottom, so treat as rectangle
       if (entity.animation?.animationDefinition?.spriteSheet && entity.animationEntityType !== 'blue_slime') {
         // SPRITE ENTITIES (players) - position relative to sprite coordinates
-        boxY = drawY + entity.h/2 - boxData.y;
+        boxY = drawY + entity.h / 2 - boxData.y;
       } else {
         // RECTANGLE ENTITIES (enemies, Blue Slime) - position at bottom like collision box
         boxY = drawY + entity.h - boxData.height;
@@ -56,12 +56,12 @@ class AnimationRenderer {
     // Check if entity should use per-frame data (attacks, idle, walking, and jumping)
     const currentStateName = entity.stateMachine ? entity.stateMachine.getCurrentStateName() : null;
     const usePerFrameData = entity.stateMachine && entity.stateMachine.isInAttackState() ||
-                           currentStateName === 'idle' ||
-                           currentStateName === 'walking' ||
-                           currentStateName === 'jumping' ||
-                           currentStateName === 'enemy_idle' ||
-                           currentStateName === 'enemy_walking' ||
-                           currentStateName === 'enemy_jumping';
+      currentStateName === 'idle' ||
+      currentStateName === 'walking' ||
+      currentStateName === 'jumping' ||
+      currentStateName === 'enemy_idle' ||
+      currentStateName === 'enemy_walking' ||
+      currentStateName === 'enemy_jumping';
 
     // Debug logging for Blue Slime hit box issues
     // if (entity.animationEntityType === 'blue_slime') {
@@ -220,24 +220,24 @@ class AnimationRenderer {
       // Draw collision box dimensions text
       this.ctx.fillStyle = 'yellow';
       this.ctx.font = '12px Arial';
-      this.ctx.fillText(`${entity.w}x${entity.h}`, entity.x + entity.w/2 - 20, entity.y - entity.h - zOffset - 5);
+      this.ctx.fillText(`${entity.w}x${entity.h}`, entity.x + entity.w / 2 - 20, entity.y - entity.h - zOffset - 5);
     }
 
     // Hit visualizations
     if (entity.hit) {
       // Get current hit box position using the same logic as debug boxes
-      let hitBoxCenter = { x: entity.x + entity.w/2, y: entity.y - entity.h/2 - zOffset };
+      let hitBoxCenter = { x: entity.x + entity.w / 2, y: entity.y - entity.h / 2 - zOffset };
 
       // Try to use dynamic hit box position if available
       if (entity.animation) {
         const currentStateName = entity.stateMachine ? entity.stateMachine.getCurrentStateName() : null;
         const usePerFrameData = entity.stateMachine && entity.stateMachine.isInAttackState() ||
-                               currentStateName === 'idle' ||
-                               currentStateName === 'walking' ||
-                               currentStateName === 'jumping' ||
-                               currentStateName === 'enemy_idle' ||
-                               currentStateName === 'enemy_walking' ||
-                               currentStateName === 'enemy_jumping';
+          currentStateName === 'idle' ||
+          currentStateName === 'walking' ||
+          currentStateName === 'jumping' ||
+          currentStateName === 'enemy_idle' ||
+          currentStateName === 'enemy_walking' ||
+          currentStateName === 'enemy_jumping';
 
         if (usePerFrameData) {
           const currentFrame = entity.animation.currentFrame;
@@ -255,7 +255,7 @@ class AnimationRenderer {
 
       this.ctx.strokeStyle = "#FFFFFF";
       this.ctx.beginPath();
-      this.ctx.arc(hitBoxCenter.x, hitBoxCenter.y, 20, 0, Math.PI*2); // Smaller radius for better visibility
+      this.ctx.arc(hitBoxCenter.x, hitBoxCenter.y, 20, 0, Math.PI * 2); // Smaller radius for better visibility
       this.ctx.stroke();
     }
   }
@@ -273,6 +273,9 @@ class AnimationRenderer {
 
     // Calculate drawing position with Z-depth offset
     const zOffset = this.getZOffset(entity);
+
+    // FIX REGRESSION: Revert to using entity.x to respect manual offsets (like Player's -60)
+    // We will handle centering via the FLIP TRANSFORMATION instead
     const drawX = entity.x;
     const drawY = entity.y - entity.h - zOffset;
 
@@ -288,9 +291,37 @@ class AnimationRenderer {
 
     // Apply facing direction transformation
     if (animation.facingDirection === 'left') {
-      // Flip around collision center to prevent teleportation (X only)
+      // FIX UNIVERSAL: Flip around the ACTUAL PHYSICAL CENTER
+      // This works for both:
+      // 1. Enemies (Centered Hitbox): Pivot is center of sprite
+      // 2. Player (Offset Hitbox): Pivot is center of hitbox, preserving the offset visually
+
+      let centerX;
+
+      // Try to get precise hitbox center from current frame
+      if (animation.animationDefinition &&
+        animation.animationDefinition.frameData &&
+        animation.animationDefinition.frameData[animation.currentFrame] &&
+        animation.animationDefinition.frameData[animation.currentFrame].hitBox) {
+
+        const hitBoxData = animation.animationDefinition.frameData[animation.currentFrame].hitBox;
+        // Calculate absolute hitbox X position
+        // Matches logic in calculateBoxPosition: boxX = drawX + boxData.x
+        // Note: For Players, boxData.x is negative, shifting Hitbox Left of DrawX
+        const hitBoxX = drawX + hitBoxData.x;
+        centerX = hitBoxX + hitBoxData.width / 2;
+
+      } else {
+        // Fallback: Use standard collision width
+        const collisionW = entity.collisionW || entity.w;
+        // Standard assumption: Hitbox starts at entity.x
+        centerX = entity.x + collisionW / 2;
+      }
+
+      // Apply 3-Step Flip: Translate to Center -> Flip -> Translate Back
+      this.ctx.translate(centerX, 0);
       this.ctx.scale(-1, 1);
-      this.ctx.translate(-drawX * 2 - entity.collisionW, 0);
+      this.ctx.translate(-centerX, 0);
     }
 
     // Draw the sprite frame
@@ -321,9 +352,16 @@ class AnimationRenderer {
 
     // Apply facing direction transformation if needed
     if (entity.animation && entity.animation.facingDirection === 'left') {
-      // Flip around collision center to prevent teleportation (X only)
+      // FIX UNIVERSAL: Flip around the ACTUAL PHYSICAL CENTER
+      let centerX;
+
+      // Fallback logic mostly applies here as rectangles usually imply simple shapes
+      const collisionW = entity.collisionW || entity.w;
+      centerX = entity.x + collisionW / 2;
+
+      this.ctx.translate(centerX, 0);
       this.ctx.scale(-1, 1);
-      this.ctx.translate(-drawX * 2 - entity.collisionW, 0);
+      this.ctx.translate(-centerX, 0);
     }
 
     // Draw colored rectangle
@@ -450,7 +488,7 @@ class AnimationRenderer {
     const entityBottom = entity.y - cameraY;
 
     return entityRight > 0 && entityLeft < viewportWidth &&
-           entityBottom > 0 && entityTop < viewportHeight;
+      entityBottom > 0 && entityTop < viewportHeight;
   }
 
   // Advanced drawing with camera support

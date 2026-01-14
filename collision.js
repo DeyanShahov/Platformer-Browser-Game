@@ -60,6 +60,11 @@ function getCurrentHitBoxPosition(entity) {
   boxY = drawY + entity.h / 2 - hitBoxData.y;
 
   // MIRROR HIT BOX FOR COLLISION when facing left (same as attack collision)
+  // FIX: DISABLED mirroring for BODY hitboxes (collisionType !== 'attack')
+  // Reason: The new Universal Flip Renderer rotates the world around the Hitbox Center.
+  // This means the physical Hitbox IS the axis of rotation and should remain static relative to entity.x.
+  // Moving it mirrors it TWICE (once visually, once physically), causing desync.
+  /* 
   if (entity.animation && entity.animation.facingDirection === 'left') {
     // Calculate the center of the entity for mirroring
     const entityCenterX = entity.x + (entity.collisionW || entity.w) / 2;
@@ -70,6 +75,7 @@ function getCurrentHitBoxPosition(entity) {
 
     boxX = mirroredCenterX - hitBoxData.width / 2;
   }
+  */
 
   return {
     x: boxX,
@@ -268,11 +274,8 @@ function applyCollisionCorrection(entity, proposedX, proposedY, proposedZ, axis,
           }
         }
       } else if (axis === 'z') {
-        // For Z-axis collision (depth), we only block if it's the PLAYER
-        // This prevents enemies from getting stuck on each other when changing depth
-        if (other.entityType !== 'player') {
-          return proposedZ;
-        }
+        // For Z-axis collision (depth), checks should apply to ALL entities
+        // This ensures enemies don't stack on top of each other
 
         const zDifference = proposedZ - other.z;
         const entityThickness = entity.zThickness || 3;

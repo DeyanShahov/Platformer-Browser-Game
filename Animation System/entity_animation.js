@@ -71,6 +71,9 @@ class EntityAnimation {
 
     // Check if animation has individual frame durations
     if (this.animationDefinition.frameDurations) {
+      // if (this.currentAnimation && this.currentAnimation.toLowerCase().includes('attack')) {
+      //   console.log(`[ANIMATION DEBUG] Update variable timing for ${this.entityType}:${this.currentAnimation}, dt=${dt}, totalTime=${this.animationTime}`);
+      // }
       this.updateWithVariableFrameTiming(dt);
     } else {
       this.updateWithFixedFrameTiming(dt);
@@ -168,8 +171,8 @@ class EntityAnimation {
     // Allow movement animations to interrupt each other, even if forced
     // Only block if it's a non-movement forced animation (attacks, jumps, etc.)
     const isMovementAnimation = this.currentAnimation === window.ANIMATION_TYPES?.IDLE ||
-                               this.currentAnimation === window.ANIMATION_TYPES?.WALK ||
-                               this.currentAnimation === window.ANIMATION_TYPES?.RUN;
+      this.currentAnimation === window.ANIMATION_TYPES?.WALK ||
+      this.currentAnimation === window.ANIMATION_TYPES?.RUN;
 
     if (this.forceAnimation && this.isPlaying && !isMovementAnimation) {
       // Don't interrupt non-movement forced animations (attacks, jumps, etc.)
