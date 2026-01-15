@@ -605,10 +605,9 @@ class BaseEnemy {
     this.vx = this.patrolDirection * patrolSpeed;
   }
 
-  // Running behavior: chase player, check distance and attack range
+  // Running behavior: Strategic Z-First Chase with Deadlock Prevention
   updateRunningBehavior(players, dt, behaviors) {
     const closestPlayer = this.getClosestPlayer(players);
-
     if (!closestPlayer) {
       // No players - consult BT for next behavior
       const nextBehavior = this.consultBTForBehavior(players);
@@ -617,32 +616,136 @@ class BaseEnemy {
     }
 
     const chaseSpeed = behaviors.chase?.speed || 80;
-    const attackRange = behaviors.attack?.range || this.attackRange; // Use attack range from BT config or fallback
+    const attackRange = behaviors.attack?.range || this.attackRange;
 
-    console.log(`[CHASE_DEBUG] Distance to player: ${closestPlayer.distance.toFixed(1)}, attack range: ${attackRange}`);
+    // Z-assessment using collision buffer values for precision
+    const zCollisionBuffer = 30; // Z-tolerance from collision system (±30px for reliable detection)
+    const zAlignmentMargin = 10; // Additional margin (5-10px) for attack triggering reliability
+    const zRepositionThreshold = zCollisionBuffer + zAlignmentMargin; // Align to within 20px of target
 
-    // FIXED: Check for collision with player during chase
-    const isPlayerColliding = this.detectCollidedEntity(this.x, this.y, this.z)?.entityType === 'player';
-    console.log(`[CHASE_DEBUG] Player colliding: ${isPlayerColliding}`);
+    // Initialize chase state if needed
+    if (!this.chaseState) {
+      this.chaseState = { zFailCount: 0, lastZFailTime: 0 };
+    }
 
-    if (isPlayerColliding || closestPlayer.distance <= attackRange) {
-      // GO TO IDLE FIRST - don't attack immediately (same as patrol pattern)
-      console.log(`[CHASE_COLLISION] ${isPlayerColliding ? 'Collision detected' : `Distance ${closestPlayer.distance.toFixed(1)} <= ${attackRange}`}, going to IDLE (thinking phase) first`);
-      // Important: Set canInterrupt: false so updateIdleBehavior doesn't immediately cancel this pause
+    // 3D distance check for attack range
+    const distance3D = window.calculateEntityDistance ? window.calculateEntityDistance(this, closestPlayer) : closestPlayer.distance;
+
+    // Check for collision or 3D attack range
+    if (this.detectCollidedEntity(this.x, this.y, this.z)?.entityType === 'player' || distance3D <= attackRange) {
+      // Reset chase state on successful engagement
+      this.chaseState = { zFailCount: 0, lastZFailTime: 0 };
+      // Transition to attack preparation
       this.transitionToBehavior({ type: 'idle', duration: 0.3, canInterrupt: false }, behaviors);
       return;
     }
 
+    // PHASE 1: Z-ASSESSMENT - Check if Z-repositioning needed
+    const zDifference = Math.abs(this.z - closestPlayer.z);
+    const needsZRepositioning = zDifference > zRepositionThreshold;
+
+    if (needsZRepositioning && !this.chaseState?.zAligned) {
+      // PHASE 2: Z-FIRST REPOSITIONING - Prioritize vertical alignment
+      console.log(`[Z_CHASE] Enemy repositioning: Z-diff ${zDifference.toFixed(1)} > ${zRepositionThreshold}`);
+
+      // Calculate Z-movement direction and speed
+      const zDirection = this.z < closestPlayer.z ? 1 : -1;
+      const zRepositionSpeed = Math.min(chaseSpeed * 0.6, zDifference * 1.5); // Conservative Z-speed
+
+      // Apply Z-movement with collision checking
+      const proposedZ = this.z + (zDirection * zRepositionSpeed * dt);
+      const correctedZ = window.applyCollisionCorrection ?
+        window.applyCollisionCorrection(this, this.x, this.y, proposedZ, 'z') : proposedZ;
+
+      // Check if Z-movement is possible (not blocked)
+      if (Math.abs(correctedZ - proposedZ) < 2) { // Small tolerance for floating point
+        this.z = correctedZ;
+        this.vz = zDirection * zRepositionSpeed;
+
+        // Check if Z-alignment achieved
+        const newZDifference = Math.abs(this.z - closestPlayer.z);
+        if (newZDifference <= zRepositionThreshold) {
+          console.log(`[Z_CHASE] Z-alignment achieved: ${newZDifference.toFixed(1)} <= ${zRepositionThreshold}`);
+          this.chaseState = { ...this.chaseState, zAligned: true };
+          this.vz = 0; // Stop Z-movement
+        }
+
+        // During Z-repositioning, maintain safe X-distance to avoid collision conflicts
+        this.vx = 0; // Don't move horizontally while repositioning
+        return;
+      } else {
+        // Z-movement blocked - track failure and apply deadlock prevention
+        this.chaseState.zFailCount = (this.chaseState.zFailCount || 0) + 1;
+        this.chaseState.lastZFailTime = performance.now();
+
+        console.log(`[Z_DEADLOCK] Z-repositioning blocked, fail count: ${this.chaseState.zFailCount}`);
+
+        // Deadlock prevention: minimum safe distance enforcement
+        const minSafeDistance = 50; // pixels - enough to avoid collision conflicts
+        const currentXDistance = Math.abs(this.x - closestPlayer.x);
+
+        if (this.chaseState.zFailCount >= 2 && currentXDistance < minSafeDistance) {
+          // Force X-movement away from player before retrying Z-repositioning
+          const escapeDirection = this.x < closestPlayer.x ? -1 : 1; // Move away
+          this.vx = escapeDirection * chaseSpeed * 0.8; // Slightly slower for control
+          this.vz = 0;
+
+          console.log(`[Z_DEADLOCK] Creating safe distance: ${currentXDistance.toFixed(1)} < ${minSafeDistance}, moving away`);
+
+          // Prevent immediate re-detection during escape
+          this.chaseState.escapeUntilXDistance = minSafeDistance;
+          return; // Skip normal chase logic
+        }
+
+        // Boundary-aware fallback for persistent failures
+        const atBoundary = this.x <= 50 || this.x >= (typeof CANVAS_WIDTH !== 'undefined' ? CANVAS_WIDTH - 50 : 850);
+        const persistentZFailure = this.chaseState.zFailCount >= 5;
+
+        if (atBoundary && persistentZFailure) {
+          console.log(`[Z_DEADLOCK] Boundary deadlock detected, switching to boundary-aware mode`);
+          // Give up chase and return to patrol
+          this.chaseState = {}; // Reset chase state
+          this.transitionToBehavior({ type: 'idle', duration: 1.0 }, behaviors);
+          return;
+        }
+
+        // Mark as unachievable and proceed with horizontal chase only
+        this.chaseState = { ...this.chaseState, zAligned: false, zBlocked: true };
+      }
+    }
+
+    // Allow Z-repositioning attempts again after sufficient X-distance achieved
+    if (this.chaseState.escapeUntilXDistance) {
+      const currentXDistance = Math.abs(this.x - closestPlayer.x);
+      if (currentXDistance >= this.chaseState.escapeUntilXDistance) {
+        console.log(`[Z_DEADLOCK] Safe distance achieved: ${currentXDistance.toFixed(1)} >= ${this.chaseState.escapeUntilXDistance}`);
+        delete this.chaseState.escapeUntilXDistance;
+        this.chaseState.zFailCount = 0; // Reset failure count
+      }
+    }
+
+    // PHASE 3: X-PURSUIT - Horizontal chase toward (now Z-aligned) target
+    console.log(`[Z_CHASE] Horizontal pursuit: distance=${distance3D.toFixed(1)}, Z-aligned=${!!this.chaseState?.zAligned}`);
+
     if (closestPlayer.distance > (behaviors.chase?.radiusX || 300) * 1.5) {
-      // Player too far - consult BT for next behavior
+      // Player too far - reset chase state and consult BT
+      this.chaseState = { zFailCount: 0, lastZFailTime: 0 };
       const nextBehavior = this.consultBTForBehavior(players);
       this.transitionToBehavior(nextBehavior, behaviors);
       return;
     }
 
-    // Continue chasing
-    const direction = this.x < closestPlayer.x ? 1 : -1;
-    this.vx = direction * chaseSpeed;
+    // Continue horizontal chasing
+    const xDirection = this.x < closestPlayer.x ? 1 : -1;
+    this.vx = xDirection * chaseSpeed;
+    this.vz = 0; // No Z-movement during horizontal pursuit
+
+    // Boundary enforcement
+    const boundaryResult = window.applyScreenBoundaries ? window.applyScreenBoundaries(this) : { wasLimited: false };
+    if (boundaryResult.wasLimited) {
+      this.vx = 0;
+      this.vz = 0;
+    }
   }
 
   // Attack behavior: check for animation completion and consult BT
