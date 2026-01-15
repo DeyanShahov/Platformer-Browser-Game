@@ -208,10 +208,10 @@ const ENEMY_BEHAVIORS = {
       },
       targetSelection: { strategy: "firstHit" },
       chase: { radiusX: 200, speed: 80, radiusY: 0 },
-      attack: { lightChance: 1.0, mediumChance: 0, heavyChance: 0 },
+      attack: { lightChance: 1.0, mediumChance: 0, heavyChance: 0, range: 40 },
       block: { useChance: 0 }, evade: { useChance: 0.1 },
       jump: { height: 50 }, special: { available: false },
-      meta: { awarenessRadius: 300 }
+      meta: { awarenessRadius: 1000 }
     },
     normal: {
       idle: { duration: 1.5 },
@@ -222,7 +222,7 @@ const ENEMY_BEHAVIORS = {
       },
       targetSelection: { strategy: "closest" },
       chase: { radiusX: 400, speed: 100, radiusY: 0 },
-      attack: { lightChance: 0.6, mediumChance: 0.4, heavyChance: 0 },
+      attack: { lightChance: 0.6, mediumChance: 0.4, heavyChance: 0, range: 40 },
       block: { useChance: 0.2 }, evade: { useChance: 0.3 },
       jump: { height: 60 }, special: { available: false },
       meta: { awarenessRadius: 200 }
@@ -236,7 +236,7 @@ const ENEMY_BEHAVIORS = {
       },
       targetSelection: { strategy: "dynamic" },
       chase: { radiusX: 500, speed: 120, radiusY: 0 },
-      attack: { lightChance: 0.4, mediumChance: 0.4, heavyChance: 0.2 },
+      attack: { lightChance: 0.4, mediumChance: 0.4, heavyChance: 0.2, range: 40 },
       block: { useChance: 0.4 }, evade: { useChance: 0.5 },
       jump: { height: 80 }, special: { available: true },
       meta: { awarenessRadius: 250 }
@@ -252,7 +252,7 @@ const ENEMY_BEHAVIORS = {
       },
       targetSelection: { strategy: "closest" },
       chase: { radiusX: 500, speed: 120, radiusY: 0 },
-      attack: { lightChance: 0.7, mediumChance: 0.3, heavyChance: 0 },
+      attack: { lightChance: 0.7, mediumChance: 0.3, heavyChance: 0, range: 40 },
       block: { useChance: 0.3 }, evade: { useChance: 0.3 },
       jump: { height: 70 }, special: { available: true },
       meta: { awarenessRadius: 300 }
@@ -266,7 +266,7 @@ const ENEMY_BEHAVIORS = {
       },
       targetSelection: { strategy: "dynamic" },
       chase: { radiusX: 600, speed: 150, radiusY: 0 },
-      attack: { lightChance: 0.4, mediumChance: 0.5, heavyChance: 0.1 },
+      attack: { lightChance: 0.4, mediumChance: 0.5, heavyChance: 0.1, range: 40 },
       block: { useChance: 0.5 }, evade: { useChance: 0.5 },
       jump: { height: 90 }, special: { available: true },
       meta: { awarenessRadius: 350 }
@@ -280,7 +280,7 @@ const ENEMY_BEHAVIORS = {
       },
       targetSelection: { strategy: "dynamic" },
       chase: { radiusX: 800, speed: 180, radiusY: 0 },
-      attack: { lightChance: 0.3, mediumChance: 0.4, heavyChance: 0.3 },
+      attack: { lightChance: 0.3, mediumChance: 0.4, heavyChance: 0.3, range: 40 },
       block: { useChance: 0.7 }, evade: { useChance: 0.6 },
       jump: { height: 120 }, special: { available: true },
       meta: { awarenessRadius: 400 }
@@ -296,7 +296,7 @@ const ENEMY_BEHAVIORS = {
       },
       targetSelection: { strategy: "closest" },
       chase: { radiusX: 1000, speed: 200, radiusY: 0 },
-      attack: { lightChance: 0.7, mediumChance: 0.3, heavyChance: 0 },
+      attack: { lightChance: 0.7, mediumChance: 0.3, heavyChance: 0, range: 40 },
       block: { useChance: 0.5 }, evade: { useChance: 0.3 },
       jump: { height: 100 }, special: { available: true },
       meta: { awarenessRadius: 500 }
@@ -310,7 +310,7 @@ const ENEMY_BEHAVIORS = {
       },
       targetSelection: { strategy: "dynamic" },
       chase: { radiusX: 1200, speed: 250, radiusY: 0 },
-      attack: { lightChance: 0.5, mediumChance: 0.3, heavyChance: 0.2 },
+      attack: { lightChance: 0.5, mediumChance: 0.3, heavyChance: 0.2, range: 40 },
       block: { useChance: 0.8 }, evade: { useChance: 0.5 },
       jump: { height: 120 }, special: { available: true },
       meta: { awarenessRadius: 600 }
@@ -324,7 +324,7 @@ const ENEMY_BEHAVIORS = {
       },
       targetSelection: { strategy: "dynamic" },
       chase: { radiusX: 1400, speed: 300, radiusY: 0 },
-      attack: { lightChance: 0.2, mediumChance: 0.4, heavyChance: 0.4 },
+      attack: { lightChance: 0.2, mediumChance: 0.4, heavyChance: 0.4, range: 40 },
       block: { useChance: 1.0 }, evade: { useChance: 0.8 },
       jump: { height: 150 }, special: { available: true },
       meta: { awarenessRadius: 700 }
@@ -396,8 +396,11 @@ const hasTarget = new Condition(ctx => {
 });
 
 const targetInAttackRange = new Condition(ctx => {
-  const result = ctx.target?.distance <= 100;
-  // console.log(`[BT_CONDITION] targetInAttackRange: ${result}, distance: ${ctx.target?.distance?.toFixed(1) || 'none'}`);
+  const range = ctx.behaviors?.attack?.range || 100;
+  const result = ctx.target?.distance <= range;
+  if (result) {
+    console.log(`%c[BT_CONDITION] targetInAttackRange: ${result}, distance: ${ctx.target?.distance?.toFixed(1) || 'none'}, range: ${range}`, 'color: #ff0000; font-weight: bold;');
+  }
   return result;
 });
 
@@ -480,7 +483,11 @@ const patrolAction = new Action(() => ({ type: COMMAND.PATROL }));
 const chaseAction = new Action(() => ({ type: COMMAND.CHASE }));
 const blockAction = new Action(() => ({ type: COMMAND.BLOCK }));
 const evadeAction = new Action(() => ({ type: COMMAND.EVADE }));
-const attackAction = new Action(ctx => ({ type: COMMAND.ATTACK, attackType: ctx.attackProfile.chooseAttack(ctx) }));
+const attackAction = new Action(ctx => {
+  const command = { type: COMMAND.ATTACK, attackType: ctx.attackProfile.chooseAttack(ctx) };
+  console.log(`%c[BT_ACTION] Choosing ATTACK! Distance: ${ctx.target?.distance?.toFixed(1)}, Range Threshold: ${ctx.behaviors?.attack?.range}`, 'color: #ff4500; font-weight: bold; background: #222;');
+  return command;
+});
 
 /* =========================
    SPECIAL ATTACK SUBTREE
@@ -534,14 +541,17 @@ function createPatrolDecisionSubtree(config) {
         // Ensure constraints are up-to-date before patrol decision
         new Condition(ctx => {
           // Force constraint refresh by calling getBehaviorConstraints
-          const freshConstraints = window.getBehaviorConstraints ?
-            window.getBehaviorConstraints(ctx.self) : null;
-          if (freshConstraints) {
-            ctx.behaviorConstraints = freshConstraints;
-            console.log(`[BT_CONSTRAINTS] Refreshed constraints for patrol decision:`, {
-              blocked: Array.from(freshConstraints.blocked),
-              allowed: Array.from(freshConstraints.allowed)
-            });
+          if (ctx.self && window.getBehaviorConstraints) {
+            const freshConstraints = window.getBehaviorConstraints(ctx.self);
+            if (freshConstraints) {
+              ctx.behaviorConstraints = freshConstraints;
+              console.log(`[BT_CONSTRAINTS] Refreshed constraints for patrol decision:`, {
+                blocked: Array.from(freshConstraints.blocked),
+                allowed: Array.from(freshConstraints.allowed)
+              });
+            }
+          } else {
+            console.warn(`[BT_CONSTRAINTS] Cannot refresh constraints: ctx.self=${!!ctx.self}, getBehaviorConstraints=${!!window.getBehaviorConstraints}`);
           }
           return true; // Always succeed, just refresh constraints
         }),
@@ -620,6 +630,11 @@ function selectTarget(ctx) {
     // console.log(`[SELECT_TARGET] No targets available - self: ${!!ctx.self}, targets: ${ctx.targets?.length || 0}`);
     return null;
   }
+
+  // LOG DISTANCES FOR DEBUGGING
+  // ctx.targets.forEach(t => {
+  //   console.log(`[BT_DEBUG] Target ${t.entity?.entityType || 'unknown'} distance: ${t.distance?.toFixed(1)}`);
+  // });
 
   // console.log(`[SELECT_TARGET_DEBUG] ctx.self position:`, { x: ctx.self.x?.toFixed(1), y: ctx.self.y?.toFixed(1), z: ctx.self.z?.toFixed(1) });
 

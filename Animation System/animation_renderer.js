@@ -15,7 +15,7 @@ class AnimationRenderer {
 
   // Calculate box position (centralized logic for rendering and collision)
   calculateBoxPosition(entity, boxData, boxType = 'attack') {
-    // Calculate drawing position with Z-depth offset (same as in drawAnimatedEntity)
+    // Calculate drawing position with Z-depth offset
     const zOffset = this.getZOffset(entity);
     const drawX = entity.x;
     const drawY = entity.y - entity.h - zOffset;
@@ -24,6 +24,7 @@ class AnimationRenderer {
 
     if (boxType === 'attack') {
       // Attack box positioning (extends from right side of entity)
+      // Note: Data is assumed to be in world pixels
       boxX = drawX + entity.w + boxData.x;
       boxY = drawY + (boxData.yRatio * entity.h);
       boxW = boxData.width;
@@ -32,13 +33,12 @@ class AnimationRenderer {
       // Hit box positioning - standardized for sprites vs rectangles
       boxX = drawX + boxData.x;
 
-      // Differentiate between sprite entities and rectangle entities
-      // Blue Slime has sprite but object is at bottom, so treat as rectangle
-      if (entity.animation?.animationDefinition?.spriteSheet && entity.animationEntityType !== 'blue_slime') {
+      const animDef = entity.animation?.animationDefinition;
+      if (animDef?.spriteSheet && entity.animationEntityType !== 'blue_slime') {
         // SPRITE ENTITIES (players) - position relative to sprite coordinates
         boxY = drawY + entity.h / 2 - boxData.y;
       } else {
-        // RECTANGLE ENTITIES (enemies, Blue Slime) - position at bottom like collision box
+        // RECTANGLE ENTITIES (enemies, Blue Slime) - position at bottom
         boxY = drawY + entity.h - boxData.height;
       }
 
@@ -53,15 +53,17 @@ class AnimationRenderer {
   drawDebugBoxes(entity, drawX, drawY) {
     if (!entity.animation) return;
 
-    // Check if entity should use per-frame data (attacks, idle, walking, and jumping)
+    // Use per-frame data whenever available in the animation definition
     const currentStateName = entity.stateMachine ? entity.stateMachine.getCurrentStateName() : null;
-    const usePerFrameData = entity.stateMachine && entity.stateMachine.isInAttackState() ||
-      currentStateName === 'idle' ||
-      currentStateName === 'walking' ||
-      currentStateName === 'jumping' ||
-      currentStateName === 'enemy_idle' ||
-      currentStateName === 'enemy_walking' ||
-      currentStateName === 'enemy_jumping';
+    const currentFrame = entity.animation ? entity.animation.currentFrame : 0;
+    const animationDef = entity.animation ? entity.animation.animationDefinition : null;
+
+    // Check if current animation frame has hit box data
+    const hasPerFrameHitBox = animationDef && animationDef.frameData &&
+      animationDef.frameData[currentFrame] &&
+      animationDef.frameData[currentFrame].hitBox;
+
+    const usePerFrameData = hasPerFrameHitBox;
 
     // Debug logging for Blue Slime hit box issues
     // if (entity.animationEntityType === 'blue_slime') {
@@ -83,50 +85,10 @@ class AnimationRenderer {
     let hurtBoxPos = null;
 
     if (usePerFrameData) {
-      // Use per-frame hitBox data for attacks and idle
-      const currentFrame = entity.animation.currentFrame;
-      const animationDef = entity.animation.animationDefinition;
-
-      // Debug logging for Blue Slime
-      // if (entity.animationEntityType === 'blue_slime') {
-      //   console.log(`[DEBUG BLUE SLIME] currentFrame: ${currentFrame}, animationDef exists: ${!!animationDef}`);
-      //   if (animationDef) {
-      //     console.log(`[DEBUG BLUE SLIME] frameData exists: ${!!animationDef.frameData}`);
-      //     if (animationDef.frameData) {
-      //       console.log(`[DEBUG BLUE SLIME] frameData length: ${animationDef.frameData.length}`);
-      //       if (animationDef.frameData[currentFrame]) {
-      //         console.log(`[DEBUG BLUE SLIME] frameData[${currentFrame}] hitBox:`, animationDef.frameData[currentFrame].hitBox);
-      //       } else {
-      //         console.log(`[DEBUG BLUE SLIME] frameData[${currentFrame}] is undefined`);
-      //       }
-      //     }
-      //   }
-      // }
-
-      if (animationDef && animationDef.frameData && animationDef.frameData[currentFrame] && animationDef.frameData[currentFrame].hitBox) {
-        // Use per-frame hit box data
-        hurtBoxPos = this.calculateBoxPosition(entity, animationDef.frameData[currentFrame].hitBox, 'hit');
-
-        // Debug final position for Blue Slime
-        // if (entity.animationEntityType === 'blue_slime') {
-        //   console.log(`[DEBUG BLUE SLIME] Using per-frame hitBox, final position:`, hurtBoxPos);
-        // }
-      } else {
-        // Fall back to static dimensions if no per-frame data
-        hurtBoxPos = {
-          x: drawX,
-          y: drawY + entity.h - (entity.collisionH || entity.h),
-          width: entity.collisionW || entity.w,
-          height: entity.collisionH || entity.h
-        };
-
-        // Debug fallback for Blue Slime
-        // if (entity.animationEntityType === 'blue_slime') {
-        //   console.log(`[DEBUG BLUE SLIME] Using fallback hitBox, position:`, hurtBoxPos);
-        // }
-      }
+      // Use per-frame hit box data
+      hurtBoxPos = this.calculateBoxPosition(entity, animationDef.frameData[currentFrame].hitBox, 'hit');
     } else {
-      // During other normal states: use constant hurt box
+      // Fall back to static dimensions if no per-frame data
       hurtBoxPos = {
         x: drawX,
         y: drawY + entity.h - (entity.collisionH || entity.h),
@@ -145,11 +107,13 @@ class AnimationRenderer {
     this.ctx.font = '10px Arial';
     let boxType = 'Hurt';
     if (usePerFrameData) {
-      if (entity.stateMachine.isInAttackState()) {
+      if (entity.stateMachine && entity.stateMachine.isInAttackState()) {
         boxType = 'Attack';
-      } else if (currentStateName === 'walking') {
+      } else if (currentStateName === 'walking' || currentStateName === 'enemy_walking') {
         boxType = 'Walk';
-      } else if (currentStateName === 'idle') {
+      } else if (currentStateName === 'running' || currentStateName === 'enemy_running') {
+        boxType = 'Run';
+      } else if (currentStateName === 'idle' || currentStateName === 'enemy_idle') {
         boxType = 'Idle';
       } else if (currentStateName === 'jumping') {
         boxType = 'Jump';
@@ -164,8 +128,6 @@ class AnimationRenderer {
 
       if (animationDef.frameData && animationDef.frameData[currentFrame]?.attackBox) {
         const attackBoxPos = this.calculateBoxPosition(entity, animationDef.frameData[currentFrame].attackBox, 'attack');
-
-        //console.log(`[RENDER DEBUG] Attack box for ${entity.id}: x=${attackBoxPos.x.toFixed(1)}, y=${attackBoxPos.y.toFixed(1)}, w=${attackBoxPos.width}, h=${attackBoxPos.height}`);
 
         // Red outline for attack box
         this.ctx.strokeStyle = "#FF0000";
@@ -230,19 +192,16 @@ class AnimationRenderer {
 
       // Try to use dynamic hit box position if available
       if (entity.animation) {
-        const currentStateName = entity.stateMachine ? entity.stateMachine.getCurrentStateName() : null;
-        const usePerFrameData = entity.stateMachine && entity.stateMachine.isInAttackState() ||
-          currentStateName === 'idle' ||
-          currentStateName === 'walking' ||
-          currentStateName === 'jumping' ||
-          currentStateName === 'enemy_idle' ||
-          currentStateName === 'enemy_walking' ||
-          currentStateName === 'enemy_jumping';
+        // Use per-frame data whenever available
+        const currentFrame = entity.animation ? entity.animation.currentFrame : 0;
+        const animationDef = entity.animation ? entity.animation.animationDefinition : null;
+        const hasPerFrameHitBox = animationDef && animationDef.frameData &&
+          animationDef.frameData[currentFrame] &&
+          animationDef.frameData[currentFrame].hitBox;
+
+        const usePerFrameData = hasPerFrameHitBox;
 
         if (usePerFrameData) {
-          const currentFrame = entity.animation.currentFrame;
-          const animationDef = entity.animation.animationDefinition;
-
           if (animationDef && animationDef.frameData && animationDef.frameData[currentFrame] && animationDef.frameData[currentFrame].hitBox) {
             const hitBoxPos = this.calculateBoxPosition(entity, animationDef.frameData[currentFrame].hitBox, 'hit');
             hitBoxCenter = {
@@ -305,16 +264,14 @@ class AnimationRenderer {
         animation.animationDefinition.frameData[animation.currentFrame].hitBox) {
 
         const hitBoxData = animation.animationDefinition.frameData[animation.currentFrame].hitBox;
+
         // Calculate absolute hitbox X position
-        // Matches logic in calculateBoxPosition: boxX = drawX + boxData.x
-        // Note: For Players, boxData.x is negative, shifting Hitbox Left of DrawX
         const hitBoxX = drawX + hitBoxData.x;
         centerX = hitBoxX + hitBoxData.width / 2;
 
       } else {
         // Fallback: Use standard collision width
         const collisionW = entity.collisionW || entity.w;
-        // Standard assumption: Hitbox starts at entity.x
         centerX = entity.x + collisionW / 2;
       }
 

@@ -79,10 +79,8 @@ function detectEntityCollisions(enemy, entities, checkDistance = (window.enemyAI
     if (!entity.collisionW || !entity.collisionH) continue;
 
     // Quick distance check first
-    const distance = Math.sqrt(
-      Math.pow(enemy.x - entity.x, 2) +
-      Math.pow(enemy.y - entity.y, 2)
-    );
+    const distance = window.calculateEntityDistance ? window.calculateEntityDistance(enemy, entity) :
+      Math.sqrt(Math.pow(enemy.x - entity.x, 2) + Math.pow(enemy.y - entity.y, 2));
 
     if (distance > checkDistance) continue;
 
@@ -99,44 +97,9 @@ function detectEntityCollisions(enemy, entities, checkDistance = (window.enemyAI
   return collisions;
 }
 
-/**
- * Check collision between two entities using collision system with Z-depth support for AI
- * @param {Object} entity1 - First entity
- * @param {Object} entity2 - Second entity
- * @returns {boolean} True if colliding
- */
-function checkEntityCollision(entity1, entity2) {
-  // Use checkCollisionWithBuffer directly to avoid infinite recursion
-  if (window.checkCollisionWithBuffer) {
-    return window.checkCollisionWithBuffer(
-      entity1.x, entity1.y, entity1.z,
-      entity1.collisionW || entity1.w, entity1.collisionH || entity1.h, entity1.zThickness || 0,
-      entity2.x, entity2.y, entity2.z,
-      entity2.collisionW || entity2.w, entity2.collisionH || entity2.h, entity2.zThickness || 0,
-      30, // Z tolerance - allow small Z differences for AI movement
-      2   // Buffer - small buffer for smoother AI movement
-    );
-  }
-
-  // Fallback to simple AABB if collision system not available
-  console.warn('[AI COLLISION] Collision system not available, using fallback AABB');
-  const entity1Left = entity1.x - (entity1.collisionW || entity1.w) / 2;
-  const entity1Right = entity1.x + (entity1.collisionW || entity1.w) / 2;
-  const entity1Top = entity1.y - (entity1.collisionH || entity1.h) / 2;
-  const entity1Bottom = entity1.y + (entity1.collisionH || entity1.h) / 2;
-
-  const entity2Left = entity2.x - (entity2.collisionW || entity2.w) / 2;
-  const entity2Right = entity2.x + (entity2.collisionW || entity2.w) / 2;
-  const entity2Top = entity2.y - (entity2.collisionH || entity2.h) / 2;
-  const entity2Bottom = entity2.y + (entity2.collisionH || entity2.h) / 2;
-
-  return (
-    entity1Left < entity2Right &&
-    entity1Right > entity2Left &&
-    entity1Top < entity2Bottom &&
-    entity1Bottom > entity2Top
-  );
-}
+// function checkEntityCollision(entity1, entity2) {
+//   ... (Removed to use global checkEntityCollision from collision.js)
+// }
 
 /**
  * Get direction from entity1 to entity2
@@ -254,11 +217,12 @@ function getEntitiesInRange(enemy, entities, range) {
   return entities
     .map(entity => {
       // FIXED: Include Z-coordinate in distance calculation for 2.5D gameplay
-      const distance = Math.sqrt(
-        Math.pow(enemy.x - entity.x, 2) +
-        Math.pow(enemy.y - entity.y, 2) +
-        Math.pow((enemy.z || 0) - (entity.z || 0), 2)  // Include Z component!
-      );
+      const distance = window.calculateEntityDistance ? window.calculateEntityDistance(enemy, entity) :
+        Math.sqrt(
+          Math.pow(enemy.x - entity.x, 2) +
+          Math.pow(enemy.y - entity.y, 2) +
+          Math.pow((enemy.z || 0) - (entity.z || 0), 2)
+        );
 
       console.log(`[GET_ENTITIES_IN_RANGE] Entity ${entity?.entityType} distance: ${distance.toFixed(1)}, range: ${range}, inRange: ${distance <= range}`);
 
@@ -377,18 +341,11 @@ function getCachedScreenBoundaries() {
  * @returns {number|null} Distance or null if exceeds maxDistance
  */
 function calculateDistanceOptimized(entity1, entity2, maxDistance = Infinity) {
-  const dx = entity1.x - entity2.x;
-  const dy = entity1.y - entity2.y;
+  const distance = window.calculateEntityDistance ? window.calculateEntityDistance(entity1, entity2) :
+    Math.sqrt(Math.pow(entity1.x - entity2.x, 2) + Math.pow(entity1.y - entity2.y, 2));
 
-  // Early exit for horizontal distance check
-  if (Math.abs(dx) > maxDistance) return null;
-
-  const distanceSquared = dx * dx + dy * dy;
-
-  // Early exit for squared distance check
-  if (distanceSquared > maxDistance * maxDistance) return null;
-
-  return Math.sqrt(distanceSquared);
+  if (maxDistance !== Infinity && distance > maxDistance) return null;
+  return distance;
 }
 
 /**
@@ -410,14 +367,10 @@ function batchCollisionDetection(sourceEntity, targetEntities, checkDistance) {
     // Skip entities without hitboxes
     if (!target.collisionW || !target.collisionH) continue;
 
-    // Quick distance check first (squared for performance)
-    const dx = sourceEntity.x - target.x;
-    const dy = sourceEntity.y - target.y;
-    const distanceSquared = dx * dx + dy * dy;
+    const distance = window.calculateEntityDistance ? window.calculateEntityDistance(sourceEntity, target) :
+      Math.sqrt(Math.pow(sourceEntity.x - target.x, 2) + Math.pow(sourceEntity.y - target.y, 2));
 
-    if (distanceSquared > checkDistanceSquared) continue;
-
-    const distance = Math.sqrt(distanceSquared);
+    if (distance > checkDistance) continue;
 
     // Detailed collision check
     if (checkEntityCollision(sourceEntity, target)) {
@@ -495,7 +448,7 @@ window.enemyAIUtils = {
   getCachedScreenBoundaries,
 
   // Performance monitoring (for debugging)
-  getPerformanceStats: function() {
+  getPerformanceStats: function () {
     return {
       cacheHits: screenBoundaryCache ? 1 : 0,
       canvasSize: { width: lastCanvasWidth, height: lastCanvasHeight }

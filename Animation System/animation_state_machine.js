@@ -46,7 +46,7 @@ class AnimationState {
 
     // Check for running (higher speed)
     const speed = this.getMovementSpeed(entity);
-    const runThreshold = window.SPEED * 0.7;
+    const runThreshold = window.SPEED * 1.1; // Increased to 1.1 so regular keyboard speed (1.0) is WALK
     if (speed >= runThreshold && performance.now() - this.lastTransitionTime > 100) {
       return 'running';
     }
@@ -149,7 +149,7 @@ class WalkingState extends AnimationState {
 
     // Check for running (higher speed)
     const speed = this.getMovementSpeed(entity);
-    const runThreshold = window.SPEED * 0.7;
+    const runThreshold = window.SPEED * 1.1; // Increased to 1.1 so regular keyboard speed (1.0) is WALK
     if (speed >= runThreshold && performance.now() - this.lastTransitionTime > 100) {
       return 'running';
     }
@@ -187,34 +187,24 @@ class RunningState extends AnimationState {
   }
 
   update(entity, dt) {
-    // Skip transition on the first update after entering
     if (this.justEntered) {
       this.justEntered = false;
       return null;
     }
 
-    // Check if animation has completed
-    if (entity.animation && entity.animation.animationTime >= entity.animation.animationDefinition.duration) {
-      console.log(`[DEBUG FREEZE] Animation completed for ATTACK_3!`);
-      console.log(`[DEBUG FREEZE] damageDealt was: ${entity.damageDealt}, setting to false`);
+    // Check for transitions back to walking or idle based on speed
+    const speed = this.getMovementSpeed(entity);
+    const runThreshold = window.SPEED * 1.1;
 
-      // Reset damage dealt flag for next attacks
-      entity.damageDealt = false;
-
-      const hasMovement = this.hasMovementInput(entity);
-      console.log(`[DEBUG FREEZE] hasMovementInput: ${hasMovement}, vx: ${entity.vx}, vz: ${entity.vz}`);
-
-      const nextState = hasMovement ? 'walking' : 'idle';
-      console.log(`[DEBUG FREEZE] Attempting transition to: ${nextState}`);
-
-      return nextState; // This should transition FSM out of attack state
-    } else {
-      // Debug animation progress (only log occasionally to avoid spam)
-      if (Math.random() < 0.1) { // 10% chance to log
-        const progress = entity.animation ? (entity.animation.animationTime / entity.animation.animationDefinition.duration * 100).toFixed(1) : 0;
-        console.log(`[DEBUG ATTACK_3] Animation progress: ${progress}%`);
+    if (speed < runThreshold && performance.now() - this.lastTransitionTime > 100) {
+      if (this.hasMovementInput(entity)) {
+        return 'walking';
+      } else {
+        return 'idle';
       }
     }
+
+    return null;
   }
 }
 

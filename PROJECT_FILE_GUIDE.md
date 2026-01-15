@@ -11,6 +11,60 @@ This comprehensive guide documents every file in the Platformer Browser Game pro
 
 ## 🏗️ RECENT ARCHITECTURAL CHANGES (January 2026)
 
+### AI System Distance Calculation & Stability Fixes - COMPLETED ✅ **[CRITICAL IMPROVEMENT]**
+**Fixed premature enemy attacks and distance calculation issues with unified measurement system**
+
+#### Problem Solved:
+- **Before:** Enemies attacked from unrealistic distances (~117px) due to inconsistent distance calculations
+- **Issue:** Behavior Tree used "shortened" object data without physical dimensions, animation system timing issues
+- **Impact:** Enemies attacked too early, undefined entity errors in constraint system, awareness radius too small (300px)
+
+#### Solution Implemented:
+- **Unified Distance Calculation:** Single `calculateEntityDistance()` function with 3D support and intelligent fallbacks
+- **BT Context Enrichment:** Added physical dimensions (`w`, `h`, `collisionW`, `collisionH`, `zThickness`) to BT context
+- **Animation System Integration:** Real-time hitbox access during BT execution with readiness checks
+- **Constraint Safety:** Null checks and error handling for undefined entity references
+- **Awareness Expansion:** Increased detection radius from 300px to 1000px for realistic enemy behavior
+
+#### Key Changes:
+1. **`base_enemy.js`**: Added physical dimensions and animation system link to BT context
+2. **`collision.js`**: Enhanced distance calculation with entity-specific fallbacks and 3D support
+3. **`Behavior Tree/enemyAI_BT.js`**: Added constraint safety checks and expanded awareness radius
+4. **System-wide**: Unified distance measurements across all AI components
+
+#### Technical Implementation:
+- **Per-frame Hitboxes:** Primary distance method when animation system is ready
+- **Intelligent Fallbacks:** Entity-specific collision dimensions (Player: 65x260, Enemy: 80x60)
+- **3D Distance Support:** Includes depth (Z-axis) for accurate 2.5D gameplay
+- **Animation Readiness Checks:** Prevents calculations before system initialization
+- **Null Safety:** Protected constraint operations against undefined entities
+
+#### Benefits Achieved:
+- **Accurate Attack Ranges:** Enemies attack only when truly in range using consistent measurements
+- **Stable AI System:** Eliminated undefined entity errors and crashes in constraint system
+- **Realistic Detection:** Enemies detect players from appropriate distances (1000px awareness radius)
+- **Performance Reliability:** Reduced console spam with meaningful diagnostic information
+- **Cross-system Consistency:** Same distance calculations used by AI "brain" and "body" systems
+- **Future-proof Design:** Extensible fallback system for new entity types
+
+#### Files Affected:
+- `base_enemy.js` - BT context enrichment with physical dimensions
+- `collision.js` - Unified distance calculation with 3D support and fallbacks
+- `Behavior Tree/enemyAI_BT.js` - Constraint safety and expanded detection radius
+- `AI_SYSTEM_CHANGES_SUMMARY.md` - Comprehensive documentation of changes
+
+#### Architectural Benefits Achieved:
+- **Unified Measurement System:** Single distance calculation eliminates inconsistencies across AI systems
+- **Animation System Integration:** Real-time hitbox data access during BT decision making
+- **Entity Type Awareness:** Different fallback dimensions for players vs enemies vs generic entities
+- **Error Resilience:** Graceful handling of animation system initialization timing issues
+- **Maintainable Codebase:** Clear fallback hierarchy prevents future distance calculation bugs
+- **Performance Optimized:** Readiness checks prevent unnecessary calculations during startup
+
+---
+
+## 🏗️ RECENT ARCHITECTURAL CHANGES (January 2026)
+
 ### Combat System Unification - COMPLETED ✅ **[MAJOR IMPROVEMENT]**
 **Unified combat resolution for all entities - eliminated separate enemy damage logic**
 
@@ -455,13 +509,14 @@ Platformer Browser Game/
 **Content:** Technical AI documentation
 **Integration Points:** Reference for AI development
 
-### `Behavior Tree/enemyAI_BT.js` - Behavior Tree Implementation **[RECENTLY REFACTORED]**
-**Purpose:** Behavior Tree system for enemy AI decision making
+### `Behavior Tree/enemyAI_BT.js` - Behavior Tree Implementation **[RECENTLY ENHANCED - AI CONSTRAINT FIXES]**
+**Purpose:** Behavior Tree system for enemy AI decision making with constraint safety and expanded awareness
 **Responsibilities:**
 - BT node implementations (Selector, Sequence, etc.)
 - Enemy behavior coordination
 - Decision tree execution
 - Context-aware AI behavior **[ENHANCED]**
+- **Constraint safety checks and awareness expansion** **[NEW - AI FIXES]**
 **Key Classes:**
 - `BTNode` - Base node class
 - `Selector`, `Sequence` - Composite nodes
@@ -469,8 +524,14 @@ Platformer Browser Game/
 **Key Functions:**
 - `tickEnemyAI(tree, context)` - BT execution **[USES UTILS]**
 - `selectTarget(ctx)` - Target selection **[NOW USES UTILS]**
+- `createPatrolDecisionSubtree()` - **Enhanced with null safety checks** **[NEW - AI FIXES]**
+**Key Features:**
+- **Constraint Safety:** Null checks prevent undefined entity errors in constraint operations **[NEW]**
+- **Expanded Awareness:** Increased detection radius from 300px to 1000px for realistic enemy behavior **[NEW]**
+- **Error Resilience:** Graceful handling of undefined contexts and missing animation data **[NEW]**
 **Dependencies:** `Behavior Tree/enemy_ai_utils.js`, `base_enemy.js`
 **Integration Points:** Enemy AI decision making
+**Note:** Recent AI fixes (Jan 2026) added constraint safety and expanded enemy awareness radius
 
 ### `Behavior Tree/enemy_ai_utils.js` - AI Utility Functions **[RECENTLY REFACTORED]**
 **Purpose:** Shared utility functions for AI operations
@@ -571,20 +632,26 @@ Platformer Browser Game/
 **Dependencies:** None (configuration)
 **Integration Points:** Used by all AI systems and script manager
 
-### `base_enemy.js` - Enemy Base Class **[RECENTLY ENHANCED]**
-**Purpose:** Foundation class for all enemy types
+### `base_enemy.js` - Enemy Base Class **[RECENTLY ENHANCED - AI SYSTEM FIXES]**
+**Purpose:** Foundation class for all enemy types with unified distance calculation and BT context enrichment
 **Responsibilities:**
-- Common enemy behaviors
-- AI integration points
-- Combat participation
-- Animation coordination
+- Common enemy behaviors and AI coordination
+- **BT context enrichment with physical dimensions** **[NEW - AI FIXES]**
+- **Animation system integration for real-time hitbox access** **[NEW - AI FIXES]**
+- Combat participation and animation coordination
 **Key Functions:**
 - `updateAI(players, dt)` - AI update cycle
 - `updateFSMBehavior()` - Behavior state management
 - `getThinkingDuration()` - AI timing **[NOW USES CONFIG]**
 - `consultBTForBehavior()` - BT integration **[USES UTILS]**
-**Dependencies:** `Behavior Tree/enemyAI_BT.js`, `combat_system.js`
+- `updateBTContext(players)` - **BT context enrichment with physical dimensions** **[NEW - AI FIXES]**
+**Key Features:**
+- **Unified Distance Context:** Provides complete entity dimensions (`w`, `h`, `collisionW`, `collisionH`, `zThickness`) to BT **[NEW]**
+- **Animation System Link:** Direct access to `window.animationSystem` for real-time hitbox data **[NEW]**
+- **Cross-system Consistency:** Same distance measurements used by AI "brain" and "body" systems **[NEW]**
+**Dependencies:** `Behavior Tree/enemyAI_BT.js`, `combat_system.js`, `collision.js`
 **Integration Points:** Extended by specific enemy types
+**Note:** Recent AI fixes (Jan 2026) added physical dimension context and animation system access for accurate distance calculations
 
 ### `enemy_data.js` - Enemy Definitions & Stats
 **Purpose:** Static data definitions for enemy types
@@ -713,13 +780,15 @@ Platformer Browser Game/
 **Dependencies:** `constants.js`
 **Integration Points:** Game update loop
 
-### `collision.js` - Collision Detection System **[RECENTLY ENHANCED]**
-**Purpose:** Advanced collision detection and resolution with global exports
+### `collision.js` - Collision Detection System **[RECENTLY ENHANCED - AI DISTANCE FIXES]**
+**Purpose:** Advanced collision detection and resolution with unified AI distance calculation system
 **Responsibilities:**
 - 3D collision detection with Z-depth
 - Collision buffer systems
 - Entity intersection calculations
 - Collision response coordination
+- **Unified distance calculation with intelligent fallbacks** **[NEW - AI FIXES]**
+- **Animation readiness checks for accurate measurements** **[NEW - AI FIXES]**
 - Attack collision detection **[MOVED HERE]**
 - Movement validation **[MOVED HERE]**
 - AI behavior constraints **[MOVED HERE]**
@@ -730,11 +799,19 @@ Platformer Browser Game/
 - `canMoveTo(entity, proposedX, proposedY, proposedZ)` - Movement validation **[MOVED HERE]**
 - `getBehaviorConstraints(entity)` - AI decision boundaries **[MOVED HERE]**
 - `applyScreenBoundaries(entity)` - Boundary enforcement **[MOVED HERE]**
+- `calculateEntityDistance(entity1, entity2)` - **Unified distance calculation with 3D support** **[NEW - AI FIXES]**
+- `isAnimationSystemReadyForEntity(entity)` - **Animation readiness validation** **[NEW - AI FIXES]**
 - `resolveCollision()` - Collision response
 - `getCollisionBounds(entity)` - Boundary calculation
+**Key Features:**
+- **Intelligent Fallbacks:** Entity-specific collision dimensions (Player: 65x260, Enemy: 80x60) when hitboxes unavailable **[NEW]**
+- **Animation Readiness Checks:** Prevents calculations before system initialization **[NEW]**
+- **3D Distance Support:** Includes depth (Z-axis) for accurate 2.5D gameplay **[NEW]**
+- **Enhanced Logging:** Clear diagnostic information about animation system status **[NEW]**
 **Global Exports:** All major collision functions exported globally for cross-module use
 **Dependencies:** `entities.js`, `constants.js`
 **Integration Points:** Physics, combat, AI, and game systems
+**Note:** Recent AI fixes (Jan 2026) added unified distance calculation system with animation system integration
 
 ---
 

@@ -50,7 +50,7 @@ class BaseEnemy {
     this.aiState = 'idle'; // idle, patrol, chase, attack, flee
     this.aiTimer = 0;
     this.detectionRange = 300; // Distance to detect player
-    this.attackRange = 100;    // Distance to attack player
+    this.attackRange = 60;     // Precise edge-to-edge attack distance
     this.patrolDirection = 1;  // 1 = right, -1 = left
     this.patrolDistance = 200; // How far to patrol
     this.startX = x;           // Original spawn position
@@ -103,13 +103,17 @@ class BaseEnemy {
       name: `${this.constructor.name}_${this.level}`,
       rarity: this.rarity,
       intelligence: this.intelligence,
-      self: { hp: this.health, maxHp: this.maxHp, x: this.x, y: this.y, z: this.z },
+      self: {
+        hp: this.health, maxHp: this.maxHp, x: this.x, y: this.y, z: this.z,
+        w: this.w, h: this.h, collisionW: this.collisionW, collisionH: this.collisionH, zThickness: this.zThickness
+      },
       targets: [], // Will be updated in updateAI
       capabilities: { canBlock: false, canEvade: false },
       attackProfile: this.createAttackProfile(), // Subclasses can override
       intelligence: { blockChance: 0, evadeChance: 0.1, aggression: 0.3 },
       behaviors: window.ENEMY_BEHAVIORS?.[this.rarity]?.[this.intelligence], // Rarity/intelligence config
       phaseSpecialAvailable: false, // Override for boss enemies
+      animationSystem: window.animationSystem, // Link to animation system for real-time hitbox access
       command: null,
     };
 
@@ -267,14 +271,22 @@ class BaseEnemy {
       const chaseRadius = behaviors.chase?.radiusX || 300;
       //console.log(`[DEBUG] Thinking interruption check: aiTimer=${this.aiTimer}, hasPlayer=${!!closestPlayer}, distance=${closestPlayer?.distance}, chaseRadius=${chaseRadius}, condition=${!!(closestPlayer && closestPlayer.distance <= chaseRadius)}`);
       if (closestPlayer && closestPlayer.distance <= chaseRadius) {
-        console.log(`[BASE ENEMY THINKING] Player detected during thinking, interrupting - distance: ${closestPlayer.distance} <= ${chaseRadius}`);
-        // Player detected - interrupt thinking and handle immediately
-        this.isThinking = false;
-        // DON'T clear pendingCommand - transitionToBehavior() will overwrite it if needed
+        // Only interrupt if this thinking phase allows interruption (default: true)
+        // If we explicitly waited (e.g. pre-attack pause), don't interrupt just because player is near
+        const canInterrupt = this.thinkingPhaseInterrupted !== false; // Check the flag set by command
 
-        const nextBehavior = this.consultBTForBehavior(players, { reason: 'player_detected', playerDistance: closestPlayer.distance });
-        this.transitionToBehavior(nextBehavior, behaviors);
-        return;
+        if (canInterrupt) {
+          console.log(`[BASE ENEMY THINKING] Player detected during thinking, interrupting - distance: ${closestPlayer.distance} <= ${chaseRadius}`);
+          // Player detected - interrupt thinking and handle immediately
+          this.isThinking = false;
+          // DON'T clear pendingCommand - transitionToBehavior() will overwrite it if needed
+
+          const nextBehavior = this.consultBTForBehavior(players, { reason: 'player_detected', playerDistance: closestPlayer.distance });
+          this.transitionToBehavior(nextBehavior, behaviors);
+          return;
+        } else {
+          // console.log(`[BASE ENEMY THINKING] Player detected but phase is uninterruptible`);
+        }
       }
       //console.log(`[DEBUG] No thinking interruption, continuing thinking phase`);
 
@@ -395,7 +407,7 @@ class BaseEnemy {
 
     // Check for player proximity during vertical movement
     const closestPlayer = this.getClosestPlayer(players);
-    const attackRange = 100; // Use a standard attack range for now
+    const attackRange = this.attackRange; // Use standard/configured attack range
 
     if (closestPlayer && closestPlayer.distance <= attackRange) {
       console.log(`%c[PLAYER DETECTED] Player in range during vertical movement - stopping move and preparing attack`, 'color: #ff0000; font-weight: bold; font-size: 14px;');
@@ -430,8 +442,8 @@ class BaseEnemy {
       this.verticalMovementStartZ = undefined;
 
       if (blocker && blocker.entityType === 'player') {
-        console.log(`[PLAYER COLLISION] Vertical move hit PLAYER at Z=${proposedZ.toFixed(1)} - attacking immediately!`);
-        this.transitionToBehavior({ type: 'attack', attackType: 'light' }, behaviors);
+        console.log(`[PLAYER COLLISION] Vertical move hit PLAYER at Z=${proposedZ.toFixed(1)} - going to IDLE (thinking phase)`);
+        this.transitionToBehavior({ type: 'idle', duration: 0.3, canInterrupt: false }, behaviors);
       } else {
         this.transitionToBehavior({ type: 'idle', duration: 0.5 }, behaviors);
       }
@@ -574,10 +586,9 @@ class BaseEnemy {
     //console.log(`[DISTANCE_DEBUG] Enemy at (${this.x.toFixed(1)}, ${this.z.toFixed(1)}), Player at (${closestPlayer?.x?.toFixed(1)}, ${closestPlayer?.z?.toFixed(1)}), Distance: ${closestPlayer?.distance?.toFixed(1)}, Colliding: ${isPlayerColliding}`);
 
     if (isPlayerColliding) {
-      // PRIORITY: Direct collision with player - attack immediately!
-      console.log(`[COLLISION DETECTED] Player collision detected - ATTACKING IMMEDIATELY!`);
-      const attackCommand = { type: 'attack', attackType: 'light' };
-      this.transitionToBehavior(attackCommand, behaviors);
+      // Direct collision with player - go to idle first (thinking phase)
+      console.log(`[COLLISION DETECTED] Player collision detected during patrol - going to IDLE (thinking phase)`);
+      this.transitionToBehavior({ type: 'idle', duration: 0.3, canInterrupt: false }, behaviors);
       return;
     } else if (closestPlayer && closestPlayer.distance <= (behaviors.chase?.radiusX || 300)) {
       // Distance-based detection
@@ -606,7 +617,7 @@ class BaseEnemy {
     }
 
     const chaseSpeed = behaviors.chase?.speed || 80;
-    const attackRange = behaviors.attack ? 100 : 100; // Use attack range from BT config
+    const attackRange = behaviors.attack?.range || this.attackRange; // Use attack range from BT config or fallback
 
     console.log(`[CHASE_DEBUG] Distance to player: ${closestPlayer.distance.toFixed(1)}, attack range: ${attackRange}`);
 
@@ -617,7 +628,8 @@ class BaseEnemy {
     if (isPlayerColliding || closestPlayer.distance <= attackRange) {
       // GO TO IDLE FIRST - don't attack immediately (same as patrol pattern)
       console.log(`[CHASE_COLLISION] ${isPlayerColliding ? 'Collision detected' : `Distance ${closestPlayer.distance.toFixed(1)} <= ${attackRange}`}, going to IDLE (thinking phase) first`);
-      this.transitionToBehavior({ type: 'idle', duration: 0.3 }, behaviors);
+      // Important: Set canInterrupt: false so updateIdleBehavior doesn't immediately cancel this pause
+      this.transitionToBehavior({ type: 'idle', duration: 0.3, canInterrupt: false }, behaviors);
       return;
     }
 
@@ -941,10 +953,14 @@ class BaseEnemy {
         if (command.duration) {
           this.aiTimer = -command.duration; // Negative to count up to 0
           this.isThinking = false; // Important: NOT thinking for idle command, just waiting
+
+          // Set interruption flag based on command property (default to true if undefined)
+          this.thinkingPhaseInterrupted = command.canInterrupt !== undefined ? command.canInterrupt : true;
         } else {
           // If no duration, it's a thinking phase? No, idle command usuall has duration.
           // If no duration, maybe treat as 0?
           this.aiTimer = 0;
+          this.thinkingPhaseInterrupted = true;
         }
 
         if (this.stateMachine) {
@@ -1165,16 +1181,15 @@ class BaseEnemy {
     return null;
   }
 
-  // Helper: Get closest player
+  // Helper: Get closest player using precise edge-to-edge distance
   getClosestPlayer(players) {
     if (!players || players.length === 0) return null;
 
     return players.reduce((closest, player) => {
-      // Use X-Z distance for 2.5D detection
-      const distance = Math.sqrt(
-        Math.pow(this.x - player.x, 2) +
-        Math.pow(this.z - player.z, 2)
-      );
+      // Precise edge-to-edge distance (robust for non-centered hitboxes and mirroring)
+      const distance = window.calculateEntityDistance ? window.calculateEntityDistance(this, player) :
+        Math.sqrt(Math.pow(this.x - player.x, 2) + Math.pow(this.z - player.z, 2));
+
       if (!closest || distance < closest.distance) {
         return { ...player, distance };
       }
@@ -1193,16 +1208,29 @@ class BaseEnemy {
     this.aiContext.self.y = this.y;
     this.aiContext.self.z = this.z; // ← ADD THIS: Update Z position for scripts!
 
-    // Update targets (players) - Use X-Z distance for 2.5D detection
-    this.aiContext.targets = players.map(player => ({
-      entity: player,  // FIXED: Include the actual player entity for target selection
-      distance: Math.sqrt(  // ✅ X-Z distance for 2.5D
-        Math.pow(this.x - player.x, 2) +
-        Math.pow(this.z - player.z, 2)
-      ),
-      hpPercent: (player.health / player.maxHealth) * 100,
-      damageDone: 0 // Could track damage dealt to each player
-    }));
+    // Update targets (players) - Use edge-to-edge distance for consistency with AI behaviors
+    this.aiContext.targets = players.map(player => {
+      // Calculate precise edge-to-edge distance (same as getClosestPlayer)
+      const distance = window.calculateEntityDistance ? window.calculateEntityDistance(this, player) :
+        Math.sqrt(Math.pow(this.x - player.x, 2) + Math.pow(this.z - player.z, 2));
+
+      if (distance < 200) {
+        console.log(`[DISTANCE_CALC] Distance to player: ${distance.toFixed(1)}px (Edge-to-Edge)`);
+      }
+
+      return {
+        entity: player,
+        distance: distance,
+        hpPercent: (player.health / (player.maxHealth || 100)) * 100,
+        damageDone: 0,
+        // Add physical dimensions for BT access
+        w: player.w,
+        h: player.h,
+        collisionW: player.collisionW,
+        collisionH: player.collisionH,
+        zThickness: player.zThickness
+      };
+    });
   }
 
   // Take damage from player attacks
@@ -1352,8 +1380,8 @@ class BlueSlime extends BaseEnemy {
       // Dimensions (scaled for sprite)
       w: 240,  // Visual width (2x scaled sprite: 120*2)
       h: 256,  // Visual height (2x scaled sprite: 128*2)
-      collisionW: 120,  // Collision width (same as sprite frame)
-      collisionH: 128,  // Collision height (same as sprite frame)
+      collisionW: 100,  // Standardized fallback width
+      collisionH: 70,   // Standardized fallback height
       zThickness: 3,   // Z thickness for 2.5D collision
 
       // Stats (Blue Slime specific)

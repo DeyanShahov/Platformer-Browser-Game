@@ -23,6 +23,7 @@ function checkCollision(ax, ay, az, aw, ah, azThickness, tx, ty, tz, tw, th, tzT
 // Unified attack collision function - MOVED TO game.js (contains game logic)
 
 // ===========================================
+// ===========================================
 // UNIFIED COLLISION SYSTEM
 // ===========================================
 
@@ -43,39 +44,50 @@ function getCurrentHitBoxDimensions(entity) {
   return null; // No per-frame data - use static dimensions
 }
 
+// Helper function to check if animation system is fully ready for entity
+function isAnimationSystemReadyForEntity(entity) {
+  return entity.animation &&
+    entity.animation.animationDefinition &&
+    entity.animation.animationDefinition.frameData &&
+    entity.animation.currentFrame !== undefined &&
+    entity.animation.animationDefinition.frameData[entity.animation.currentFrame];
+}
+
 // Helper function to get current per-frame hit box position and dimensions (for unified collision)
 function getCurrentHitBoxPosition(entity) {
-  const hitBoxData = getCurrentHitBoxDimensions(entity);
-  if (!hitBoxData) return null;
+  if (!entity.animation || !entity.animation.animationDefinition) {
+    return null; // No animation system fallback
+  }
 
-  // Calculate hit box position the same way as AnimationRenderer
+  const currentFrame = entity.animation.currentFrame;
+  const animationDef = entity.animation.animationDefinition;
+
+  // Check if current animation frame has hit box data
+  if (!animationDef.frameData || !animationDef.frameData[currentFrame] || !animationDef.frameData[currentFrame].hitBox) {
+    return null;
+  }
+
+  const hitBoxData = animationDef.frameData[currentFrame].hitBox;
+
+  // Calculate hit box position consistently with AnimationRenderer
   const zOffset = entity.z * 1.0;
   const drawX = entity.x;
   const drawY = entity.y - entity.h - zOffset;
 
   let boxX, boxY;
 
-  // Position relative to sprite coordinates (same as AnimationRenderer)
+  // Position relative to sprite coordinates
   boxX = drawX + hitBoxData.x;
-  boxY = drawY + entity.h / 2 - hitBoxData.y;
 
-  // MIRROR HIT BOX FOR COLLISION when facing left (same as attack collision)
-  // FIX: DISABLED mirroring for BODY hitboxes (collisionType !== 'attack')
-  // Reason: The new Universal Flip Renderer rotates the world around the Hitbox Center.
-  // This means the physical Hitbox IS the axis of rotation and should remain static relative to entity.x.
-  // Moving it mirrors it TWICE (once visually, once physically), causing desync.
-  /* 
-  if (entity.animation && entity.animation.facingDirection === 'left') {
-    // Calculate the center of the entity for mirroring
-    const entityCenterX = entity.x + (entity.collisionW || entity.w) / 2;
-
-    // Mirror the hit box around the entity center
-    const distanceFromCenter = boxX + hitBoxData.width / 2 - entityCenterX;
-    const mirroredCenterX = entityCenterX - distanceFromCenter;
-
-    boxX = mirroredCenterX - hitBoxData.width / 2;
+  // Rectangle vs Sprite branching for Y-axis
+  if (animationDef.spriteSheet && entity.animationEntityType !== 'blue_slime') {
+    boxY = drawY + entity.h / 2 - hitBoxData.y;
+  } else {
+    boxY = drawY + entity.h - hitBoxData.height;
   }
-  */
+
+  // DISABLED mirroring for BODY hitboxes (collisionType !== 'attack')
+  // The renderer pivots the whole frame around the hitbox center, so the physical box remains at the same world X.
 
   return {
     x: boxX,
@@ -109,7 +121,6 @@ function checkEntityCollision(entity1, entity2, collisionType, params = {}) {
     // Adjust hit box position for proposed movement
     const xOffset = config.entity1Pos.x - entity1.x; // Movement offset
     const yOffset = config.entity1Pos.y - entity1.y;
-    const zOffset = config.entity1Pos.z - entity1.z;
 
     e1X = e1HitBox.x + xOffset;
     e1Y = e1HitBox.y + yOffset;
@@ -117,12 +128,15 @@ function checkEntityCollision(entity1, entity2, collisionType, params = {}) {
     e1W = e1HitBox.width;
     e1H = e1HitBox.height;
   } else {
-    // Use static dimensions
-    e1X = config.entity1Pos.x;
-    e1Y = config.entity1Pos.y;
+    // Falls back to static dimensions - CENTERed within visual frame
+    const colW = entity1.collisionW || entity1.w;
+    const colH = entity1.collisionH || entity1.h;
+
+    e1X = config.entity1Pos.x + (entity1.w - colW) / 2;
+    e1Y = config.entity1Pos.y + (entity1.h - colH) / 2;
     e1Z = config.entity1Pos.z;
-    e1W = entity1.collisionW || entity1.w;
-    e1H = entity1.collisionH || entity1.h;
+    e1W = colW;
+    e1H = colH;
   }
 
   if (e2HitBox) {
@@ -133,12 +147,15 @@ function checkEntityCollision(entity1, entity2, collisionType, params = {}) {
     e2W = e2HitBox.width;
     e2H = e2HitBox.height;
   } else {
-    // Use static dimensions for entity2
-    e2X = entity2.x;
-    e2Y = entity2.y;
+    // Falls back to static dimensions for entity2 - CENTERed within visual frame
+    const colW = entity2.collisionW || entity2.w;
+    const colH = entity2.collisionH || entity2.h;
+
+    e2X = entity2.x + (entity2.w - colW) / 2;
+    e2Y = entity2.y + (entity2.h - colH) / 2;
     e2Z = entity2.z;
-    e2W = entity2.collisionW || entity2.w;
-    e2H = entity2.collisionH || entity2.h;
+    e2W = colW;
+    e2H = colH;
   }
 
   // Check collision with buffer for movement
@@ -340,11 +357,18 @@ function checkHitboxCollision(attacker, target, params) {
           // Adjust attack box position based on facing direction
           // When facing left, the attack box needs to be mirrored
           if (attacker.animation && attacker.animation.facingDirection === 'left') {
-            // Calculate the center of the entity for mirroring
-            const entityCenterX = attacker.x + attacker.collisionW / 2;
+            // FIX: Use the actual hitbox center for pivoting, matching visual renderer
+            let entityCenterX;
 
-            // Mirror the attack box around the entity center
-            const distanceFromCenter = attackBoxPos.x + attackBoxPos.width / 2 - entityCenterX;
+            const hitBoxPos = getCurrentHitBoxPosition(attacker);
+            if (hitBoxPos) {
+              entityCenterX = hitBoxPos.x + hitBoxPos.width / 2;
+            } else {
+              entityCenterX = attacker.x + (attacker.collisionW || attacker.w) / 2;
+            }
+
+            // Mirror the attack box around the pivot
+            const distanceFromCenter = (attackBoxPos.x + attackBoxPos.width / 2) - entityCenterX;
             const mirroredCenterX = entityCenterX - distanceFromCenter;
 
             attackBoxPos = {
@@ -400,22 +424,7 @@ function checkHitboxCollision(attacker, target, params) {
   return false;
 }
 
-// Helper function to get current per-frame hit box dimensions (for calculateBoxPosition)
-function getCurrentHitBoxDimensions(entity) {
-  if (!entity.animation || !entity.animation.animationDefinition) {
-    return null; // No animation system - use static dimensions
-  }
 
-  const currentFrame = entity.animation.currentFrame;
-  const animationDef = entity.animation.animationDefinition;
-
-  // Check if current animation frame has hit box data
-  if (animationDef.frameData && animationDef.frameData[currentFrame] && animationDef.frameData[currentFrame].hitBox) {
-    return animationDef.frameData[currentFrame].hitBox;
-  }
-
-  return null; // No per-frame data - use static dimensions
-}
 
 // Legacy movement collision function (moved from game.js)
 function canMoveTo(entity, proposedX, proposedY, proposedZ) {
@@ -639,6 +648,94 @@ function applyScreenBoundaries(entity) {
   return { wasLimited };
 }
 
+/**
+ * Calculate precise edge-to-edge distance between two entities
+ * Accounts for per-frame hitboxes and Z-axis depth.
+ * @param {Object} entity1 - Source entity
+ * @param {Object} entity2 - Target entity
+ * @returns {number} Distance in pixels
+ */
+function calculateEntityDistance(entity1, entity2) {
+  if (!entity1 || !entity2) return Infinity;
+
+  const hBox1 = getCurrentHitBoxPosition(entity1);
+  const hBox2 = getCurrentHitBoxPosition(entity2);
+
+  let distance;
+
+  if (hBox1 && hBox2) {
+    // Calculate horizontal edge-to-edge distance
+    const center1 = hBox1.x + hBox1.width / 2;
+    const center2 = hBox2.x + hBox2.width / 2;
+    // (distance between centers) - (half widths)
+    const hDist = Math.max(0, Math.abs(center1 - center2) - (hBox1.width + hBox2.width) / 2);
+
+    // Z distance
+    const zDist = Math.abs((entity1.z || 0) - (entity2.z || 0));
+
+    // Combine using Pythagorean theorem
+    distance = Math.sqrt(Math.pow(hDist, 2) + Math.pow(zDist, 2));
+  } else {
+    // FALLBACK improved: Use centered collision boxes instead of visual origins
+    // Better fallback logic for more accurate distance calculations
+
+    // Get collision dimensions with better defaults based on entity type
+    let colW1, colH1, colW2, colH2;
+
+    if (entity1.entityType === 'player') {
+      // Player has standardized dimensions
+      colW1 = entity1.collisionW || 65;
+      colH1 = entity1.collisionH || 260;
+    } else if (entity1.entityType === 'enemy' || entity1.entityType === 'blue_slime') {
+      // Enemy dimensions
+      colW1 = entity1.collisionW || entity1.w * 0.4 || 80;
+      colH1 = entity1.collisionH || entity1.h * 0.6 || 60;
+    } else {
+      // Generic fallback
+      colW1 = entity1.collisionW || entity1.w * 0.5 || 100;
+      colH1 = entity1.collisionH || entity1.h * 0.5 || 100;
+    }
+
+    if (entity2.entityType === 'player') {
+      colW2 = entity2.collisionW || 65;
+      colH2 = entity2.collisionH || 260;
+    } else if (entity2.entityType === 'enemy' || entity2.entityType === 'blue_slime') {
+      colW2 = entity2.collisionW || entity2.w * 0.4 || 80;
+      colH2 = entity2.collisionH || entity2.h * 0.6 || 60;
+    } else {
+      colW2 = entity2.collisionW || entity2.w * 0.5 || 100;
+      colH2 = entity2.collisionH || entity2.h * 0.5 || 100;
+    }
+
+    // Calculate centers of collision boxes (centered within visual frames)
+    const c1x = entity1.x + (entity1.w - colW1) / 2;
+    const c1y = entity1.y + (entity1.h - colH1) / 2;
+    const c2x = entity2.x + (entity2.w - colW2) / 2;
+    const c2y = entity2.y + (entity2.h - colH2) / 2;
+
+    // Calculate horizontal edge-to-edge distance between centered collision boxes
+    const hDist = Math.max(0, Math.abs(c1x - c2x) - (colW1 + colW2) / 2);
+    const vDist = Math.max(0, Math.abs(c1y - c2y) - (colH1 + colH2) / 2);
+    const dz = Math.abs((entity1.z || 0) - (entity2.z || 0));
+
+    // Use 3D distance for more accurate calculations
+    distance = Math.sqrt(hDist * hDist + vDist * vDist + dz * dz);
+
+    // Enhanced logging for debugging
+    if (!hBox1 || !hBox2) {
+      const animReady1 = isAnimationSystemReadyForEntity(entity1);
+      const animReady2 = isAnimationSystemReadyForEntity(entity2);
+      const rawDist = Math.sqrt(
+        Math.pow(entity1.x - entity2.x, 2) +
+        Math.pow((entity1.z || 0) - (entity2.z || 0), 2)
+      );
+      console.log(`[DISTANCE_FALLBACK] Animation not ready for: ${!animReady1 ? entity1.entityType + '(no anim)' : ''} ${!animReady2 ? entity2.entityType + '(no anim)' : ''}. Fallback: ${distance.toFixed(1)}px (Raw origin dist: ${rawDist.toFixed(1)}px)`);
+    }
+  }
+
+  return distance;
+}
+
 // ===========================================
 // GLOBAL EXPORTS
 // ===========================================
@@ -648,3 +745,7 @@ window.checkHitboxCollision = checkHitboxCollision;
 window.canMoveTo = canMoveTo;
 window.getBehaviorConstraints = getBehaviorConstraints;
 window.applyScreenBoundaries = applyScreenBoundaries;
+window.getCurrentHitBoxDimensions = getCurrentHitBoxDimensions;
+window.getCurrentHitBoxPosition = getCurrentHitBoxPosition;
+window.checkEntityCollision = checkEntityCollision;
+window.calculateEntityDistance = calculateEntityDistance;

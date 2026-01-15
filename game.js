@@ -1596,21 +1596,32 @@ function initGameWithSelections() {
     console.log('[GAME] Final game state debug:', window.gameState.getDebugInfo());
 
     // Create enemies using the new enemy data system
-    const blueSlime = createBlueSlime(650 * (CANVAS_WIDTH / 900), Math.max(200, CANVAS_HEIGHT - 600), 0, 1);
-    window.gameState.addEntity(blueSlime, 'enemy');
-    console.log('[GAME] Blue Slime added to game state');
+    // Create enemies using the new enemy data system
+    // TEST: Adding 3 extra enemies for verification (Total 4)
+    const enemyConfigs = [
+      { x: 650, z: 0 },   // Original
+      //{ x: 400, z: -100 }, // Left, back
+      //{ x: 900, z: 100 },  // Right, front
+      //{ x: 1200, z: 0 }    // Far right, middle
+    ];
 
-    // Register Blue Slime with animation system
-    if (window.animationSystem && window.animationSystem.isInitialized) {
-      const blueSlimeAnimation = window.animationSystem.registerEntity(blueSlime, 'blue_slime');
-      console.log(`[GAME] Blue Slime registered with animation system:`, blueSlimeAnimation ? 'SUCCESS' : 'FAILED');
+    enemyConfigs.forEach((config, index) => {
+      const scaleFactor = CANVAS_WIDTH / 900;
+      const blueSlime = createBlueSlime(config.x * scaleFactor, Math.max(200, CANVAS_HEIGHT - 600), config.z, 1);
 
-      // Create FSM after animation registration
-      if (window.EnemyAnimationStateMachine) {
-        blueSlime.stateMachine = new window.EnemyAnimationStateMachine(blueSlime);
-        console.log(`[GAME] Blue Slime FSM initialized:`, blueSlime.stateMachine.getCurrentStateName());
+      window.gameState.addEntity(blueSlime, 'enemy');
+      console.log(`[GAME] Blue Slime ${index + 1} added to game state`);
+
+      // Register with animation system
+      if (window.animationSystem && window.animationSystem.isInitialized) {
+        const blueSlimeAnimation = window.animationSystem.registerEntity(blueSlime, 'blue_slime');
+
+        // Create FSM after animation registration
+        if (window.EnemyAnimationStateMachine) {
+          blueSlime.stateMachine = new window.EnemyAnimationStateMachine(blueSlime);
+        }
       }
-    }
+    });
 
     // Initialize menu system
     if (window.initMenu) {
