@@ -43,33 +43,11 @@ const ACTION_TYPES = {
 // Debug visualization flags - set to false for production/release builds
 // Usage: Set individual flags to false to disable specific visualizations
 // Or set SHOW_HITBOXES to false to disable all hitbox drawing
-// Runtime toggle: window.toggleDebugBoxes() in browser console
 const DEBUG_MODE = {
   SHOW_HITBOXES: false,        // Master switch for all hitbox types
   SHOW_PLAYER_BOX: false,      // Yellow collision box for player
   SHOW_HURT_BOXES: false,      // Orange hurt boxes for entities
   SHOW_ATTACK_BOXES: false,    // Red attack boxes during attacks
-  SHOW_ENTITY_LABELS: true,   // White text with Z-coordinates and render order
+  SHOW_ENTITY_LABELS: false,   // White text with Z-coordinates and render order
   SHOW_DAMAGE_NUMBERS: true,  // Floating damage numbers
 };
-
-// Runtime debug toggle functions
-function toggleDebugBoxes() {
-  DEBUG_MODE.SHOW_HITBOXES = !DEBUG_MODE.SHOW_HITBOXES;
-  console.log(`Debug hitboxes: ${DEBUG_MODE.SHOW_HITBOXES ? 'ENABLED' : 'DISABLED'}`);
-  console.log('Individual controls:');
-  console.log('- DEBUG_MODE.SHOW_PLAYER_BOX (yellow)');
-  console.log('- DEBUG_MODE.SHOW_HURT_BOXES (orange)');
-  console.log('- DEBUG_MODE.SHOW_ATTACK_BOXES (red)');
-}
-
-function toggleEntityLabels() {
-  DEBUG_MODE.SHOW_ENTITY_LABELS = !DEBUG_MODE.SHOW_ENTITY_LABELS;
-  console.log(`Entity labels (Z-coordinates): ${DEBUG_MODE.SHOW_ENTITY_LABELS ? 'ENABLED' : 'DISABLED'}`);
-}
-
-// Make toggle functions globally available
-if (typeof window !== 'undefined') {
-  window.toggleDebugBoxes = toggleDebugBoxes;
-  window.toggleEntityLabels = toggleEntityLabels;
-}
