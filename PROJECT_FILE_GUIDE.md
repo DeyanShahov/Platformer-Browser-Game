@@ -4,7 +4,7 @@
 
 This comprehensive guide documents every file in the Platformer Browser Game project. It serves as a reference for developers to understand existing systems and avoid creating duplicate functionality when adding new features.
 
-**Last Updated:** January 2026 (Combat System Unification)
+**Last Updated:** January 2026 (AI Chase System + Combat Unification)
 **Purpose:** Prevent code duplication, improve maintainability, guide feature development
 
 ---
@@ -62,6 +62,112 @@ This comprehensive guide documents every file in the Platformer Browser Game pro
 - **Performance Optimized:** Readiness checks prevent unnecessary calculations during startup
 
 ---
+
+## 🏗️ RECENT ARCHITECTURAL CHANGES (January 2026)
+
+### Dual Strategy Enemy Chase System - COMPLETED ✅ **[MAJOR AI IMPROVEMENT]**
+**Implemented intelligent dual-strategy repositioning system with X-overlap detection and attack completion timing fixes**
+
+#### Problem Solved:
+- **Before:** Enemies had inconsistent repositioning when player was at different Z-depths, attack cycles were broken with movement animations instead of idle
+- **Issue:** Single strategy approach couldn't handle X-overlapping scenarios, redundant attack completion checks interfered with natural state transitions
+- **Impact:** Enemies got stuck in suboptimal positioning, attack > idle > attack cycle was broken
+
+#### Solution Implemented:
+- **Dual Strategy Repositioning:** X-overlapping scenarios use X-first approach, X-separated use Z-first approach
+- **X-Overlap Detection:** Dynamic threshold-based detection of hitbox overlapping on X-axis
+- **Attack Completion Cleanup:** Removed redundant animation completion check to prevent timing interference
+- **Comprehensive Debug Logging:** Detailed strategy decision tracking with `[Z_CHASE_STRATEGY]` prefixes
+- **State Protection:** Chase state management prevents strategy oscillation and maintains progression
+
+#### Key Changes:
+1. **`base_enemy.js`**: Complete dual strategy implementation with X-overlap detection and state protection
+2. **Strategy Logic:** X-first for overlapping scenarios, Z-first for separated scenarios with deadlock prevention
+3. **Attack Behavior:** Cleaned up completion detection to use natural state machine transitions
+4. **Debug System:** Comprehensive logging for strategy decisions, state tracking, and execution flow
+
+#### Technical Implementation:
+- **X-Overlap Threshold:** Configurable `minXSeparation` (default 170px) for hitbox overlap detection
+- **Strategy Selection:** Dynamic choice between X-first and Z-first based on current positioning
+- **State Management:** `chaseState` object tracks strategy, alignment, and separation status
+- **Attack Completion:** Single state machine-based transition without redundant manual checks
+- **Debug Logging:** Real-time strategy decision logging with position and state information
+
+#### Benefits Achieved:
+- **Intelligent Repositioning:** Enemies choose optimal movement strategy based on current positioning
+- **Clean Attack Cycles:** Proper attack > idle > attack flow without movement interruptions
+- **No Stuck States:** Dual strategies prevent positioning deadlocks in all scenarios
+- **Better Performance:** Reduced redundant checks and cleaner state transitions
+- **Debug Capability:** Comprehensive logging enables easy troubleshooting of chase behavior
+
+#### Files Affected:
+- `base_enemy.js` - Dual strategy chase system, attack completion cleanup, debug logging
+- `PROJECT_FILE_GUIDE.md` - Documentation update with new mechanics
+
+#### Architectural Benefits Achieved:
+- **Adaptive AI Behavior:** Context-aware strategy selection creates more intelligent enemy movement
+- **Clean State Management:** Proper state transitions eliminate redundant checks and interference
+- **Extensible Framework:** Strategy system can be easily extended with additional repositioning approaches
+- **Performance Optimized:** Reduced computational overhead with intelligent early exits
+- **Debug-Friendly:** Comprehensive logging enables rapid issue identification and resolution
+
+---
+
+## 🏗️ RECENT ARCHITECTURAL CHANGES (January 2026)
+
+### Strategic Z-First Enemy Chase System - COMPLETED ✅ **[CRITICAL AI IMPROVEMENT]**
+**Fixed enemy stuck states when player is at different Z-depths with intelligent repositioning and deadlock prevention**
+
+#### Problem Solved:
+- **Before:** Enemies reached same X as player but different Z-depth → stuck in infinite chase loop with "trembling" idle animations
+- **Issue:** Collision system prevented Z-movement when X-aligned, causing deadlock scenarios at boundaries
+- **Impact:** Enemies couldn't reach players at different Z-levels, poor AI responsiveness and stuck states
+
+#### Solution Implemented:
+- **Strategic Z-First Repositioning:** Assess Z-difference → reposition vertically → THEN horizontal pursuit (avoiding collision conflicts)
+- **Collision-Aware Design:** Maintain X-distance during Z-repositioning to prevent Z-axis blocking
+- **Deadlock Prevention System:** 4-phase boundary handling (detection → safe distance → boundary fallback → recovery)
+- **Precision Z-Alignment:** Configurable ±10px threshold for reliable attack triggering
+- **Multi-Phase Chase Logic:** Z-Assessment → Z-Repositioning → X-Pursuit → Attack transitions
+
+#### Key Changes:
+1. **`base_enemy.js`**: Complete rewrite of `updateRunningBehavior()` with strategic chase logic and state tracking
+2. **Chase State Management:** `chaseState` object tracks Z-alignment status, failure counts, and escape distances
+3. **Collision Integration:** Uses existing `applyCollisionCorrection()` for safe Z-movement validation
+4. **Boundary Resilience:** Special handling for screen edge scenarios with persistent failure detection
+
+#### Technical Implementation:
+- **Multi-Phase Logic:** Z-Assessment (needs repositioning?) → Z-Repositioning (align vertically) → X-Pursuit (horizontal chase) → Attack (when in range)
+- **Collision Safety:** Maintains X-distance during vertical movement to avoid Z-axis collision conflicts
+- **State Tracking:** Comprehensive `chaseState` object for alignment status, failure counting, and boundary handling
+- **Boundary Awareness:** Detects screen edges and applies intelligent fallback strategies
+- **Debug Logging:** Detailed `[Z_CHASE]` and `[Z_DEADLOCK]` prefixes for troubleshooting chase behavior
+
+#### Benefits Achieved:
+- **Complete 3D Chase:** Enemies reach players at ANY X/Z coordinate combination without stuck states
+- **Eliminated Stuck States:** No more infinite chase loops or trembling idle animations
+- **Strategic AI Behavior:** Intelligent Z-first repositioning creates believable pursuit patterns
+- **Collision Safety:** No Z-movement conflicts during repositioning phases
+- **Boundary Resilience:** Robust handling of screen edge scenarios with automatic recovery
+- **Performance Optimized:** Minimal collision checks with early exit conditions and state-based logic
+
+#### Files Affected:
+- `base_enemy.js` - Complete strategic chase system implementation with deadlock prevention
+- `ENEMY_Z_CHASE_FIX_PLAN.md` - Comprehensive planning, testing, and implementation documentation
+
+#### Architectural Benefits Achieved:
+- **Intelligent AI Behavior:** Strategic repositioning creates more believable and responsive enemy behavior
+- **Collision System Integration:** Leverages existing collision framework for safe multi-axis movement
+- **State-Driven Architecture:** Clean phase transitions with comprehensive state tracking
+- **Boundary-Aware Systems:** Intelligent handling of edge cases and boundary conditions
+- **Performance Conscious:** Minimal overhead with efficient state management and early exits
+- **Future-Extensible:** Framework supports additional chase phases and movement patterns
+
+---
+
+## 🏗️ RECENT ARCHITECTURAL CHANGES (January 2026)
+
+### Combat System Unification - COMPLETED ✅ **[MAJOR IMPROVEMENT]**
 
 ## 🏗️ RECENT ARCHITECTURAL CHANGES (January 2026)
 

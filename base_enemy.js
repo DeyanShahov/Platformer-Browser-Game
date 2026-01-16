@@ -618,14 +618,120 @@ class BaseEnemy {
     const chaseSpeed = behaviors.chase?.speed || 80;
     const attackRange = behaviors.attack?.range || this.attackRange;
 
-    // Z-assessment using collision buffer values for precision
-    const zCollisionBuffer = 30; // Z-tolerance from collision system (±30px for reliable detection)
-    const zAlignmentMargin = 10; // Additional margin (5-10px) for attack triggering reliability
-    const zRepositionThreshold = zCollisionBuffer + zAlignmentMargin; // Align to within 20px of target
+    // Initialize chase state if needed
+    if (!this.chaseState) {
+      this.chaseState = { zFailCount: 0, lastZFailTime: 0 };
+    }
+
+    // ESCAPE STATE PROTECTION: Prevent infinite loops during deadlock prevention
+    if (this.chaseState?.isEscaping) {
+      // During escape mode - DON'T check for player proximity or try Z-repositioning
+      // Just continue horizontal movement until safe distance is achieved
+      this.vx = this.chaseState.escapeDirection * chaseSpeed * 0.8;
+      this.vz = 0;
+
+      // Check if safe distance achieved
+      const currentXDistance = Math.abs(this.x - closestPlayer.x);
+      if (currentXDistance >= this.chaseState.escapeUntilXDistance) {
+        console.log(`[Z_DEADLOCK] Safe distance achieved (${currentXDistance.toFixed(1)} >= ${this.chaseState.escapeUntilXDistance}), ending escape mode`);
+        delete this.chaseState.isEscaping;
+        delete this.chaseState.escapeDirection;
+        delete this.chaseState.escapeUntilXDistance;
+        this.chaseState.zFailCount = 0; // Reset failure count for fresh start
+      }
+
+      // Boundary enforcement during escape
+      const boundaryResult = window.applyScreenBoundaries ? window.applyScreenBoundaries(this) : { wasLimited: false };
+      if (boundaryResult.wasLimited) {
+        this.vx = 0;
+        this.vz = 0;
+      }
+
+      return; // Skip all other chase logic during escape mode
+    }
+
+    // Z-assessment using precise alignment (±10px from target Z-position)
+    const zRepositionThreshold = 10; // Align to within ±10px of target Z-position
 
     // Initialize chase state if needed
     if (!this.chaseState) {
       this.chaseState = { zFailCount: 0, lastZFailTime: 0 };
+    }
+
+    // MOVE zDifference DECLARATION BEFORE X-overlap detection to fix temporal dead zone
+    const zDifference = Math.abs(this.z - closestPlayer.z);
+
+    // X-OVERLAP DETECTION: Determine repositioning strategy based on hitbox overlap
+    const xDistance = Math.abs(this.x - closestPlayer.x);
+    const minXSeparation = 170; // Minimum pixels needed for safe Z-movement (accounts for hitbox widths)
+    const isXOverlapping = xDistance <= minXSeparation;
+    const needsRepositioning = zDifference > zRepositionThreshold;
+
+    console.log(`[Z_CHASE_STRATEGY] ========== STRATEGY DECISION ==========`);
+    console.log(`[Z_CHASE_STRATEGY] Enemy pos: (${this.x.toFixed(1)}, ${this.z.toFixed(1)})`);
+    console.log(`[Z_CHASE_STRATEGY] Player pos: (${closestPlayer.x.toFixed(1)}, ${closestPlayer.z.toFixed(1)})`);
+    console.log(`[Z_CHASE_STRATEGY] X-distance: ${xDistance.toFixed(1)}, Z-diff: ${zDifference.toFixed(1)}`);
+    console.log(`[Z_CHASE_STRATEGY] minXSeparation: ${minXSeparation}, zRepositionThreshold: ${zRepositionThreshold}`);
+    console.log(`[Z_CHASE_STRATEGY] isXOverlapping: ${isXOverlapping}, needsRepositioning: ${needsRepositioning}`);
+    console.log(`[Z_CHASE_STRATEGY] ========== DECISION LOGIC ==========`);
+
+    // ADD: Debug current chase state
+    console.log(`[Z_CHASE_STRATEGY] Current chaseState:`, {
+      strategy: this.chaseState?.strategy || 'none',
+      zAligned: this.chaseState?.zAligned,
+      zFailCount: this.chaseState?.zFailCount || 0,
+      isEscaping: this.chaseState?.isEscaping,
+      xSeparationAchieved: this.chaseState?.xSeparationAchieved
+    });
+
+    // DUAL STRATEGY SELECTION: Trigger when X-overlapping OR when Z-repositioning needed
+    // FIX: Prevent X-FIRST re-triggering after initial repositioning is complete
+    const needsInitialRepositioning = (isXOverlapping && !this.chaseState?.xSeparationAchieved) || needsRepositioning;
+
+    if (needsInitialRepositioning) {
+      if (isXOverlapping && !this.chaseState?.xSeparationAchieved) {
+        // STRATEGY B: X-overlapping + initial repositioning needed → X-first repositioning
+        console.log(`[Z_CHASE_STRATEGY] Using X-FIRST strategy: X-overlapping detected (distance: ${xDistance.toFixed(1)} <= ${minXSeparation}), initial repositioning needed`);
+
+        // Move horizontally to create safe separation, then potentially align vertically if needed
+        this.chaseState.strategy = 'x_first';
+        this.chaseState.xTargetSeparation = minXSeparation + 10; // Target separation + buffer
+
+        // Determine direction to move horizontally (away from player)
+        const xDirection = this.x < closestPlayer.x ? -1 : 1;
+        this.vx = xDirection * chaseSpeed * 0.8; // Slightly slower for control
+        this.vz = 0; // No Z movement during X-separation
+
+        console.log(`[Z_CHASE_STRATEGY] Moving horizontally: vx=${this.vx.toFixed(1)}, target separation=${this.chaseState.xTargetSeparation}`);
+        return; // Exit - continue this strategy next frame
+      } else {
+        // STRATEGY A: X-separated + Z-different → Z-first repositioning (existing logic)
+        console.log(`[Z_CHASE_STRATEGY] Using Z-FIRST strategy: X-separated (distance: ${xDistance.toFixed(1)} > ${minXSeparation}), Z-diff: ${zDifference.toFixed(1)} > ${zRepositionThreshold}`);
+        this.chaseState.strategy = 'z_first';
+        // Continue with existing Z-first logic below
+      }
+    } else {
+      // No repositioning needed - normal horizontal chase
+      console.log(`[Z_CHASE_STRATEGY] No repositioning needed: X-distance ${xDistance.toFixed(1)} ${isXOverlapping ? '<=' : '>'} ${minXSeparation}, Z-diff ${zDifference.toFixed(1)} ${needsRepositioning ? '>' : '<='} ${zRepositionThreshold}${this.chaseState?.xSeparationAchieved ? ', xSeparationAchieved=true' : ''}`);
+    }
+
+    // Handle ongoing X-first strategy (when we were previously moving horizontally)
+    if (this.chaseState?.strategy === 'x_first' && !this.chaseState?.xSeparationAchieved) {
+      const currentXDistance = Math.abs(this.x - closestPlayer.x);
+
+      if (currentXDistance >= this.chaseState.xTargetSeparation) {
+        // X-separation achieved, now switch to Z-alignment
+        console.log(`[Z_CHASE_STRATEGY] X-separation achieved (${currentXDistance.toFixed(1)} >= ${this.chaseState.xTargetSeparation}), switching to Z-alignment`);
+        this.chaseState.xSeparationAchieved = true;
+        this.vx = 0; // Stop horizontal movement
+        // Continue to Z-repositioning logic below
+      } else {
+        // Continue horizontal separation
+        const xDirection = this.x < closestPlayer.x ? -1 : 1;
+        this.vx = xDirection * chaseSpeed * 0.8;
+        this.vz = 0;
+        return; // Continue X-separation
+      }
     }
 
     // 3D distance check for attack range
@@ -640,8 +746,7 @@ class BaseEnemy {
       return;
     }
 
-    // PHASE 1: Z-ASSESSMENT - Check if Z-repositioning needed
-    const zDifference = Math.abs(this.z - closestPlayer.z);
+    // PHASE 1: Z-ASSESSMENT - Check if Z-repositioning needed (zDifference already calculated above)
     const needsZRepositioning = zDifference > zRepositionThreshold;
 
     if (needsZRepositioning && !this.chaseState?.zAligned) {
@@ -692,7 +797,9 @@ class BaseEnemy {
 
           console.log(`[Z_DEADLOCK] Creating safe distance: ${currentXDistance.toFixed(1)} < ${minSafeDistance}, moving away`);
 
-          // Prevent immediate re-detection during escape
+          // Prevent immediate re-detection during escape - SET ESCAPE FLAGS
+          this.chaseState.isEscaping = true;
+          this.chaseState.escapeDirection = escapeDirection;
           this.chaseState.escapeUntilXDistance = minSafeDistance;
           return; // Skip normal chase logic
         }
@@ -752,29 +859,6 @@ class BaseEnemy {
   updateAttackBehavior(players, dt, behaviors) {
     console.log(`[ATTACK_DEBUG] Current state: ${this.stateMachine?.getCurrentStateName()}, isInAttackState: ${this.stateMachine?.isInAttackState()}, animation: ${this.animation?.currentAnimation}, frame: ${this.animation?.currentFrame}`);
 
-    // NEW: Check if animation reached the last frame (frame 3 for 4-frame animation: 0,1,2,3)
-    //const isLastFrame = this.animation?.currentFrame >= 4; // Frame 3 is the last frame
-    //const attackDuration = this.attackTimeoutStart ? performance.now() - this.attackTimeoutStart : 0; 
-    //const animationDurationMs = (this.animation?.animationDefinition?.duration || 1) * 1000;
-
-    // Force completion after animation duration OR when animation reaches the last frame
-    const isAnimationComplete = !this.animation?.isPlaying;
-    if (isAnimationComplete) { //(attackDuration > animationDurationMs || isAnimationComplete) {
-      console.log(`%c[COMMAND INTERRUPTED] Attack completed - going to idle (thinking phase)`, 'color: #00ffff; font-weight: bold; font-size: 14px;');
-
-      // Force transition to IDLE first (like patrol does)
-      if (this.stateMachine) {
-        this.stateMachine.forceState('enemy_idle');
-      }
-      this.attackTimeoutStart = null;
-      this.vx = 0;
-      this.vz = 0;
-
-      // GO TO IDLE FIRST - don't consult BT immediately (same as patrol pattern)
-      this.transitionToBehavior({ type: 'idle', duration: 0.5 }, behaviors);
-      return;
-    }
-
     // Initialize timeout tracking
     if (!this.attackTimeoutStart) {
       this.attackTimeoutStart = performance.now();
@@ -787,9 +871,6 @@ class BaseEnemy {
       this.transitionToBehavior(nextBehavior, behaviors);
       return;
     }
-
-    // Attack animation still playing - continue with attack logic
-    // Movement logic during attack is handled by FSM staying in attack state
   }
 
   // Consult BT for strategic behavior decision with context
