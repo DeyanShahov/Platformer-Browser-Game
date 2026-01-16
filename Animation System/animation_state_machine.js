@@ -1011,9 +1011,19 @@ class EnemyDeadState extends AnimationState {
 
   enter(entity) {
     super.enter(entity);
+    console.log(`[ENEMY_DEAD_STATE] EnemyDeadState.enter() called for ${entity.constructor.name} #${entity.instanceId || 'unknown'}`);
+    console.log(`[ENEMY_DEAD_STATE] entity.animation exists: ${!!entity.animation}`);
+    console.log(`[ENEMY_DEAD_STATE] entity.animationEntityType: ${entity.animationEntityType}`);
+
     const deadType = this.getEntityAnimationType(entity, 'DEAD');
+    console.log(`[ENEMY_DEAD_STATE] deadType resolved: ${deadType}`);
+
     if (entity.animation && deadType) {
+      console.log(`[ENEMY_DEAD_STATE] Setting death animation: ${deadType}`);
       entity.animation.setAnimation(deadType, true);
+      console.log(`[ENEMY_DEAD_STATE] Death animation set successfully`);
+    } else {
+      console.warn(`[ENEMY_DEAD_STATE] Cannot set death animation - entity.animation: ${!!entity.animation}, deadType: ${deadType}`);
     }
   }
 
@@ -1024,9 +1034,13 @@ class EnemyDeadState extends AnimationState {
 
   getEntityAnimationType(entity, baseType) {
     if (entity.constructor.name === 'BlueSlime') {
-      return window.BLUE_SLIME_ANIMATION_TYPES?.[baseType] || null;
+      const result = window.BLUE_SLIME_ANIMATION_TYPES?.[baseType] || null;
+      console.log(`[ENEMY_DEAD_STATE] BlueSlime animation type for ${baseType}: ${result}`);
+      return result;
     }
-    return window.ANIMATION_TYPES?.[baseType.toLowerCase()] || null;
+    const result = window.ANIMATION_TYPES?.[baseType.toLowerCase()] || null;
+    console.log(`[ENEMY_DEAD_STATE] Generic animation type for ${baseType}: ${result}`);
+    return result;
   }
 }
 

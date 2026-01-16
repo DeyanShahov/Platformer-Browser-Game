@@ -1498,15 +1498,15 @@ function initGameWithSelections() {
     // TEST: Adding 3 extra enemies for verification (Total 4)
     const enemyConfigs = [
       { x: 250, z: 0 },   // Original
-      { x: 300, z: -100 }, // Left, back
-      { x: 600, z: 100 },  // Right, front
-      { x: 800, z: 30 },   // Far right, middle
-      { x: 300, z: -140 }, // Left, back
-      { x: 500, z: 170 },
-      { x: 700, z: -170 }, // Left, back
-      { x: 800, z: 200 },
-      { x: 100, z: -200 }, // Left, back
-      { x: 200, z: -350 },
+      // { x: 300, z: -100 }, // Left, back
+      // { x: 600, z: 100 },  // Right, front
+      // { x: 800, z: 30 },   // Far right, middle
+      // { x: 300, z: -140 }, // Left, back
+      // { x: 500, z: 170 },
+      // { x: 700, z: -170 }, // Left, back
+      // { x: 800, z: 200 },
+      // { x: 100, z: -200 }, // Left, back
+      // { x: 200, z: -350 },
     ];
 
     enemyConfigs.forEach((config, index) => {
