@@ -45,15 +45,15 @@ const ACTION_TYPES = {
 // Or set SHOW_HITBOXES to false to disable all hitbox drawing
 // Runtime toggle: window.toggleDebugBoxes() in browser console
 const DEBUG_MODE = {
-  SHOW_HITBOXES: true,        // Master switch for all hitbox types
-  SHOW_PLAYER_BOX: true,      // Yellow collision box for player
-  SHOW_HURT_BOXES: true,      // Orange hurt boxes for entities
-  SHOW_ATTACK_BOXES: true,    // Red attack boxes during attacks
-  SHOW_ENTITY_LABELS: false,  // Entity type and ID labels
+  SHOW_HITBOXES: false,        // Master switch for all hitbox types
+  SHOW_PLAYER_BOX: false,      // Yellow collision box for player
+  SHOW_HURT_BOXES: false,      // Orange hurt boxes for entities
+  SHOW_ATTACK_BOXES: false,    // Red attack boxes during attacks
+  SHOW_ENTITY_LABELS: true,   // White text with Z-coordinates and render order
   SHOW_DAMAGE_NUMBERS: true,  // Floating damage numbers
 };
 
-// Runtime debug toggle function
+// Runtime debug toggle functions
 function toggleDebugBoxes() {
   DEBUG_MODE.SHOW_HITBOXES = !DEBUG_MODE.SHOW_HITBOXES;
   console.log(`Debug hitboxes: ${DEBUG_MODE.SHOW_HITBOXES ? 'ENABLED' : 'DISABLED'}`);
@@ -63,7 +63,13 @@ function toggleDebugBoxes() {
   console.log('- DEBUG_MODE.SHOW_ATTACK_BOXES (red)');
 }
 
-// Make toggle function globally available
+function toggleEntityLabels() {
+  DEBUG_MODE.SHOW_ENTITY_LABELS = !DEBUG_MODE.SHOW_ENTITY_LABELS;
+  console.log(`Entity labels (Z-coordinates): ${DEBUG_MODE.SHOW_ENTITY_LABELS ? 'ENABLED' : 'DISABLED'}`);
+}
+
+// Make toggle functions globally available
 if (typeof window !== 'undefined') {
   window.toggleDebugBoxes = toggleDebugBoxes;
+  window.toggleEntityLabels = toggleEntityLabels;
 }

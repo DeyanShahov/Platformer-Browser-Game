@@ -8,14 +8,14 @@ function render() {
 
   ctx.strokeStyle = "#00FF00";
   ctx.beginPath();
-  ctx.moveTo(0, baselineY - Z_MIN*1.0);
-  ctx.lineTo(ctx.canvas.width, baselineY - Z_MIN*1.0);
+  ctx.moveTo(0, baselineY - Z_MIN * 1.0);
+  ctx.lineTo(ctx.canvas.width, baselineY - Z_MIN * 1.0);
   ctx.stroke();
 
   ctx.strokeStyle = "#FF00FF";
   ctx.beginPath();
-  ctx.moveTo(0, baselineY - Z_MAX*1.0);
-  ctx.lineTo(ctx.canvas.width, baselineY - Z_MAX*1.0);
+  ctx.moveTo(0, baselineY - Z_MAX * 1.0);
+  ctx.lineTo(ctx.canvas.width, baselineY - Z_MAX * 1.0);
   ctx.stroke();
 
   // Get sorted entities using game logic (moved from render.js to game.js)
@@ -68,14 +68,17 @@ function renderEnemyLabels(entity) {
   ctx.fillStyle = healthData.healthColor;
   ctx.font = "14px Arial";
   ctx.fillText(`${enemyInfo.displayName} (Lv.${enemyInfo.level}) - ${entity.health}/${entity.maxHealth} HP ${healthData.healthStatus}`,
-               entity.x, entity.y - entity.h - entity.z - 40);
+    entity.x, entity.y - entity.h - entity.z - 40);
 }
 
 function renderDebugLabels(entity, index) {
+  // Check debug flag before rendering entity labels
+  if (!DEBUG_MODE.SHOW_ENTITY_LABELS) return;
+
   ctx.fillStyle = "#FFFFFF";
   ctx.font = "12px Arial";
   const effectiveY = entity.y - entity.z;
   // Move Z debug text closer to character (above the character)
-  ctx.fillText(`Z:${entity.z.toFixed(1)} EffY:${effectiveY.toFixed(1)} Order:${index+1}`,
-               entity.x, entity.y - entity.h - entity.z + 80);
+  ctx.fillText(`Z:${entity.z.toFixed(1)} EffY:${effectiveY.toFixed(1)} Order:${index + 1}`,
+    entity.x, entity.y - entity.h - entity.z + 80);
 }
