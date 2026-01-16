@@ -54,11 +54,11 @@ function updatePlayerStatus() {
 }
 
 function joinPlayer(playerId) {
-  console.log(`[DEBUG] joinPlayer(${playerId}) called`);
+  //console.log(`[DEBUG] joinPlayer(${playerId}) called`);
   if (!activePlayers.has(playerId)) {
-    console.log(`[DEBUG] Adding player ${playerId} to activePlayers`);
+    //console.log(`[DEBUG] Adding player ${playerId} to activePlayers`);
     activePlayers.add(playerId);
-    console.log(`Player ${playerId} joined!`);
+    //console.log(`Player ${playerId} joined!`);
 
     // Auto-assign first available character
     assignFirstAvailableCharacter(playerId);
@@ -73,7 +73,7 @@ function joinPlayer(playerId) {
     // Reset start button state - new player needs to confirm selection
     updateStartButton();
   } else {
-    console.log(`[DEBUG] Player ${playerId} already active`);
+    //console.log(`[DEBUG] Player ${playerId} already active`);
   }
 }
 
@@ -99,7 +99,7 @@ function removePlayer(playerId) {
     updatePlayerStatus();
     updateStartButton();
 
-    console.log(`Player ${playerId} removed!`);
+    //console.log(`Player ${playerId} removed!`);
   }
 }
 
@@ -110,7 +110,7 @@ function assignFirstAvailableCharacter(playerId) {
     if (!isCharacterTaken(char.id, null)) { // null = check if taken by anyone
       playerSelections[char.id] = playerId;
       updateSelectionUI(char.id);
-      console.log(`Player ${playerId} auto-assigned to ${char.name}`);
+      //console.log(`Player ${playerId} auto-assigned to ${char.name}`);
       break;
     }
   }
@@ -158,7 +158,7 @@ function selectCharacter(playerId, direction) {
       delete confirmedSelections[charId];
       // Update UI for the old confirmed character
       updateSelectionUI(charId);
-      console.log(`Player ${playerId} changed selection, removed confirmed choice`);
+      //console.log(`Player ${playerId} changed selection, removed confirmed choice`);
       break; // Should only have one confirmed selection per player
     }
   }
@@ -203,7 +203,7 @@ function confirmSelection(playerId) {
       indicator.classList.add('confirmed');
     }
 
-    console.log(`Player ${playerId} confirmed selection of ${window.characters.find(c => c.id === selectedChar).name}`);
+    //console.log(`Player ${playerId} confirmed selection of ${window.characters.find(c => c.id === selectedChar).name}`);
 
     // Check if we can start the game
     updateStartButton();
@@ -411,7 +411,7 @@ function updatePlayer(player, playerIndex, dt) {
 
   // Safety check for undefined/null players
   if (!player || typeof player !== 'object') {
-    console.warn('[UPDATE_PLAYER] Invalid player, returning early');
+    //console.warn('[UPDATE_PLAYER] Invalid player, returning early');
     return;
   }
 
@@ -434,44 +434,44 @@ function updatePlayer(player, playerIndex, dt) {
 
   // Проверка за удар с врагове - FSM-based damage dealing
   if (player.stateMachine && player.stateMachine.isInAttackState() && !player.damageDealt) {
-    console.log(`[ATTACK] Player in attack state: ${player.stateMachine.getCurrentStateName()}, damage not yet dealt`);
+    //console.log(`[ATTACK] Player in attack state: ${player.stateMachine.getCurrentStateName()}, damage not yet dealt`);
 
     // Проверка за сблъсък с всички противници
     const enemies = window.gameState ? window.gameState.getEntitiesByType('enemy') : [window.enemy].filter(e => e);
-    console.log(`[ATTACK] Found ${enemies.length} enemies to check`);
+    //console.log(`[ATTACK] Found ${enemies.length} enemies to check`);
 
     for (const enemy of enemies) {
       if (!enemy) continue;
 
-      console.log(`[ATTACK] Checking collision with enemy at (${enemy.x}, ${enemy.y})`);
+      //console.log(`[ATTACK] Checking collision with enemy at (${enemy.x}, ${enemy.y})`);
       const hit = checkHitboxCollision(player, enemy, {
         zTolerance: 10
       });
 
-      console.log(`[ATTACK] Collision result: ${hit}`);
+      //console.log(`[ATTACK] Collision result: ${hit}`);
 
       if (hit) {
         // Use combat system to calculate and apply damage
         const currentAttackType = player.stateMachine.getCurrentAttackType();
-        console.log(`[ATTACK] Current attack type: ${currentAttackType}`);
-        console.log(`[ATTACK] Player health before attack: ${player.health}`);
+        //console.log(`[ATTACK] Current attack type: ${currentAttackType}`);
+        //console.log(`[ATTACK] Player health before attack: ${player.health}`);
 
         if (currentAttackType) {
-          console.log(`[ATTACK] Resolving attack with combat system...`);
-          console.log(`[ATTACK] Enemy health before attack: ${enemy.health}`);
+          //console.log(`[ATTACK] Resolving attack with combat system...`);
+          //console.log(`[ATTACK] Enemy health before attack: ${enemy.health}`);
           const combatEvent = window.combatResolver.resolveAttackNoResourceCheck(player, enemy, currentAttackType);
-          console.log(`[ATTACK] Combat event result:`, combatEvent);
-          console.log(`[ATTACK] Enemy health after attack: ${enemy.health}`);
-          console.log(`[ATTACK] Damage dealt: ${combatEvent?.actualDamage || 0}`);
+          //console.log(`[ATTACK] Combat event result:`, combatEvent);
+          //console.log(`[ATTACK] Enemy health after attack: ${enemy.health}`);
+          //console.log(`[ATTACK] Damage dealt: ${combatEvent?.actualDamage || 0}`);
 
           // Add damage number for visual feedback
           if (combatEvent && combatEvent.actualDamage > 0) {
-            console.log(`[ATTACK] Applying ${combatEvent.actualDamage} damage`);
+            //console.log(`[ATTACK] Applying ${combatEvent.actualDamage} damage`);
             const damageX = enemy.x + enemy.w + 5;
             const damageY = enemy.y - enemy.h - 15;
             window.damageNumberManager.addDamageNumber(damageX, damageY, combatEvent.actualDamage, combatEvent.damageResult.isCritical);
           } else {
-            console.log(`[ATTACK] No damage applied - combat event:`, combatEvent);
+            //console.log(`[ATTACK] No damage applied - combat event:`, combatEvent);
           }
 
           // Mark damage as dealt for this attack and set visual hit flag
@@ -479,13 +479,13 @@ function updatePlayer(player, playerIndex, dt) {
           if (combatEvent && combatEvent.actualDamage > 0) {
             player.damageDealt = true;
             enemy.hit = true;
-            console.log(`[ATTACK] Damage dealt (${combatEvent.actualDamage}), setting damageDealt flag`);
+            //console.log(`[ATTACK] Damage dealt (${combatEvent.actualDamage}), setting damageDealt flag`);
           } else {
-            console.log(`[ATTACK] No damage applied, keeping damageDealt false for potential retry`);
+            //console.log(`[ATTACK] No damage applied, keeping damageDealt false for potential retry`);
           }
           break; // Само един удар на атака
         } else {
-          console.log(`[ATTACK] No current attack type found`);
+          //console.log(`[ATTACK] No current attack type found`);
         }
       }
     }
@@ -501,96 +501,96 @@ function updatePlayer(player, playerIndex, dt) {
   );
 
   // Only log if there are actively attacking enemies
-  if (attackingEnemies.length > 0) {
-    console.log(`[ENEMY_ATTACK_DEBUG] ${attackingEnemies.length} enemies actively attacking player`);
+  // if (attackingEnemies.length > 0) {
+  //   console.log(`[ENEMY_ATTACK_DEBUG] ${attackingEnemies.length} enemies actively attacking player`);
 
-    for (const enemy of attackingEnemies) {
-      console.log(`[ENEMY_ATTACK_DEBUG] Enemy ${enemy?.id || 'unknown'}:`);
-      console.log(`  - currentState: ${enemy?.stateMachine?.getCurrentStateName() || 'none'}`);
-      console.log(`  - isInAttackState: ${enemy?.stateMachine?.isInAttackState() || false}`);
-      console.log(`  - damageDealt: ${enemy?.damageDealt || false}`);
-      console.log(`  - animation.currentFrame: ${enemy?.animation?.currentFrame || 'no animation'}`);
-      console.log(`  - animation.type: ${enemy?.animation?.currentAnimation || 'no animation'}`);
+  for (const enemy of attackingEnemies) {
+    // console.log(`[ENEMY_ATTACK_DEBUG] Enemy ${enemy?.id || 'unknown'}:`);
+    // console.log(`  - currentState: ${enemy?.stateMachine?.getCurrentStateName() || 'none'}`);
+    // console.log(`  - isInAttackState: ${enemy?.stateMachine?.isInAttackState() || false}`);
+    // console.log(`  - damageDealt: ${enemy?.damageDealt || false}`);
+    // console.log(`  - animation.currentFrame: ${enemy?.animation?.currentFrame || 'no animation'}`);
+    // console.log(`  - animation.type: ${enemy?.animation?.currentAnimation || 'no animation'}`);
 
-      console.log(`[ENEMY_ATTACK_DEBUG] Enemy ${enemy.id} checking collision...`);
-      console.log(`[ENEMY_ATTACK_DEBUG] damageDealt before collision check: ${enemy.damageDealt}`);
+    // console.log(`[ENEMY_ATTACK_DEBUG] Enemy ${enemy.id} checking collision...`);
+    // console.log(`[ENEMY_ATTACK_DEBUG] damageDealt before collision check: ${enemy.damageDealt}`);
 
-      // Check collision for enemy attack
-      const hit = checkHitboxCollision(enemy, player, {
-        zTolerance: 10
-      });
+    // Check collision for enemy attack
+    const hit = checkHitboxCollision(enemy, player, {
+      zTolerance: 10
+    });
 
-      console.log(`[ENEMY_ATTACK_DEBUG] Collision result: ${hit}`);
+    //console.log(`[ENEMY_ATTACK_DEBUG] Collision result: ${hit}`);
 
-      // Debug attack box position
-      if (enemy.animation && enemy.animation.animationDefinition) {
-        const currentFrame = enemy.animation.currentFrame;
-        const frameData = enemy.animation.animationDefinition.frameData?.[currentFrame];
-        console.log(`[ENEMY_ATTACK_DEBUG] Frame data:`, {
-          frame: currentFrame,
-          hasAttackBox: !!frameData?.attackBox,
-          attackBox: frameData?.attackBox
-        });
-      }
+    // Debug attack box position
+    if (enemy.animation && enemy.animation.animationDefinition) {
+      const currentFrame = enemy.animation.currentFrame;
+      const frameData = enemy.animation.animationDefinition.frameData?.[currentFrame];
+      // console.log(`[ENEMY_ATTACK_DEBUG] Frame data:`, {
+      //   frame: currentFrame,
+      //   hasAttackBox: !!frameData?.attackBox,
+      //   attackBox: frameData?.attackBox
+      // });
+    }
 
-      if (hit) {
-        console.log(`[ENEMY_ATTACK_DEBUG] HIT DETECTED! Getting attack type...`);
-        // Use combat system to calculate and apply damage
-        const enemyAttackType = enemy.stateMachine.getCurrentAttackType();
-        console.log(`[ENEMY_ATTACK_DEBUG] Attack type: ${enemyAttackType}`);
+    if (hit) {
+      //console.log(`[ENEMY_ATTACK_DEBUG] HIT DETECTED! Getting attack type...`);
+      // Use combat system to calculate and apply damage
+      const enemyAttackType = enemy.stateMachine.getCurrentAttackType();
+      //console.log(`[ENEMY_ATTACK_DEBUG] Attack type: ${enemyAttackType}`);
 
-        if (enemyAttackType) {
-          console.log(`[ENEMY_ATTACK_DEBUG] Resolving attack with combat system...`);
+      if (enemyAttackType) {
+        //console.log(`[ENEMY_ATTACK_DEBUG] Resolving attack with combat system...`);
 
-          // Map enemy animation attack types to combat skill types
-          let combatSkillType;
-          switch (enemyAttackType) {
-            case 'ATTACK_1':
-              combatSkillType = 'basic_attack_light'; // Use player's basic attack for damage calculation
-              break;
-            case 'ATTACK_2':
-              combatSkillType = 'secondary_attack_light';
-              break;
-            case 'ATTACK_3':
-            case 'RUN_ATTACK':
-              combatSkillType = 'basic_attack_medium';
-              break;
-            default:
-              combatSkillType = 'basic_attack_light'; // Default fallback
-          }
-
-          console.log(`[ENEMY_ATTACK_DEBUG] Mapped ${enemyAttackType} to combat skill: ${combatSkillType}`);
-          const combatEvent = window.combatResolver.resolveAttackNoResourceCheck(enemy, player, combatSkillType);
-          console.log(`[ENEMY_ATTACK_DEBUG] Combat event:`, combatEvent);
-
-          // Add damage number for visual feedback
-          if (combatEvent && combatEvent.actualDamage > 0) {
-            const damageX = player.x + player.w / 2;
-            const damageY = player.y - 10;
-            window.damageNumberManager.addDamageNumber(damageX, damageY, combatEvent.actualDamage, combatEvent.damageResult.isCritical);
-          }
-
-          // Set damageDealt flag to prevent multiple damage per attack (unified with player system)
-          if (combatEvent && combatEvent.actualDamage > 0) {
-            enemy.damageDealt = true;
-            console.log(`[ENEMY_ATTACK_DEBUG] Damage applied (${combatEvent.actualDamage}), set damageDealt=true`);
-          } else {
-            console.log(`[ENEMY_ATTACK_DEBUG] No damage applied, keeping damageDealt=false`);
-          }
-
-          // Set visual hit flag for player
-          player.hit = true;
-          console.log(`[ENEMY_ATTACK_DEBUG] Player hit flag set to true`);
-          break; // Only one enemy attack per player per frame
-        } else {
-          console.log(`[ENEMY_ATTACK_DEBUG] No attack type found, skipping damage`);
+        // Map enemy animation attack types to combat skill types
+        let combatSkillType;
+        switch (enemyAttackType) {
+          case 'ATTACK_1':
+            combatSkillType = 'basic_attack_light'; // Use player's basic attack for damage calculation
+            break;
+          case 'ATTACK_2':
+            combatSkillType = 'secondary_attack_light';
+            break;
+          case 'ATTACK_3':
+          case 'RUN_ATTACK':
+            combatSkillType = 'basic_attack_medium';
+            break;
+          default:
+            combatSkillType = 'basic_attack_light'; // Default fallback
         }
+
+        //console.log(`[ENEMY_ATTACK_DEBUG] Mapped ${enemyAttackType} to combat skill: ${combatSkillType}`);
+        const combatEvent = window.combatResolver.resolveAttackNoResourceCheck(enemy, player, combatSkillType);
+        //console.log(`[ENEMY_ATTACK_DEBUG] Combat event:`, combatEvent);
+
+        // Add damage number for visual feedback
+        if (combatEvent && combatEvent.actualDamage > 0) {
+          const damageX = player.x + player.w / 2;
+          const damageY = player.y - 10;
+          window.damageNumberManager.addDamageNumber(damageX, damageY, combatEvent.actualDamage, combatEvent.damageResult.isCritical);
+        }
+
+        // Set damageDealt flag to prevent multiple damage per attack (unified with player system)
+        if (combatEvent && combatEvent.actualDamage > 0) {
+          enemy.damageDealt = true;
+          //console.log(`[ENEMY_ATTACK_DEBUG] Damage applied (${combatEvent.actualDamage}), set damageDealt=true`);
+        } else {
+          //console.log(`[ENEMY_ATTACK_DEBUG] No damage applied, keeping damageDealt=false`);
+        }
+
+        // Set visual hit flag for player
+        player.hit = true;
+        //console.log(`[ENEMY_ATTACK_DEBUG] Player hit flag set to true`);
+        break; // Only one enemy attack per player per frame
       } else {
-        console.log(`[ENEMY_ATTACK_DEBUG] No collision detected, enemy attack missed`);
+        //console.log(`[ENEMY_ATTACK_DEBUG] No attack type found, skipping damage`);
       }
+    } else {
+      //console.log(`[ENEMY_ATTACK_DEBUG] No collision detected, enemy attack missed`);
     }
   }
 }
+
 
 // Обработка на клавиатурен вход
 function handleKeyboardInput(player) {
@@ -864,7 +864,7 @@ function handleControllerInput(player, playerIndex) {
 
     // Скок - FSM-based
     if (isButtonPressed(gamepad, controls.jump) && player.onGround && player.stateMachine) {
-      console.log(`[JUMP] Jump started - player on ground, triggering FSM jump`);
+      //console.log(`[JUMP] Jump started - player on ground, triggering FSM jump`);
       const buttonName = getButtonName(controls.jump);
       logAction(playerIndex, 'контролер', buttonName, 'jump');
       player.vy = JUMP_FORCE;
@@ -960,11 +960,11 @@ function handleMovement(player, dt) {
     player.onGround = true;
 
     if (wasInAir) {
-      console.log(`[JUMP] Player landed on ground (y: ${groundY})`);
+      //console.log(`[JUMP] Player landed on ground (y: ${groundY})`);
 
       // Check if player was jumping - force FSM transition
       if (player.animation && player.animation.currentAnimation === window.ANIMATION_TYPES.JUMP) {
-        console.log(`[JUMP] Player was jumping, forcing FSM transition on landing`);
+        //console.log(`[JUMP] Player was jumping, forcing FSM transition on landing`);
         // Clear force flag first
         player.animation.forceAnimation = false;
 
@@ -976,7 +976,7 @@ function handleMovement(player, dt) {
 
           const transition = player.stateMachine.currentState.update(player, 0);
           if (transition) {
-            console.log(`[JUMP] Landing transition to: ${transition}`);
+            //console.log(`[JUMP] Landing transition to: ${transition}`);
             player.stateMachine.changeState(transition);
           }
 
@@ -1002,7 +1002,7 @@ function getCurrentControls(player) {
 
   // Ако контролер controls липсват, създай default
   if (mode === 'controller' && !controls) {
-    console.log('Creating default controller controls');
+    //console.log('Creating default controller controls');
     controls = {
       // Движения (D-pad)
       left: 14,   // D-pad Left
@@ -1030,7 +1030,7 @@ function getCurrentControls(player) {
 function logAction(playerIndex, inputDevice, button, actionType) {
   const playerNum = playerIndex + 1;
   const actionName = getActionDisplayName(actionType);
-  console.log(`🎮 Играч ${playerNum}, ${inputDevice}, бутон "${button}", действие ${actionName}`);
+  //console.log(`🎮 Играч ${playerNum}, ${inputDevice}, бутон "${button}", действие ${actionName}`);
 }
 
 function getActionDisplayName(actionType) {
@@ -1050,7 +1050,7 @@ function isButtonPressed(gamepad, buttonIndex, threshold = 0.5) {
   const button = gamepad.buttons[buttonIndex];
 
   if (!button) {
-    console.log(`Button ${buttonIndex} not found`);
+    //console.log(`Button ${buttonIndex} not found`);
     return false;
   }
 
@@ -1283,7 +1283,7 @@ function updateDeathSequences(dt) {
       if (entity.isDying && entity.entityType === 'enemy') {
         const isDead = window.combatResolver.updateEnemyDeath(entity, dt);
         if (isDead) {
-          console.log(`[GAME] Enemy ${entity.id} death sequence completed and removed`);
+          //console.log(`[GAME] Enemy ${entity.id} death sequence completed and removed`);
         }
       }
     }
@@ -1343,115 +1343,13 @@ function checkIfEntityIsInCollision(entity) {
     );
 
     if (hasCollision) {
-      console.log(`[COLLISION_CHECK] Entity ${entity.entityType} is currently colliding with ${other.entityType}`);
+      //console.log(`[COLLISION_CHECK] Entity ${entity.entityType} is currently colliding with ${other.entityType}`);
       return true;
     }
   }
 
   return false;
 }
-// ===========================================
-// COLLISION FUNCTIONS - DEFINED IN collision.js
-// ===========================================
-// The following functions are defined in collision.js and exported to window:
-// - getBehaviorConstraints(entity) - AI behaviour constraints based on boundaries
-// - applyScreenBoundaries(entity) - Universal screen boundary enforcement
-// These functions are centralized in collision.js to avoid code duplication.
-
-// ===========================================
-// SKILL TREE FUNCTIONS - moved from menu.js
-// ===========================================
-
-// Helper function to get current skill grid layout
-// function getCurrentSkillGridLayout() {
-//   return SKILL_GRID_LAYOUTS[currentSkillPage] || SKILL_GRID_LAYOUTS[SKILL_PAGES.MAIN];
-// }
-
-// Helper function to find grid position of a skill
-// function findSkillGridPosition(skillType) {
-//   const currentLayout = getCurrentSkillGridLayout();
-//   for (let row = 0; row < currentLayout.length; row++) {
-//     for (let col = 0; col < currentLayout[row].length; col++) {
-//       if (currentLayout[row][col] === skillType) {
-//         return { row, col };
-//       }
-//     }
-//   }
-//   return null;
-// }
-
-// Draw connection lines between prerequisite skills
-// function drawConnectionLines(svgContainer, player) {
-//   // Clear existing lines
-//   svgContainer.innerHTML = '';
-
-//   // Icon dimensions (including margins)
-//   const iconSize = 64;
-//   const iconMargin = 10;
-//   const totalIconSize = iconSize + iconMargin;
-
-//   // Define skill chains and their gap positions (moved 2 columns to the right due to padding changes)
-//   const skillChains = [
-//     // Basic attack chain - gap at column 3.5 (between col 3 and 4) - moved +2 from 1.25
-//     { skills: [SKILL_TYPES.BASIC_ATTACK_LIGHT, SKILL_TYPES.BASIC_ATTACK_MEDIUM, SKILL_TYPES.BASIC_ATTACK_HEAVY], gapColumn: 3 },
-//     // Secondary attack chain - gap at column 4.5 (between col 4 and 5) - moved +2 from 2.3
-//     { skills: [SKILL_TYPES.SECONDARY_ATTACK_LIGHT, SKILL_TYPES.SECONDARY_ATTACK_MEDIUM, SKILL_TYPES.SECONDARY_ATTACK_HEAVY], gapColumn: 4.05 },
-//     // Enhanced attack chain - gap at column 5.5 (between col 5 and 6) - moved +2 from 3.4
-//     { skills: [SKILL_TYPES.ENHANCED_ATTACK, SKILL_TYPES.STRONG_ATTACK, SKILL_TYPES.ULTIMATE_ATTACK], gapColumn: 5.15 }
-//   ];
-
-//   // Draw vertical lines for each skill chain
-//   skillChains.forEach(chain => {
-//     for (let i = 0; i < chain.skills.length - 1; i++) {
-//       const fromSkill = chain.skills[i];
-//       const toSkill = chain.skills[i + 1];
-
-//       // Find grid positions
-//       const fromPos = findSkillGridPosition(fromSkill);
-//       const toPos = findSkillGridPosition(toSkill);
-
-//       if (fromPos && toPos) {
-//         // Draw vertical line in the gap between columns with dynamic color
-//         drawVerticalLineInGap(svgContainer, fromPos.row, toPos.row, chain.gapColumn, totalIconSize, player, toSkill);
-//       }
-//     }
-//   });
-// }
-
-// Draw a vertical line in the gap between columns with dynamic color
-// function drawVerticalLineInGap(svgContainer, fromRow, toRow, gapColumn, totalIconSize, player, toSkill) {
-//   // Calculate pixel positions for the vertical line in the gap
-//   const lineX = gapColumn * totalIconSize; // Position in the gap (e.g., 0.5 * totalIconSize)
-//   const fromY = (fromRow + 0.5) * totalIconSize; // Center of from icon
-//   const toY = (toRow + 0.5) * totalIconSize;   // Center of to icon
-
-//   // Determine line color based on target skill status
-//   let lineColor = '#666666'; // Default gray for locked skills
-
-//   if (player.unlockedSkills.has(toSkill)) {
-//     lineColor = '#00ff00'; // Green - target skill is unlocked
-//   } else if (window.skillTreeManager.canUnlockSkill(player, toSkill)) {
-//     lineColor = '#ff8800'; // Orange - target skill can be unlocked
-//   } else {
-//     lineColor = '#666666'; // Gray - target skill is locked
-//   }
-
-//   // Create vertical line
-//   const line = document.createElementNS('http://www.w3.org/2000/svg', 'line');
-//   line.setAttribute('x1', lineX);
-//   line.setAttribute('y1', fromY);
-//   line.setAttribute('x2', lineX);
-//   line.setAttribute('y2', toY);
-//   line.setAttribute('stroke', lineColor);
-//   line.setAttribute('stroke-width', '5'); // Even thicker for better visibility
-//   line.setAttribute('opacity', '0.95'); // Very opaque
-//   line.setAttribute('stroke-linecap', 'round');
-
-//   svgContainer.appendChild(line);
-// }
-
-
-
 
 
 // ===========================================
@@ -1507,13 +1405,13 @@ function getEnemyHealthStatus(entity) {
 
 // Initialize game with selected players and characters
 function initGameWithSelections() {
-  console.log('[GAME] initGameWithSelections called');
+  //console.log('[GAME] initGameWithSelections called');
 
   // Hide start screen
   const startScreen = document.getElementById('startScreen');
   if (startScreen) {
     startScreen.style.display = 'none';
-    console.log('[GAME] Start screen hidden');
+    //console.log('[GAME] Start screen hidden');
   }
 
   // Setup canvas
@@ -1522,7 +1420,7 @@ function initGameWithSelections() {
 
   // Initialize animation system first
   initializeAnimationSystem().then(() => {
-    console.log('[GAME] Animation system initialized');
+    //console.log('[GAME] Animation system initialized');
 
     // Initialize damage number manager
     if (window.damageNumberManager) {
@@ -1531,24 +1429,24 @@ function initGameWithSelections() {
 
     // Initialize game state system
     window.gameState = new GameState();
-    console.log('[GAME] Game state initialized');
+    //console.log('[GAME] Game state initialized');
 
     // Clear global arrays for backwards compatibility
     window.players = [];
-    console.log('[GAME] window.players cleared and set to:', window.players);
+    //console.log('[GAME] window.players cleared and set to:', window.players);
 
     // Create players based on confirmed selections (sorted by player ID for consistent ordering)
     const selectedChars = Object.keys(window.playerSelections).sort((a, b) =>
       window.playerSelections[a] - window.playerSelections[b]
     );
-    console.log('[GAME] Creating players for selectedChars:', selectedChars);
+    //console.log('[GAME] Creating players for selectedChars:', selectedChars);
 
     selectedChars.forEach((charId, index) => {
       const char = window.characters.find(c => c.id === charId);
       const playerId = window.playerSelections[charId];
       const playerKey = `player${playerId}`;
 
-      console.log(`[GAME] Creating player ${playerId} with key ${playerKey}, controls exist:`, !!window.controls[playerKey]);
+      //console.log(`[GAME] Creating player ${playerId} with key ${playerKey}, controls exist:`, !!window.controls[playerKey]);
 
       if (window.controls[playerKey]) {
         // Scale X positions for new canvas size (from 900 to 1920)
@@ -1561,18 +1459,18 @@ function initGameWithSelections() {
         const spawnY = Math.max(200, CANVAS_HEIGHT - 600); // Min 200px from top
         const player = new Player(window.controls[playerKey], x, spawnY, char.position, char.color, char.id);
 
-        console.log(`[GAME] Player ${playerId} created:`, player);
+        //console.log(`[GAME] Player ${playerId} created:`, player);
 
         // Add to game state instead of directly to players
         window.gameState.addEntity(player, 'player');
-        console.log(`[GAME] Player ${playerId} added to game state`);
+        //console.log(`[GAME] Player ${playerId} added to game state`);
 
         // Register player with animation system
         if (window.animationSystem && window.animationSystem.isInitialized) {
           const animation = window.animationSystem.registerEntity(player, 'knight');
-          console.log(`[GAME] Player ${playerId} registered with animation system:`, animation ? 'SUCCESS' : 'FAILED');
+          //console.log(`[GAME] Player ${playerId} registered with animation system:`, animation ? 'SUCCESS' : 'FAILED');
           if (animation) {
-            console.log(`[GAME] Player ${playerId} animation state:`, animation.getDebugInfo());
+            //console.log(`[GAME] Player ${playerId} animation state:`, animation.getDebugInfo());
           }
         } else {
           console.warn(`[GAME] Animation system not ready for player ${playerId}:`, {
@@ -1584,25 +1482,31 @@ function initGameWithSelections() {
         // Initialize State Machine for player
         if (window.AnimationStateMachine) {
           player.stateMachine = new window.AnimationStateMachine(player);
-          console.log(`[GAME] Player ${playerId} state machine initialized:`, player.stateMachine.getCurrentStateName());
+          //console.log(`[GAME] Player ${playerId} state machine initialized:`, player.stateMachine.getCurrentStateName());
         } else {
-          console.warn(`[GAME] AnimationStateMachine not available for player ${playerId}`);
+          //console.warn(`[GAME] AnimationStateMachine not available for player ${playerId}`);
         }
       } else {
-        console.warn(`No controls found for player ${playerId} (${playerKey})`);
+        //console.warn(`No controls found for player ${playerId} (${playerKey})`);
       }
     });
 
-    console.log('[GAME] Final game state debug:', window.gameState.getDebugInfo());
+    //console.log('[GAME] Final game state debug:', window.gameState.getDebugInfo());
 
     // Create enemies using the new enemy data system
     // Create enemies using the new enemy data system
     // TEST: Adding 3 extra enemies for verification (Total 4)
     const enemyConfigs = [
-      { x: 650, z: 0 },   // Original
-      //{ x: 400, z: -100 }, // Left, back
-      //{ x: 900, z: 100 },  // Right, front
-      //{ x: 1200, z: 0 }    // Far right, middle
+      { x: 250, z: 0 },   // Original
+      { x: 300, z: -100 }, // Left, back
+      { x: 600, z: 100 },  // Right, front
+      { x: 800, z: 30 },   // Far right, middle
+      { x: 300, z: -140 }, // Left, back
+      { x: 500, z: 170 },
+      { x: 700, z: -170 }, // Left, back
+      { x: 800, z: 200 },
+      { x: 100, z: -200 }, // Left, back
+      { x: 200, z: -350 },
     ];
 
     enemyConfigs.forEach((config, index) => {
@@ -1610,7 +1514,7 @@ function initGameWithSelections() {
       const blueSlime = createBlueSlime(config.x * scaleFactor, Math.max(200, CANVAS_HEIGHT - 600), config.z, 1);
 
       window.gameState.addEntity(blueSlime, 'enemy');
-      console.log(`[GAME] Blue Slime ${index + 1} added to game state`);
+      //console.log(`[GAME] Blue Slime ${index + 1} added to game state`);
 
       // Register with animation system
       if (window.animationSystem && window.animationSystem.isInitialized) {
@@ -1634,7 +1538,7 @@ function initGameWithSelections() {
     // Start game loop
     requestAnimationFrame(loop);
 
-    console.log('[GAME] Game initialization completed successfully');
+    //console.log('[GAME] Game initialization completed successfully');
   }).catch(error => {
     console.error('[GAME] Failed to initialize animation system:', error);
   });

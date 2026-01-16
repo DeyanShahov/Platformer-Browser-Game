@@ -227,7 +227,7 @@ function applyCollisionCorrection(entity, proposedX, proposedY, proposedZ, axis,
     );
 
     if (hasCollision) {
-      console.log(`[COLLISION CORRECTION] ${entity.entityType} correcting position on ${axis}-axis`);
+      //console.log(`[COLLISION CORRECTION] ${entity.entityType} correcting position on ${axis}-axis`);
 
       // Calculate correction based on collision direction
       if (axis === 'x') {
@@ -259,7 +259,7 @@ function applyCollisionCorrection(entity, proposedX, proposedY, proposedZ, axis,
           const overlapX = Math.min(entityRight, otherRight) - Math.max(entityLeft, otherLeft);
           const overlapY = Math.min(entityBottom, otherBottom) - Math.max(entityTop, otherTop);
 
-          console.log(`[COLLISION_CORRECTION] Overlap X: ${overlapX.toFixed(1)}, Y: ${overlapY.toFixed(1)}`);
+          //console.log(`[COLLISION_CORRECTION] Overlap X: ${overlapX.toFixed(1)}, Y: ${overlapY.toFixed(1)}`);
 
           // If there's actual overlap, calculate separation
           if (overlapX > 0 && overlapY > 0) {
@@ -274,19 +274,19 @@ function applyCollisionCorrection(entity, proposedX, proposedY, proposedZ, axis,
               // Entity is to the left, push it further left
               const correctedHitBoxX = proposedHitBoxX - separationX;
               const correctedEntityX = entity.x + (correctedHitBoxX - entityHitBox.x);
-              console.log(`[COLLISION_CORRECTION] Separation vector: push left by ${separationX.toFixed(1)}px`);
-              console.log(`[COLLISION_CORRECTION] Correcting X from ${proposedX.toFixed(1)} to ${correctedEntityX.toFixed(1)}`);
+              //console.log(`[COLLISION_CORRECTION] Separation vector: push left by ${separationX.toFixed(1)}px`);
+              //console.log(`[COLLISION_CORRECTION] Correcting X from ${proposedX.toFixed(1)} to ${correctedEntityX.toFixed(1)}`);
               return correctedEntityX;
             } else {
               // Entity is to the right, push it further right
               const correctedHitBoxX = proposedHitBoxX + separationX;
               const correctedEntityX = entity.x + (correctedHitBoxX - entityHitBox.x);
-              console.log(`[COLLISION_CORRECTION] Separation vector: push right by ${separationX.toFixed(1)}px`);
-              console.log(`[COLLISION_CORRECTION] Correcting X from ${proposedX.toFixed(1)} to ${correctedEntityX.toFixed(1)}`);
+              //console.log(`[COLLISION_CORRECTION] Separation vector: push right by ${separationX.toFixed(1)}px`);
+              //console.log(`[COLLISION_CORRECTION] Correcting X from ${proposedX.toFixed(1)} to ${correctedEntityX.toFixed(1)}`);
               return correctedEntityX;
             }
           } else {
-            console.log(`[COLLISION_CORRECTION] No overlap detected, allowing movement`);
+            //console.log(`[COLLISION_CORRECTION] No overlap detected, allowing movement`);
             return proposedX;
           }
         }
@@ -300,7 +300,7 @@ function applyCollisionCorrection(entity, proposedX, proposedY, proposedZ, axis,
         const minZDistance = entityThickness + otherThickness + 10; // 10px buffer for player
 
         if (Math.abs(zDifference) < minZDistance) {
-          console.log(`[COLLISION_CORRECTION] Z-axis clash with PLAYER detected. Diff: ${zDifference.toFixed(1)}`);
+          //console.log(`[COLLISION_CORRECTION] Z-axis clash with PLAYER detected. Diff: ${zDifference.toFixed(1)}`);
           const correction = zDifference > 0 ? minZDistance : -minZDistance;
           const correctedZ = other.z + correction;
           return correctedZ;
@@ -308,7 +308,7 @@ function applyCollisionCorrection(entity, proposedX, proposedY, proposedZ, axis,
       }
 
       // For now, return current position if we can't determine correction
-      console.log(`[COLLISION CORRECTION] Returning current position (correction failed)`);
+      //console.log(`[COLLISION CORRECTION] Returning current position (correction failed)`);
       if (axis === 'z') return entity.z;
       if (axis === 'y') return entity.y;
       return entity.x;
@@ -327,9 +327,9 @@ function applyCollisionCorrection(entity, proposedX, proposedY, proposedZ, axis,
 
 // Unified attack collision function (moved from game.js - contains game logic)
 function checkHitboxCollision(attacker, target, params) {
-  console.log(`[COLLISION_DEBUG] checkHitboxCollision: ${attacker?.entityType} attacking ${target?.entityType}`);
-  console.log(`[COLLISION_DEBUG] Attacker state: ${attacker?.stateMachine?.getCurrentStateName()}, isInAttackState: ${attacker?.stateMachine?.isInAttackState()}`);
-  console.log(`[COLLISION_DEBUG] Target position: (${target?.x?.toFixed(1)}, ${target?.y?.toFixed(1)}, ${target?.z?.toFixed(1)})`);
+  //console.log(`[COLLISION_DEBUG] checkHitboxCollision: ${attacker?.entityType} attacking ${target?.entityType}`);
+  //console.log(`[COLLISION_DEBUG] Attacker state: ${attacker?.stateMachine?.getCurrentStateName()}, isInAttackState: ${attacker?.stateMachine?.isInAttackState()}`);
+  //console.log(`[COLLISION_DEBUG] Target position: (${target?.x?.toFixed(1)}, ${target?.y?.toFixed(1)}, ${target?.z?.toFixed(1)})`);
 
   // Only log when attacker is actually in attack state to reduce spam
   const isAttackerAttacking = attacker.stateMachine && attacker.stateMachine.isInAttackState();
@@ -411,9 +411,9 @@ function checkHitboxCollision(attacker, target, params) {
 
         // Only log successful hits to reduce spam
         if (isAttackerAttacking && collisionResult) {
-          console.log(`[COLLISION] HIT DETECTED on frame ${currentFrame}!`);
-          console.log(`[COLLISION] Attack box: x=${attackBoxPos.x.toFixed(1)}, y=${attackBoxPos.y.toFixed(1)}, w=${attackBoxPos.width}, h=${attackBoxPos.height}`);
-          console.log(`[COLLISION] Target hit box: x=${targetHitBox.x.toFixed(1)}, y=${targetHitBox.y.toFixed(1)}, w=${targetHitBox.width}, h=${targetHitBox.height}`);
+          //console.log(`[COLLISION] HIT DETECTED on frame ${currentFrame}!`);
+          //console.log(`[COLLISION] Attack box: x=${attackBoxPos.x.toFixed(1)}, y=${attackBoxPos.y.toFixed(1)}, w=${attackBoxPos.width}, h=${attackBoxPos.height}`);
+          //console.log(`[COLLISION] Target hit box: x=${targetHitBox.x.toFixed(1)}, y=${targetHitBox.y.toFixed(1)}, w=${targetHitBox.width}, h=${targetHitBox.height}`);
         }
 
         return collisionResult;
@@ -453,11 +453,13 @@ function canMoveTo(entity, proposedX, proposedY, proposedZ) {
 
 // Behavior constraints function - determines which behaviors are physically possible
 // Now uses centralized enemy AI utilities for consistency
-function getBehaviorConstraints(entity) {
+// Accepts optional dynamicBlocked for merging with static constraints
+function getBehaviorConstraints(entity, dynamicBlocked = null) {
   const constraints = {
     allowed: new Set(['idle', 'attack', 'chase']), // Always allowed
     blocked: new Set(),
-    reasons: {}
+    reasons: {},
+    dynamicBlocked: dynamicBlocked || new Set() // ← НОВО: Dynamic blocked behaviors
   };
 
   // Use centralized constants
@@ -601,12 +603,12 @@ function applyScreenBoundaries(entity) {
 
     // Horizontal boundaries (X-axis) - ensure full hit box visibility
     if (entity.x < leftBoundary) {
-      console.log(`[SCREEN_BOUNDARIES] ${entity.entityType} hit left boundary, clamping X from ${entity.x} to ${leftBoundary}`);
+      //console.log(`[SCREEN_BOUNDARIES] ${entity.entityType} hit left boundary, clamping X from ${entity.x} to ${leftBoundary}`);
       entity.x = leftBoundary;
       entity.vx = 0; // Stop horizontal movement
       wasLimited = true;
     } else if (entity.x > rightBoundary) {
-      console.log(`[SCREEN_BOUNDARIES] ${entity.entityType} hit right boundary, clamping X from ${entity.x} to ${rightBoundary}`);
+      //console.log(`[SCREEN_BOUNDARIES] ${entity.entityType} hit right boundary, clamping X from ${entity.x} to ${rightBoundary}`);
       entity.x = rightBoundary;
       entity.vx = 0; // Stop horizontal movement
       wasLimited = true;
@@ -619,7 +621,7 @@ function applyScreenBoundaries(entity) {
     const bottomBoundary = Z_MIN;
     const topBoundary = Z_MAX;
 
-    console.log(`[SCREEN_BOUNDARIES] ${entity.entityType} fallback boundaries - left: ${leftBoundary}, right: ${rightBoundary}, width: ${entityWidth}`);
+    //console.log(`[SCREEN_BOUNDARIES] ${entity.entityType} fallback boundaries - left: ${leftBoundary}, right: ${rightBoundary}, width: ${entityWidth}`);
 
     if (entity.x < leftBoundary) {
       entity.x = leftBoundary;
@@ -634,12 +636,12 @@ function applyScreenBoundaries(entity) {
 
   // Vertical boundaries (Z-axis) - same as before
   if (entity.z < Z_MIN) {
-    console.log(`[SCREEN_BOUNDARIES] ${entity.entityType} hit bottom boundary, clamping Z from ${entity.z} to ${Z_MIN}`);
+    //console.log(`[SCREEN_BOUNDARIES] ${entity.entityType} hit bottom boundary, clamping Z from ${entity.z} to ${Z_MIN}`);
     entity.z = Z_MIN;
     entity.vz = 0; // Stop vertical movement
     wasLimited = true;
   } else if (entity.z > Z_MAX) {
-    console.log(`[SCREEN_BOUNDARIES] ${entity.entityType} hit top boundary, clamping Z from ${entity.z} to ${Z_MAX}`);
+    //console.log(`[SCREEN_BOUNDARIES] ${entity.entityType} hit top boundary, clamping Z from ${entity.z} to ${Z_MAX}`);
     entity.z = Z_MAX;
     entity.vz = 0; // Stop vertical movement
     wasLimited = true;
@@ -729,7 +731,7 @@ function calculateEntityDistance(entity1, entity2) {
         Math.pow(entity1.x - entity2.x, 2) +
         Math.pow((entity1.z || 0) - (entity2.z || 0), 2)
       );
-      console.log(`[DISTANCE_FALLBACK] Animation not ready for: ${!animReady1 ? entity1.entityType + '(no anim)' : ''} ${!animReady2 ? entity2.entityType + '(no anim)' : ''}. Fallback: ${distance.toFixed(1)}px (Raw origin dist: ${rawDist.toFixed(1)}px)`);
+      //console.log(`[DISTANCE_FALLBACK] Animation not ready for: ${!animReady1 ? entity1.entityType + '(no anim)' : ''} ${!animReady2 ? entity2.entityType + '(no anim)' : ''}. Fallback: ${distance.toFixed(1)}px (Raw origin dist: ${rawDist.toFixed(1)}px)`);
     }
   }
 

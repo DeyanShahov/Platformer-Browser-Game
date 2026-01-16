@@ -281,7 +281,7 @@ const BLUE_SLIME_ANIMATION_DEFINITIONS = {
       },
       {
         hitBox: { x: 80, y: 0, width: 80, height: 80 },
-        attackBox: { x: -80, yRatio: 0.70, width: 60, heightRatio: 0.3 }
+        attackBox: { x: -80, yRatio: 0.70, width: 45, heightRatio: 0.3 }
       }
     ],
     loop: false,

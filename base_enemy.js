@@ -5,7 +5,12 @@
    ========================= */
 
 class BaseEnemy {
+  // Static counter for unique instance IDs
+  static instanceCounter = 0;
+
   constructor(x, y, z, config = {}) {
+    // Assign unique instance ID
+    this.instanceId = ++BaseEnemy.instanceCounter;
     // Position and dimensions (must be overridden by subclasses)
     this.x = x;
     this.y = y;
@@ -68,6 +73,24 @@ class BaseEnemy {
     this.isThinking = true;        // Whether currently in thinking (IDLE) phase - start thinking
     this.hasStarted = false;       // Whether this is the first update cycle
 
+    // Dynamic blocked behaviors system for BT memory
+    this.dynamicBlocked = new Set(); // Currently blocked behaviors from interruptions
+
+    // Helper method for collision direction analysis
+    this.getBlockedDirectionsFromCollision = function (proposedX, proposedY, proposedZ) {
+      const correction = { x: this.x - proposedX, z: this.z - proposedZ };
+      const blocked = new Set();
+
+      if (Math.abs(correction.x) > 5) {
+        blocked.add(correction.x > 0 ? 'patrol_left' : 'patrol_right');
+      }
+      if (Math.abs(correction.z) > 5) {
+        blocked.add(correction.z > 0 ? 'move_down' : 'move_up');
+      }
+
+      return blocked;
+    };
+
     // Animation entity type (must be overridden by subclasses)
     this.animationEntityType = config.animationEntityType || 'enemy';
 
@@ -88,13 +111,27 @@ class BaseEnemy {
       window.enemyCombatManager.registerEnemy(this);
     }
 
-    console.log(`[BASE ENEMY] Created ${this.constructor.name} (Level ${this.level}) at (${x}, ${y}) with ${this.maxHealth} HP${this.activeScript ? ` [SCRIPT: ${this.activeScript.name}]` : ''}`);
+    //console.log(`[BASE ENEMY] Created ${this.constructor.name} (Level ${this.level}) at (${x}, ${y}) with ${this.maxHealth} HP${this.activeScript ? ` [SCRIPT: ${this.activeScript.name}]` : ''}`);
+  }
+
+  // Dynamic blocked behaviors management methods
+  addBlockedBehavior(behavior, reason = 'unknown') {
+    console.log(`[BT_MEMORY] ${this.constructor.name} blocked ${behavior} (${reason})`);
+    this.dynamicBlocked.add(behavior);
+  }
+
+  removeBlockedBehavior(behavior) {
+    this.dynamicBlocked.delete(behavior);
+  }
+
+  clearBlockedBehaviors() {
+    this.dynamicBlocked.clear();
   }
 
   // Initialize Behavior Tree AI System (universal system)
   initializeBT() {
     if (!window.createUniversalEnemyBehaviorTree || !window.tickEnemyAI || !window.createAttackProfile) {
-      console.warn('[BASE ENEMY] Universal BT system not loaded, using fallback AI');
+      //console.warn('[BASE ENEMY] Universal BT system not loaded, using fallback AI');
       return;
     }
 
@@ -120,7 +157,7 @@ class BaseEnemy {
     // Create BT tree using universal factory
     this.aiContext.behaviorTree = window.createUniversalEnemyBehaviorTree(this.rarity, this.intelligence);
 
-    console.log(`[BASE ENEMY] Universal BT AI system initialized: ${this.rarity}/${this.intelligence}`);
+    //console.log(`[BASE ENEMY] Universal BT AI system initialized: ${this.rarity}/${this.intelligence}`);
   }
 
   // Create attack profile (can be overridden by subclasses)
@@ -131,12 +168,12 @@ class BaseEnemy {
   // PHASE 4: Initialize script system if specified
   async initializeScript() {
     if (!this.scriptConfig?.scriptId) {
-      console.log(`[SCRIPT_INIT] No script config for ${this.constructor.name}, using base system`);
+      //console.log(`[SCRIPT_INIT] No script config for ${this.constructor.name}, using base system`);
       return;
     }
 
     try {
-      console.log(`[SCRIPT_INIT] Initializing ${this.scriptConfig.scriptId} for ${this.constructor.name}`);
+      //console.log(`[SCRIPT_INIT] Initializing ${this.scriptConfig.scriptId} for ${this.constructor.name}`);
 
       // Load script through manager
       if (window.enemyScriptManager && window.enemyScriptManager.loadScript) {
@@ -147,7 +184,7 @@ class BaseEnemy {
           throw new Error(`Script type mismatch: config says ${this.scriptConfig.type}, script is ${this.activeScript.type}`);
         }
 
-        console.log(`[SCRIPT_INIT] Successfully loaded: ${this.activeScript.name} (${this.activeScript.type})`);
+        //console.log(`[SCRIPT_INIT] Successfully loaded: ${this.activeScript.name} (${this.activeScript.type})`);
       } else {
         console.warn(`[SCRIPT_INIT] Script manager not available, falling back to base system`);
       }
@@ -163,7 +200,7 @@ class BaseEnemy {
   // PHASE 4: Runtime script switching (for boss phases)
   async switchScript(newScriptId) {
     if (!newScriptId) {
-      console.log(`[SCRIPT_SWITCH] Disabling script for ${this.constructor.name}, reverting to base system`);
+      //console.log(`[SCRIPT_SWITCH] Disabling script for ${this.constructor.name}, reverting to base system`);
       this.scriptConfig = null;
       this.activeScript = null;
       // Recreate base BT
@@ -174,11 +211,11 @@ class BaseEnemy {
     }
 
     try {
-      console.log(`[SCRIPT_SWITCH] Switching ${this.constructor.name} to script: ${newScriptId}`);
+      //console.log(`[SCRIPT_SWITCH] Switching ${this.constructor.name} to script: ${newScriptId}`);
 
       if (window.enemyScriptManager && window.enemyScriptManager.switchScript) {
         const newScript = await window.enemyScriptManager.switchScript(this, newScriptId);
-        console.log(`[SCRIPT_SWITCH] Switched to: ${newScript.name}`);
+        //console.log(`[SCRIPT_SWITCH] Switched to: ${newScript.name}`);
 
         // Update BT context with new script BT
         if (this.aiContext) {
@@ -254,7 +291,7 @@ class BaseEnemy {
 
       default:
         // Unknown state, go to idle
-        console.log(`[BASE ENEMY FSM] Unknown state ${currentState}, going to enemy_idle`);
+        //console.log(`[BASE ENEMY FSM] Unknown state ${currentState}, going to enemy_idle`);
         this.stateMachine.changeState('enemy_idle');
         break;
     }
@@ -276,7 +313,7 @@ class BaseEnemy {
         const canInterrupt = this.thinkingPhaseInterrupted !== false; // Check the flag set by command
 
         if (canInterrupt) {
-          console.log(`[BASE ENEMY THINKING] Player detected during thinking, interrupting - distance: ${closestPlayer.distance} <= ${chaseRadius}`);
+          //console.log(`[BASE ENEMY THINKING] Player detected during thinking, interrupting - distance: ${closestPlayer.distance} <= ${chaseRadius}`);
           // Player detected - interrupt thinking and handle immediately
           this.isThinking = false;
           // DON'T clear pendingCommand - transitionToBehavior() will overwrite it if needed
@@ -298,7 +335,7 @@ class BaseEnemy {
       //console.log(`[BASE ENEMY THINKING] Timer: ${this.aiTimer}/${thinkingDuration}, vx: ${this.vx}`);
 
       if (this.aiTimer >= 0 || Math.abs(this.aiTimer) < 0.001) {
-        console.log(`[BASE ENEMY THINKING] Thinking phase complete (aiTimer: ${this.aiTimer}), executing pending command`);
+        //console.log(`[BASE ENEMY THINKING] Thinking phase complete (aiTimer: ${this.aiTimer}), executing pending command`);
         // console.log(`[DEBUG] updateIdleBehavior: checking pendingCommand, value =`, this.pendingCommand, 'exists =', !!this.pendingCommand);
 
         // Thinking phase complete - execute pending command if available
@@ -307,6 +344,7 @@ class BaseEnemy {
         } else {
           // No pending command - consult BT for new behavior
           // console.log(`[DEBUG] ELSE BLOCK: Consulting BT for idle_timeout`);
+          console.log(`%c[NORMAL BEHAVIOR] ${this.constructor.name} #${this.instanceId} idle timeout - consulting BT for next action`, 'color: #0088ff; font-weight: bold; font-size: 14px;');
           const nextBehavior = this.consultBTForBehavior(players, { reason: 'idle_timeout' });
           // console.log(`[BASE ENEMY THINKING] BT returned:`, nextBehavior);
           this.transitionToBehavior(nextBehavior, behaviors);
@@ -329,10 +367,10 @@ class BaseEnemy {
     //console.log(`[BASE ENEMY IDLE] Timer: ${this.aiTimer}/${idleDuration}, vx: ${this.vx}`);
 
     if (this.aiTimer >= idleDuration) {
-      console.log(`[BASE ENEMY IDLE] Timer expired, consulting BT for next behavior`);
+      //console.log(`[BASE ENEMY IDLE] Timer expired, consulting BT for next behavior`);
       // Idle duration expired - consult BT for next behavior
       const nextBehavior = this.consultBTForBehavior(players, { reason: 'idle_timeout' });
-      console.error(`[BASE ENEMY IDLE] BT returned:`, nextBehavior);
+      //console.error(`[BASE ENEMY IDLE] BT returned:`, nextBehavior);
       this.transitionToBehavior(nextBehavior, behaviors);
       this.aiTimer = 0;
     }
@@ -343,7 +381,7 @@ class BaseEnemy {
     // console.log(`[VZ_DEBUG] updateVerticalMovementBehavior START - vz=${this.vz}, targetZ=${this.targetZ}`);
 
     if (this.targetZ === undefined) {
-      console.log(`[BASE ENEMY VERTICAL] ERROR: targetZ not set, exiting vertical movement`);
+      //console.log(`[BASE ENEMY VERTICAL] ERROR: targetZ not set, exiting vertical movement`);
       this.transitionToBehavior({ type: 'idle', duration: 0.5 }, behaviors);
       return;
     }
@@ -355,7 +393,7 @@ class BaseEnemy {
     );
 
     if (isStuckAtBoundary) {
-      console.log(`[VERTICAL STUCK] Stuck at boundary (z=${this.z}, targetZ=${this.targetZ}), immediate BT consultation`);
+      //console.log(`[VERTICAL STUCK] Stuck at boundary (z=${this.z}, targetZ=${this.targetZ}), immediate BT consultation`);
       this.vz = 0;
       this.targetZ = undefined;
       this.verticalMovementStartZ = undefined;
@@ -370,16 +408,16 @@ class BaseEnemy {
     const distanceMoved = Math.abs(this.z - this.verticalMovementStartZ);
     const targetDistance = Math.abs(this.targetZ - this.verticalMovementStartZ); // Dynamic distance to target
 
-    console.log(`[BASE ENEMY VERTICAL] Moving: current=${this.z.toFixed(1)}, target=${this.targetZ.toFixed(1)}, moved=${distanceMoved.toFixed(1)}, targetDistance=${targetDistance.toFixed(1)}`);
+    //console.log(`[BASE ENEMY VERTICAL] Moving: current=${this.z.toFixed(1)}, target=${this.targetZ.toFixed(1)}, moved=${distanceMoved.toFixed(1)}, targetDistance=${targetDistance.toFixed(1)}`);
 
     // Check if we've reached or exceeded the target distance
     if (distanceMoved >= targetDistance) {
-      console.log(`[BASE ENEMY VERTICAL] Target reached (${distanceMoved.toFixed(1)} >= ${targetDistance}), immediate BT consultation`);
+      //console.log(`[BASE ENEMY VERTICAL] Target reached (${distanceMoved.toFixed(1)} >= ${targetDistance}), immediate BT consultation`);
 
       // Apply boundary enforcement to ensure we're within limits
       const boundaryResult = window.applyScreenBoundaries ? window.applyScreenBoundaries(this) : { wasLimited: false };
       if (boundaryResult.wasLimited) {
-        console.log(`[BASE ENEMY VERTICAL] Boundary enforced after movement`);
+        //console.log(`[BASE ENEMY VERTICAL] Boundary enforced after movement`);
       }
 
       // Cache targetZ for logging
@@ -393,7 +431,7 @@ class BaseEnemy {
       // Dynamic IDLE duration based on rarity/intelligence
       const idleDuration = this.aiContext?.behaviors?.idle?.duration || 0.2;
 
-      console.log(`%c[COMMAND INTERRUPTED] Vertical movement completed (reached target Z: ${reachedTargetZ !== undefined ? reachedTargetZ.toFixed(1) : 'unknown'}) - going to idle (thinking phase)`, 'color: #00ffff; font-weight: bold; font-size: 14px;');
+      //console.log(`%c[COMMAND INTERRUPTED] Vertical movement completed (reached target Z: ${reachedTargetZ !== undefined ? reachedTargetZ.toFixed(1) : 'unknown'}) - going to idle (thinking phase)`, 'color: #00ffff; font-weight: bold; font-size: 14px;');
 
       // ADD IDLE THINKING instead of immediate BT
       this.transitionToBehavior({ type: 'idle', duration: idleDuration }, behaviors); // 0.3 sec мислене
@@ -410,7 +448,7 @@ class BaseEnemy {
     const attackRange = this.attackRange; // Use standard/configured attack range
 
     if (closestPlayer && closestPlayer.distance <= attackRange) {
-      console.log(`%c[PLAYER DETECTED] Player in range during vertical movement - stopping move and preparing attack`, 'color: #ff0000; font-weight: bold; font-size: 14px;');
+      //console.log(`%c[PLAYER DETECTED] Player in range during vertical movement - stopping move and preparing attack`, 'color: #ff0000; font-weight: bold; font-size: 14px;');
       this.vz = 0;
       this.targetZ = undefined;
       this.verticalMovementStartZ = undefined;
@@ -434,7 +472,7 @@ class BaseEnemy {
       // Find the entity that actually blocked us for better logging
       const blocker = this.detectCollidedEntity(this.x, this.y, proposedZ);
 
-      console.log(`%c[COMMAND INTERRUPTED] Vertical movement blocked by ${blocker ? blocker.entityType : 'unknown obstacle'} - going to idle (thinking phase)`, 'color: #00ffff; font-weight: bold; font-size: 14px;');
+      //console.log(`%c[COMMAND INTERRUPTED] Vertical movement blocked by ${blocker ? blocker.entityType : 'unknown obstacle'} - going to idle (thinking phase)`, 'color: #00ffff; font-weight: bold; font-size: 14px;');
 
       // Stop movement and reset state
       this.vz = 0;
@@ -456,7 +494,7 @@ class BaseEnemy {
     // Apply boundary enforcement during movement (safety check)
     const boundaryResult = window.applyScreenBoundaries ? window.applyScreenBoundaries(this) : { wasLimited: false };
     if (boundaryResult.wasLimited) {
-      console.log(`[BASE ENEMY VERTICAL] Boundary hit during movement, resetting movement state`);
+      //console.log(`[BASE ENEMY VERTICAL] Boundary hit during movement, resetting movement state`);
       // Stop movement if we hit a boundary
       this.vz = 0;
       this.targetZ = undefined;
@@ -499,7 +537,15 @@ class BaseEnemy {
     // Check if boundary was hit during movement (set by handleEnemyMovement)
     if (this.boundaryInterrupted) {
       this.boundaryInterrupted = false; // Reset flag
-      console.log(`%c[COMMAND INTERRUPTED] Patrol blocked by screen boundary - going to idle (thinking phase)`, 'color: #00ffff; font-weight: bold; font-size: 14px;');
+      //console.log(`%c[COMMAND INTERRUPTED] Patrol blocked by screen boundary - going to idle (thinking phase)`, 'color: #00ffff; font-weight: bold; font-size: 14px;');
+
+      // 🎯 НОВО: Определяне на блокирана посока и добавяне към dynamic blocked
+      const blockedDirection = this.patrolDirection > 0 ? 'patrol_right' : 'patrol_left';
+      this.addBlockedBehavior(blockedDirection, 'screen_boundary');
+
+      console.log(`%c[COMMAND INTERRUPTED] ${this.constructor.name} #${this.instanceId} patrol blocked by screen boundary (${blockedDirection}) - going to idle (thinking phase)`, 'color: #00ffff; font-weight: bold; font-size: 14px;');
+      console.log(`%c[AI_SITUATION] ${this.constructor.name} #${this.instanceId}: "Патрулът е прекъснат от граница, какво да правя?" Ограничение: ${blockedDirection}`, 'color: #ffaa00; font-weight: bold; font-size: 12px;');
+
       // Consult BT with context about screen boundary collision
       const nextBehavior = this.consultBTForBehavior(players, {
         reason: 'screen_boundary',
@@ -547,21 +593,26 @@ class BaseEnemy {
     // Check if movement was blocked by collision (with buffer consideration)
     if (hasSignificantCorrection) {
       // DEBUG: Log collision details
-      console.log(`[COLLISION_DEBUG] hasSignificantCorrection=true, delta: ${correctionDelta.toFixed(1)}px`);
+      //console.log(`[COLLISION_DEBUG] hasSignificantCorrection=true, delta: ${correctionDelta.toFixed(1)}px`);
 
       // NEW: Check if collision is with player - if so, attack immediately!
       const collidedEntity = this.detectCollidedEntity(proposedX, this.y, this.z);
-      console.log(`[COLLISION_DEBUG] Collided entity:`, collidedEntity ? `${collidedEntity.entityType} (${collidedEntity.x?.toFixed(1)}, ${collidedEntity.z?.toFixed(1)})` : 'none');
+      //console.log(`[COLLISION_DEBUG] Collided entity:`, collidedEntity ? `${collidedEntity.entityType} (${collidedEntity.x?.toFixed(1)}, ${collidedEntity.z?.toFixed(1)})` : 'none');
 
       if (collidedEntity && collidedEntity.entityType === 'player') {
-        console.log(`%c[PLAYER COLLISION] Patrol interrupted by PLAYER collision (${correctionDelta.toFixed(1)}px correction) - ATTACKING IMMEDIATELY!`, 'color: #ff0000; font-weight: bold; font-size: 14px;');
+        //console.log(`%c[PLAYER COLLISION] Patrol interrupted by PLAYER collision (${correctionDelta.toFixed(1)}px correction) - ATTACKING IMMEDIATELY!`, 'color: #ff0000; font-weight: bold; font-size: 14px;');
         // Direct attack - no idle thinking phase for player collisions
         const attackCommand = { type: 'attack', attackType: 'light' };
         this.transitionToBehavior(attackCommand, behaviors);
         return;
       } else {
-        // Collision with non-player entity - use normal idle thinking
-        console.log(`%c[COMMAND INTERRUPTED] Patrol blocked by entity collision (${correctionDelta.toFixed(1)}px correction) - going to idle (thinking phase)`, 'color: #00ffff; font-weight: bold; font-size: 14px;');
+        // 🎯 НОВО: Entity collision - анализирай посоката и блокирай правилните поведения
+        const blockedDirections = this.getBlockedDirectionsFromCollision(proposedX, this.y, this.z);
+        blockedDirections.forEach(direction => {
+          this.addBlockedBehavior(direction, 'entity_collision');
+        });
+
+        console.log(`%c[COMMAND INTERRUPTED] ${this.constructor.name} #${this.instanceId} patrol blocked by entity collision (${correctionDelta.toFixed(1)}px correction) - blocked: ${Array.from(blockedDirections).join(', ')} - going to idle (thinking phase)`, 'color: #00ffff; font-weight: bold; font-size: 14px;');
         this.transitionToBehavior({ type: 'idle', duration: 0.5 }, behaviors);
         return;
       }
@@ -573,7 +624,7 @@ class BaseEnemy {
 
     // Check patrol radius boundaries - go to idle first (thinking phase)
     if (Math.abs(this.x - this.startX) >= patrolRadius) {
-      console.log(`%c[COMMAND INTERRUPTED] Patrol completed (max distance reached: ${Math.abs(this.x - this.startX).toFixed(1)} >= ${patrolRadius}) - going to idle (thinking phase)`, 'color: #00ffff; font-weight: bold; font-size: 14px;');
+      console.log(`%c[NORMAL BEHAVIOR] ${this.constructor.name} #${this.instanceId} patrol completed (max distance: ${Math.abs(this.x - this.startX).toFixed(1)} >= ${patrolRadius}) - consulting BT for next action`, 'color: #0088ff; font-weight: bold; font-size: 14px;');
       // Go to idle state first (thinking phase) before consulting BT
       this.transitionToBehavior({ type: 'idle', duration: 0.5 }, behaviors);
       return;
@@ -587,12 +638,12 @@ class BaseEnemy {
 
     if (isPlayerColliding) {
       // Direct collision with player - go to idle first (thinking phase)
-      console.log(`[COLLISION DETECTED] Player collision detected during patrol - going to IDLE (thinking phase)`);
+      //console.log(`[COLLISION DETECTED] Player collision detected during patrol - going to IDLE (thinking phase)`);
       this.transitionToBehavior({ type: 'idle', duration: 0.3, canInterrupt: false }, behaviors);
       return;
     } else if (closestPlayer && closestPlayer.distance <= (behaviors.chase?.radiusX || 300)) {
       // Distance-based detection
-      console.log(`[BASE ENEMY PATROL] Player detected during patrol at distance ${closestPlayer.distance.toFixed(1)}, consulting BT`);
+      //console.log(`[BASE ENEMY PATROL] Player detected during patrol at distance ${closestPlayer.distance.toFixed(1)}, consulting BT`);
       const nextBehavior = this.consultBTForBehavior(players, { reason: 'player_detected', playerDistance: closestPlayer.distance });
       if (nextBehavior.type === 'chase') {
         this.transitionToBehavior(nextBehavior, behaviors);
@@ -667,22 +718,22 @@ class BaseEnemy {
     const isXOverlapping = xDistance <= minXSeparation;
     const needsRepositioning = zDifference > zRepositionThreshold;
 
-    console.log(`[Z_CHASE_STRATEGY] ========== STRATEGY DECISION ==========`);
-    console.log(`[Z_CHASE_STRATEGY] Enemy pos: (${this.x.toFixed(1)}, ${this.z.toFixed(1)})`);
-    console.log(`[Z_CHASE_STRATEGY] Player pos: (${closestPlayer.x.toFixed(1)}, ${closestPlayer.z.toFixed(1)})`);
-    console.log(`[Z_CHASE_STRATEGY] X-distance: ${xDistance.toFixed(1)}, Z-diff: ${zDifference.toFixed(1)}`);
-    console.log(`[Z_CHASE_STRATEGY] minXSeparation: ${minXSeparation}, zRepositionThreshold: ${zRepositionThreshold}`);
-    console.log(`[Z_CHASE_STRATEGY] isXOverlapping: ${isXOverlapping}, needsRepositioning: ${needsRepositioning}`);
-    console.log(`[Z_CHASE_STRATEGY] ========== DECISION LOGIC ==========`);
+    // console.log(`[Z_CHASE_STRATEGY] ========== STRATEGY DECISION ==========`);
+    // console.log(`[Z_CHASE_STRATEGY] Enemy pos: (${this.x.toFixed(1)}, ${this.z.toFixed(1)})`);
+    // console.log(`[Z_CHASE_STRATEGY] Player pos: (${closestPlayer.x.toFixed(1)}, ${closestPlayer.z.toFixed(1)})`);
+    // console.log(`[Z_CHASE_STRATEGY] X-distance: ${xDistance.toFixed(1)}, Z-diff: ${zDifference.toFixed(1)}`);
+    // console.log(`[Z_CHASE_STRATEGY] minXSeparation: ${minXSeparation}, zRepositionThreshold: ${zRepositionThreshold}`);
+    // console.log(`[Z_CHASE_STRATEGY] isXOverlapping: ${isXOverlapping}, needsRepositioning: ${needsRepositioning}`);
+    // console.log(`[Z_CHASE_STRATEGY] ========== DECISION LOGIC ==========`);
 
     // ADD: Debug current chase state
-    console.log(`[Z_CHASE_STRATEGY] Current chaseState:`, {
-      strategy: this.chaseState?.strategy || 'none',
-      zAligned: this.chaseState?.zAligned,
-      zFailCount: this.chaseState?.zFailCount || 0,
-      isEscaping: this.chaseState?.isEscaping,
-      xSeparationAchieved: this.chaseState?.xSeparationAchieved
-    });
+    // console.log(`[Z_CHASE_STRATEGY] Current chaseState:`, {
+    //   strategy: this.chaseState?.strategy || 'none',
+    //   zAligned: this.chaseState?.zAligned,
+    //   zFailCount: this.chaseState?.zFailCount || 0,
+    //   isEscaping: this.chaseState?.isEscaping,
+    //   xSeparationAchieved: this.chaseState?.xSeparationAchieved
+    // });
 
     // DUAL STRATEGY SELECTION: Trigger when X-overlapping OR when Z-repositioning needed
     // FIX: Prevent X-FIRST re-triggering after initial repositioning is complete
@@ -691,7 +742,7 @@ class BaseEnemy {
     if (needsInitialRepositioning) {
       if (isXOverlapping && !this.chaseState?.xSeparationAchieved) {
         // STRATEGY B: X-overlapping + initial repositioning needed → X-first repositioning
-        console.log(`[Z_CHASE_STRATEGY] Using X-FIRST strategy: X-overlapping detected (distance: ${xDistance.toFixed(1)} <= ${minXSeparation}), initial repositioning needed`);
+        //console.log(`[Z_CHASE_STRATEGY] Using X-FIRST strategy: X-overlapping detected (distance: ${xDistance.toFixed(1)} <= ${minXSeparation}), initial repositioning needed`);
 
         // Move horizontally to create safe separation, then potentially align vertically if needed
         this.chaseState.strategy = 'x_first';
@@ -702,17 +753,17 @@ class BaseEnemy {
         this.vx = xDirection * chaseSpeed * 0.8; // Slightly slower for control
         this.vz = 0; // No Z movement during X-separation
 
-        console.log(`[Z_CHASE_STRATEGY] Moving horizontally: vx=${this.vx.toFixed(1)}, target separation=${this.chaseState.xTargetSeparation}`);
+        //console.log(`[Z_CHASE_STRATEGY] Moving horizontally: vx=${this.vx.toFixed(1)}, target separation=${this.chaseState.xTargetSeparation}`);
         return; // Exit - continue this strategy next frame
       } else {
         // STRATEGY A: X-separated + Z-different → Z-first repositioning (existing logic)
-        console.log(`[Z_CHASE_STRATEGY] Using Z-FIRST strategy: X-separated (distance: ${xDistance.toFixed(1)} > ${minXSeparation}), Z-diff: ${zDifference.toFixed(1)} > ${zRepositionThreshold}`);
+        //console.log(`[Z_CHASE_STRATEGY] Using Z-FIRST strategy: X-separated (distance: ${xDistance.toFixed(1)} > ${minXSeparation}), Z-diff: ${zDifference.toFixed(1)} > ${zRepositionThreshold}`);
         this.chaseState.strategy = 'z_first';
         // Continue with existing Z-first logic below
       }
     } else {
       // No repositioning needed - normal horizontal chase
-      console.log(`[Z_CHASE_STRATEGY] No repositioning needed: X-distance ${xDistance.toFixed(1)} ${isXOverlapping ? '<=' : '>'} ${minXSeparation}, Z-diff ${zDifference.toFixed(1)} ${needsRepositioning ? '>' : '<='} ${zRepositionThreshold}${this.chaseState?.xSeparationAchieved ? ', xSeparationAchieved=true' : ''}`);
+      //console.log(`[Z_CHASE_STRATEGY] No repositioning needed: X-distance ${xDistance.toFixed(1)} ${isXOverlapping ? '<=' : '>'} ${minXSeparation}, Z-diff ${zDifference.toFixed(1)} ${needsRepositioning ? '>' : '<='} ${zRepositionThreshold}${this.chaseState?.xSeparationAchieved ? ', xSeparationAchieved=true' : ''}`);
     }
 
     // Handle ongoing X-first strategy (when we were previously moving horizontally)
@@ -721,7 +772,7 @@ class BaseEnemy {
 
       if (currentXDistance >= this.chaseState.xTargetSeparation) {
         // X-separation achieved, now switch to Z-alignment
-        console.log(`[Z_CHASE_STRATEGY] X-separation achieved (${currentXDistance.toFixed(1)} >= ${this.chaseState.xTargetSeparation}), switching to Z-alignment`);
+        //console.log(`[Z_CHASE_STRATEGY] X-separation achieved (${currentXDistance.toFixed(1)} >= ${this.chaseState.xTargetSeparation}), switching to Z-alignment`);
         this.chaseState.xSeparationAchieved = true;
         this.vx = 0; // Stop horizontal movement
         // Continue to Z-repositioning logic below
@@ -751,7 +802,7 @@ class BaseEnemy {
 
     if (needsZRepositioning && !this.chaseState?.zAligned) {
       // PHASE 2: Z-FIRST REPOSITIONING - Prioritize vertical alignment
-      console.log(`[Z_CHASE] Enemy repositioning: Z-diff ${zDifference.toFixed(1)} > ${zRepositionThreshold}`);
+      //console.log(`[Z_CHASE] Enemy repositioning: Z-diff ${zDifference.toFixed(1)} > ${zRepositionThreshold}`);
 
       // Calculate Z-movement direction and speed
       const zDirection = this.z < closestPlayer.z ? 1 : -1;
@@ -770,7 +821,7 @@ class BaseEnemy {
         // Check if Z-alignment achieved
         const newZDifference = Math.abs(this.z - closestPlayer.z);
         if (newZDifference <= zRepositionThreshold) {
-          console.log(`[Z_CHASE] Z-alignment achieved: ${newZDifference.toFixed(1)} <= ${zRepositionThreshold}`);
+          //console.log(`[Z_CHASE] Z-alignment achieved: ${newZDifference.toFixed(1)} <= ${zRepositionThreshold}`);
           this.chaseState = { ...this.chaseState, zAligned: true };
           this.vz = 0; // Stop Z-movement
         }
@@ -783,7 +834,7 @@ class BaseEnemy {
         this.chaseState.zFailCount = (this.chaseState.zFailCount || 0) + 1;
         this.chaseState.lastZFailTime = performance.now();
 
-        console.log(`[Z_DEADLOCK] Z-repositioning blocked, fail count: ${this.chaseState.zFailCount}`);
+        //console.log(`[Z_DEADLOCK] Z-repositioning blocked, fail count: ${this.chaseState.zFailCount}`);
 
         // Deadlock prevention: minimum safe distance enforcement
         const minSafeDistance = 50; // pixels - enough to avoid collision conflicts
@@ -795,7 +846,7 @@ class BaseEnemy {
           this.vx = escapeDirection * chaseSpeed * 0.8; // Slightly slower for control
           this.vz = 0;
 
-          console.log(`[Z_DEADLOCK] Creating safe distance: ${currentXDistance.toFixed(1)} < ${minSafeDistance}, moving away`);
+          //console.log(`[Z_DEADLOCK] Creating safe distance: ${currentXDistance.toFixed(1)} < ${minSafeDistance}, moving away`);
 
           // Prevent immediate re-detection during escape - SET ESCAPE FLAGS
           this.chaseState.isEscaping = true;
@@ -809,7 +860,7 @@ class BaseEnemy {
         const persistentZFailure = this.chaseState.zFailCount >= 5;
 
         if (atBoundary && persistentZFailure) {
-          console.log(`[Z_DEADLOCK] Boundary deadlock detected, switching to boundary-aware mode`);
+          //console.log(`[Z_DEADLOCK] Boundary deadlock detected, switching to boundary-aware mode`);
           // Give up chase and return to patrol
           this.chaseState = {}; // Reset chase state
           this.transitionToBehavior({ type: 'idle', duration: 1.0 }, behaviors);
@@ -825,14 +876,14 @@ class BaseEnemy {
     if (this.chaseState.escapeUntilXDistance) {
       const currentXDistance = Math.abs(this.x - closestPlayer.x);
       if (currentXDistance >= this.chaseState.escapeUntilXDistance) {
-        console.log(`[Z_DEADLOCK] Safe distance achieved: ${currentXDistance.toFixed(1)} >= ${this.chaseState.escapeUntilXDistance}`);
+        //console.log(`[Z_DEADLOCK] Safe distance achieved: ${currentXDistance.toFixed(1)} >= ${this.chaseState.escapeUntilXDistance}`);
         delete this.chaseState.escapeUntilXDistance;
         this.chaseState.zFailCount = 0; // Reset failure count
       }
     }
 
     // PHASE 3: X-PURSUIT - Horizontal chase toward (now Z-aligned) target
-    console.log(`[Z_CHASE] Horizontal pursuit: distance=${distance3D.toFixed(1)}, Z-aligned=${!!this.chaseState?.zAligned}`);
+    //console.log(`[Z_CHASE] Horizontal pursuit: distance=${distance3D.toFixed(1)}, Z-aligned=${!!this.chaseState?.zAligned}`);
 
     if (closestPlayer.distance > (behaviors.chase?.radiusX || 300) * 1.5) {
       // Player too far - reset chase state and consult BT
@@ -857,7 +908,7 @@ class BaseEnemy {
 
   // Attack behavior: check for animation completion and consult BT
   updateAttackBehavior(players, dt, behaviors) {
-    console.log(`[ATTACK_DEBUG] Current state: ${this.stateMachine?.getCurrentStateName()}, isInAttackState: ${this.stateMachine?.isInAttackState()}, animation: ${this.animation?.currentAnimation}, frame: ${this.animation?.currentFrame}`);
+    //console.log(`[ATTACK_DEBUG] Current state: ${this.stateMachine?.getCurrentStateName()}, isInAttackState: ${this.stateMachine?.isInAttackState()}, animation: ${this.animation?.currentAnimation}, frame: ${this.animation?.currentFrame}`);
 
     // Initialize timeout tracking
     if (!this.attackTimeoutStart) {
@@ -866,7 +917,7 @@ class BaseEnemy {
 
     // Fallback: Check if attack animation has completed (state machine transition)
     if (this.stateMachine && !this.stateMachine.isInAttackState()) {
-      console.log(`%c[COMMAND INTERRUPTED] Attack completed via state machine - consulting BT for next action`, 'color: #00ffff; font-weight: bold; font-size: 14px;');
+      console.log(`%c[NORMAL BEHAVIOR] ${this.constructor.name} #${this.instanceId} attack completed - consulting BT for next action`, 'color: #0088ff; font-weight: bold; font-size: 14px;');
       const nextBehavior = this.consultBTForBehavior(players, { reason: 'attack_complete' });
       this.transitionToBehavior(nextBehavior, behaviors);
       return;
@@ -898,11 +949,11 @@ class BaseEnemy {
       if (this.scriptConfig.type === window.enemyAIConfig.SCRIPT_TYPE.FULL) {
         const scriptCommand = this.getScriptCommand(context);
         if (scriptCommand) {
-          console.log(`%c[SCRIPT_OVERRIDE] ${this.constructor.name} using FULL script: ${scriptCommand.type}`, 'color: #ff00ff; font-weight: bold; font-size: 14px;');
+          //console.log(`%c[SCRIPT_OVERRIDE] ${this.constructor.name} using FULL script: ${scriptCommand.type}`, 'color: #ff00ff; font-weight: bold; font-size: 14px;');
           return scriptCommand;
         }
         // Script didn't provide command - this shouldn't happen for FULL scripts
-        console.warn(`[SCRIPT_SYSTEM] FULL script didn't provide command, falling back to base system`);
+        //console.warn(`[SCRIPT_SYSTEM] FULL script didn't provide command, falling back to base system`);
       }
 
       // PARTIAL/BONUS script: Always consult both script and base system, then merge
@@ -915,9 +966,9 @@ class BaseEnemy {
         // Merge script and base commands
         const mergedCommand = window.mergeCommands(baseCommand, scriptCommand, this.scriptConfig.type);
 
-        if (scriptCommand) {
-          console.log(`%c[SCRIPT_MERGE] ${this.constructor.name} merging ${this.scriptConfig.type.toUpperCase()} script (${scriptCommand.type}) with base (${baseCommand?.type || 'none'})`, 'color: #00ff88; font-weight: bold; font-size: 14px;');
-        }
+        // if (scriptCommand) {
+        //   console.log(`%c[SCRIPT_MERGE] ${this.constructor.name} merging ${this.scriptConfig.type.toUpperCase()} script (${scriptCommand.type}) with base (${baseCommand?.type || 'none'})`, 'color: #00ff88; font-weight: bold; font-size: 14px;');
+        // }
 
         return mergedCommand;
       }
@@ -945,24 +996,21 @@ class BaseEnemy {
   // Get command from base BT system
   getBaseCommand(context) {
     // Get fresh behavior constraints based on current physical environment
-    const constraints = window.getBehaviorConstraints ? window.getBehaviorConstraints(this) : null;
+    // Include dynamic blocked behaviors for interruption-aware decisions
+    const constraints = window.getBehaviorConstraints ? window.getBehaviorConstraints(this, this.dynamicBlocked) : null;
     if (constraints) {
       context.behaviorConstraints = constraints;
-      // console.log(`[BT_CONSTRAINTS] Fresh constraints for ${context.reason || 'general'}:`, {
-      //   blocked: Array.from(constraints.blocked),
-      //   allowed: Array.from(constraints.allowed),
-      //   reasons: constraints.reasons
-      // });
+      console.log(`[BT_CONSTRAINTS] ${this.constructor.name} #${this.instanceId} constraints: blocked=[${Array.from(constraints.blocked).join(', ')}], dynamic=[${Array.from(constraints.dynamicBlocked || []).join(', ')}]`);
     }
 
     // Green log - enemy asking BT for decision
     const situationText = this.getSituationText(context);
-    console.log(`%c[BT_QUERY] ${this.constructor.name} #${this.level}: "${situationText}"`, 'color: #00ff00; font-weight: bold; font-size: 14px;');
+    console.log(`%c[BT_QUERY] ${this.constructor.name} #${this.instanceId}: "${situationText}"`, 'color: #00ff00; font-weight: bold; font-size: 14px;');
 
     // console.log('[BASE ENEMY BT] consultBTForBehavior called with context:', context, 'aiContext:', !!this.aiContext, 'behaviorTree:', !!this.aiContext?.behaviorTree, 'tickEnemyAI:', !!window.tickEnemyAI);
 
     if (!this.aiContext || !this.aiContext.behaviorTree) {
-      console.log('[BASE ENEMY BT] BT not available, using fallback');
+      //console.log('[BASE ENEMY BT] BT not available, using fallback');
       // BT not available - fallback decisions
       return this.fallbackBehaviorDecision(players, context);
     }
@@ -985,7 +1033,7 @@ class BaseEnemy {
 
     // Red log - BT decision
     const decisionText = this.getDecisionText(command, context);
-    // console.log(`%c[BT_DECISION] ${this.constructor.name} #${this.level} from ${situationText} → ${decisionText}`, 'color: #ff0000; font-weight: bold; font-size: 14px;');
+    console.log(`%c[BT_DECISION] ${this.constructor.name} #${this.instanceId} from "${situationText}" → ${decisionText}`, 'color: #ff0000; font-weight: bold; font-size: 14px;');
 
     // Clear context after consultation
     delete this.aiContext.consultationContext;
@@ -1157,7 +1205,7 @@ class BaseEnemy {
       case 'patrol':
       case 'patrol_left':
       case 'patrol_right':
-        console.log(`%c[COMMAND START] Patrol ${command.type.replace('patrol_', '') || 'auto'} (direction: ${command.type === 'patrol_left' ? -1 : command.type === 'patrol_right' ? 1 : 'auto'})`, 'color: #0088ff; font-weight: bold; font-size: 14px;');
+        //console.log(`%c[COMMAND START] Patrol ${command.type.replace('patrol_', '') || 'auto'} (direction: ${command.type === 'patrol_left' ? -1 : command.type === 'patrol_right' ? 1 : 'auto'})`, 'color: #0088ff; font-weight: bold; font-size: 14px;');
         // console.log(`[DEBUG] executePendingCommand: executing patrol command`);
         if (this.stateMachine) {
           // const result = this.stateMachine.changeState('enemy_walking');
@@ -1185,46 +1233,46 @@ class BaseEnemy {
         // Stay in walking state but reverse direction
         this.stateMachine.changeState('enemy_walking');
         this.patrolDirection *= -1; // Reverse current direction
-        console.log(`[BASE ENEMY TRANSITION] Reversing patrol direction to: ${this.patrolDirection}`);
+        //console.log(`[BASE ENEMY TRANSITION] Reversing patrol direction to: ${this.patrolDirection}`);
         break;
 
       case 'move_up':
-        console.log(`[DEBUG] executePendingCommand: executing move_up command`);
+        //console.log(`[DEBUG] executePendingCommand: executing move_up command`);
         if (this.stateMachine) {
           const result = this.stateMachine.changeState('enemy_walking');
-          console.log(`[DEBUG] executePendingCommand: move_up changeState result =`, result);
+          //console.log(`[DEBUG] executePendingCommand: move_up changeState result =`, result);
         }
         // Move up by command displacement using command speed
         this.targetZ = this.z + command.displacement; // Use dynamic displacement
         this.vz = command.speed; // Movement velocity (positive Z = up)
         this.verticalMovementStartZ = this.z; // Track starting position
-        console.log(`[BASE ENEMY VERTICAL] Starting move_up: from ${this.z} to ${this.targetZ}`);
+        //console.log(`[BASE ENEMY VERTICAL] Starting move_up: from ${this.z} to ${this.targetZ}`);
         break;
 
       case 'move_down':
-        console.log(`[DEBUG] executePendingCommand: executing move_down command`);
+        //console.log(`[DEBUG] executePendingCommand: executing move_down command`);
         // Move down by command displacement using command speed
         this.targetZ = this.z - command.displacement; // Use dynamic displacement
         this.vz = -command.speed; // Movement velocity (negative Z = down)
         this.verticalMovementStartZ = this.z; // Track starting position
-        console.log(`[VZ_DEBUG] executePendingCommand set vz=${this.vz}, command.speed=${command.speed}`);
-        console.log(`[BASE ENEMY VERTICAL] Starting move_down: from ${this.z} to ${this.targetZ}`);
+        //console.log(`[VZ_DEBUG] executePendingCommand set vz=${this.vz}, command.speed=${command.speed}`);
+        //console.log(`[BASE ENEMY VERTICAL] Starting move_down: from ${this.z} to ${this.targetZ}`);
 
         // Change state AFTER setting targetZ (so EnemyWalkingState.enter() sees it)
         if (this.stateMachine) {
           const result = this.stateMachine.changeState('enemy_walking');
-          console.log(`[DEBUG] executePendingCommand: move_down changeState result =`, result);
+          //console.log(`[DEBUG] executePendingCommand: move_down changeState result =`, result);
         }
         break;
 
       case 'chase':
-        console.log(`%c[COMMAND START] Chase player`, 'color: #0088ff; font-weight: bold; font-size: 14px;');
+        //console.log(`%c[COMMAND START] Chase player`, 'color: #0088ff; font-weight: bold; font-size: 14px;');
         this.stateMachine.changeState('enemy_running');
         // vx will be set in updateRunningBehavior
         break;
 
       case 'attack':
-        console.log(`%c[COMMAND START] Attack ${command.attackType || 'light'}`, 'color: #0088ff; font-weight: bold; font-size: 14px;');
+        //console.log(`%c[COMMAND START] Attack ${command.attackType || 'light'}`, 'color: #0088ff; font-weight: bold; font-size: 14px;');
         // Map attack type to enemy FSM action
         const attackNumber = command.attackType === 'light' ? '1' :
           command.attackType === 'medium' ? '2' :
@@ -1246,7 +1294,7 @@ class BaseEnemy {
 
   // Fallback behavior decision when BT is not available
   fallbackBehaviorDecision(players, context = {}) {
-    console.log('[BASE ENEMY FALLBACK] Making decision with context:', context);
+    //console.log('[BASE ENEMY FALLBACK] Making decision with context:', context);
 
     const closestPlayer = this.getClosestPlayer(players);
 
@@ -1398,9 +1446,9 @@ class BaseEnemy {
       const distance = window.calculateEntityDistance ? window.calculateEntityDistance(this, player) :
         Math.sqrt(Math.pow(this.x - player.x, 2) + Math.pow(this.z - player.z, 2));
 
-      if (distance < 200) {
-        console.log(`[DISTANCE_CALC] Distance to player: ${distance.toFixed(1)}px (Edge-to-Edge)`);
-      }
+      // if (distance < 200) {
+      //   console.log(`[DISTANCE_CALC] Distance to player: ${distance.toFixed(1)}px (Edge-to-Edge)`);
+      // }
 
       return {
         entity: player,
@@ -1424,7 +1472,7 @@ class BaseEnemy {
     this.health -= damage;
     this.hit = true;
 
-    console.log(`[BASE ENEMY] Took ${damage} damage, health: ${this.health}/${this.maxHealth}`);
+    //console.log(`[BASE ENEMY] Took ${damage} damage, health: ${this.health}/${this.maxHealth}`);
 
     if (this.health <= 0) {
       this.die();
@@ -1444,7 +1492,7 @@ class BaseEnemy {
     this.isDying = true;
     this.health = 0;
 
-    console.log(`[BASE ENEMY] ${this.constructor.name} defeated!`);
+    //console.log(`[BASE ENEMY] ${this.constructor.name} defeated!`);
 
     // Play death animation
     if (this.stateMachine) {

@@ -53,11 +53,11 @@ class RandomSelector extends BTNode {
       [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
     }
 
-    console.error(`[RANDOM_SELECTOR] Ticking with order: ${shuffled.map(c => (c.name || c.constructor.name))}`);
+    //console.error(`[RANDOM_SELECTOR] Ticking with order: ${shuffled.map(c => (c.name || c.constructor.name))}`);
 
     for (const child of shuffled) {
       const status = child.tick(ctx);
-      console.error(`[RANDOM_SELECTOR] Child ${child.name || child.constructor.name} returned ${status}`);
+      //console.error(`[RANDOM_SELECTOR] Child ${child.name || child.constructor.name} returned ${status}`);
       if (status !== BT_STATUS.FAILURE) return status;
     }
     return BT_STATUS.FAILURE;
@@ -96,7 +96,7 @@ class Cooldown extends BTNode {
     this.child = child;
     this.cooldownTime = cooldownTime;
     this.lastTime = 0;
-    console.log(`[BT_CONSTRUCTION] Cooldown node created for ${child.constructor.name} (${cooldownTime}ms)`);
+    //console.log(`[BT_CONSTRUCTION] Cooldown node created for ${child.constructor.name} (${cooldownTime}ms)`);
   }
 
   tick(ctx) {
@@ -104,20 +104,20 @@ class Cooldown extends BTNode {
     const timeSinceLast = now - this.lastTime;
 
     // FORCE LOG to debug
-    if (this.lastTime > 0) {
-      console.error(`[BT_COOLDOWN] Checking cooldown. Last: ${this.lastTime.toFixed(0)}, Now: ${now.toFixed(0)}, Diff: ${(timeSinceLast / 1000).toFixed(1)}s, Limit: ${this.cooldownTime}`);
-    } else {
-      console.error(`[BT_COOLDOWN] First run or reset (lastTime=0)`);
-    }
+    // if (this.lastTime > 0) {
+    //   console.error(`[BT_COOLDOWN] Checking cooldown. Last: ${this.lastTime.toFixed(0)}, Now: ${now.toFixed(0)}, Diff: ${(timeSinceLast / 1000).toFixed(1)}s, Limit: ${this.cooldownTime}`);
+    // } else {
+    //   console.error(`[BT_COOLDOWN] First run or reset (lastTime=0)`);
+    // }
 
     if (this.lastTime > 0 && timeSinceLast < this.cooldownTime) {
-      console.error(`[BT_COOLDOWN] BLOCKED by cooldown`);
+      //console.error(`[BT_COOLDOWN] BLOCKED by cooldown`);
       return BT_STATUS.FAILURE;
     }
 
     const status = this.child.tick(ctx);
     if (status === BT_STATUS.SUCCESS || (ctx.command && (ctx.command.type === 'move_up' || ctx.command.type === 'move_down'))) {
-      console.error(`[BT_COOLDOWN] Node ${this.child.constructor.name || 'Unknown'} EXECUTED. Starting cooldown of ${this.cooldownTime}ms.`);
+      //console.error(`[BT_COOLDOWN] Node ${this.child.constructor.name || 'Unknown'} EXECUTED. Starting cooldown of ${this.cooldownTime}ms.`);
       this.lastTime = now;
     }
     return status;
@@ -208,7 +208,7 @@ const ENEMY_BEHAVIORS = {
       },
       targetSelection: { strategy: "firstHit" },
       chase: { radiusX: 200, speed: 80, radiusY: 0 },
-      attack: { lightChance: 1.0, mediumChance: 0, heavyChance: 0, range: 40 },
+      attack: { lightChance: 1.0, mediumChance: 0, heavyChance: 0, range: 25 },
       block: { useChance: 0 }, evade: { useChance: 0.1 },
       jump: { height: 50 }, special: { available: false },
       meta: { awarenessRadius: 1000 }
@@ -398,9 +398,9 @@ const hasTarget = new Condition(ctx => {
 const targetInAttackRange = new Condition(ctx => {
   const range = ctx.behaviors?.attack?.range || 100;
   const result = ctx.target?.distance <= range;
-  if (result) {
-    console.log(`%c[BT_CONDITION] targetInAttackRange: ${result}, distance: ${ctx.target?.distance?.toFixed(1) || 'none'}, range: ${range}`, 'color: #ff0000; font-weight: bold;');
-  }
+  // if (result) {
+  //   console.log(`%c[BT_CONDITION] targetInAttackRange: ${result}, distance: ${ctx.target?.distance?.toFixed(1) || 'none'}, range: ${range}`, 'color: #ff0000; font-weight: bold;');
+  // }
   return result;
 });
 
@@ -551,7 +551,7 @@ function createPatrolDecisionSubtree(config) {
               });
             }
           } else {
-            console.warn(`[BT_CONSTRAINTS] Cannot refresh constraints: ctx.self=${!!ctx.self}, getBehaviorConstraints=${!!window.getBehaviorConstraints}`);
+            //console.warn(`[BT_CONSTRAINTS] Cannot refresh constraints: ctx.self=${!!ctx.self}, getBehaviorConstraints=${!!window.getBehaviorConstraints}`);
           }
           return true; // Always succeed, just refresh constraints
         }),
@@ -583,10 +583,13 @@ function generateContextualPatrolCommand(ctx, config) {
 
   const directionLogic = config.patrol.directionLogic || 'random';
 
-  // Constraint-based direction selection
+  // Constraint-based direction selection with dynamic blocked behaviors
   if (directionLogic === 'constraint_based') {
-    const canGoLeft = !constraints?.blocked?.has('patrol_left');
-    const canGoRight = !constraints?.blocked?.has('patrol_right');
+    // 🎯 НОВО: Проверяваме и статични И динамични блокади
+    const canGoLeft = !constraints?.blocked?.has('patrol_left') &&
+      !constraints?.dynamicBlocked?.has('patrol_left');
+    const canGoRight = !constraints?.blocked?.has('patrol_right') &&
+      !constraints?.dynamicBlocked?.has('patrol_right');
 
     if (canGoLeft && !canGoRight) {
       // Only left available
@@ -783,11 +786,11 @@ function createUniversalEnemyBehaviorTree(rarity, intelligence) {
   const config = ENEMY_BEHAVIORS[rarity]?.[intelligence];
 
   if (!config) {
-    console.warn(`[BT_FACTORY] Unknown rarity/intelligence: ${rarity}/${intelligence}, using fallback BT`);
+    //console.warn(`[BT_FACTORY] Unknown rarity/intelligence: ${rarity}/${intelligence}, using fallback BT`);
     return createFallbackBehaviorTree();
   }
 
-  console.log(`[BT_FACTORY] Creating BT for ${rarity}/${intelligence}`);
+  //console.log(`[BT_FACTORY] Creating BT for ${rarity}/${intelligence}`);
 
   return new Selector([
     // Priority 1: Defensive reactions (always available)
@@ -833,7 +836,7 @@ function createFallbackBehaviorTree() {
    LEGACY BT FACTORY (backwards compatibility)
    ========================= */
 function createEnemyBehaviorTree() {
-  console.warn('[BT_FACTORY] Using legacy createEnemyBehaviorTree(), consider using createUniversalEnemyBehaviorTree(enemyType)');
+  //console.warn('[BT_FACTORY] Using legacy createEnemyBehaviorTree(), consider using createUniversalEnemyBehaviorTree(enemyType)');
   return createFallbackBehaviorTree();
 }
 
@@ -994,7 +997,7 @@ function createScriptEnabledBT(rarity, intelligence, scriptConfig = null) {
   const config = ENEMY_BEHAVIORS[rarity]?.[intelligence];
 
   if (!config) {
-    console.warn(`[BT_FACTORY] Unknown rarity/intelligence: ${rarity}/${intelligence}, using fallback BT`);
+    //console.warn(`[BT_FACTORY] Unknown rarity/intelligence: ${rarity}/${intelligence}, using fallback BT`);
     return createFallbackBehaviorTree();
   }
 

@@ -40,7 +40,7 @@ class AnimationState {
 
     // Player logic: Transition to idle if no movement, but prevent immediate oscillation
     if (!this.hasMovementInput(entity) && performance.now() - this.lastTransitionTime > 100) {
-      console.log(`[FSM] Walking: no movement detected, vx=${entity.vx}, vz=${entity.vz}, transitioning to idle`);
+      //console.log(`[FSM] Walking: no movement detected, vx=${entity.vx}, vz=${entity.vz}, transitioning to idle`);
       return 'idle';
     }
 
@@ -131,9 +131,9 @@ class WalkingState extends AnimationState {
 
   update(entity, dt) {
     // DEBUG: Добави тези логи
-    console.log(`[WALKING UPDATE] vx=${entity.vx}, vz=${entity.vz}, targetZ=${entity.targetZ}`);
+    //console.log(`[WALKING UPDATE] vx=${entity.vx}, vz=${entity.vz}, targetZ=${entity.targetZ}`);
     const hasMovement = this.hasMovementInput(entity);
-    console.log(`[WALKING UPDATE] hasMovementInput=${hasMovement}`);
+    //console.log(`[WALKING UPDATE] hasMovementInput=${hasMovement}`);
 
     // Skip transition on the first update after entering
     if (this.justEntered) {
@@ -143,7 +143,7 @@ class WalkingState extends AnimationState {
 
     // Transition to idle if no movement, but prevent immediate oscillation
     if (!hasMovement && performance.now() - this.lastTransitionTime > 100) {
-      console.log(`[FSM] Walking: no movement detected, vx=${entity.vx}, vz=${entity.vz}, transitioning to idle`);
+      //console.log(`[FSM] Walking: no movement detected, vx=${entity.vx}, vz=${entity.vz}, transitioning to idle`);
       return 'idle';
     }
 
@@ -217,7 +217,7 @@ class JumpingState extends AnimationState {
     super.enter(entity);
     // Force jump animation
     entity.animation.forceAnimationType(window.ANIMATION_TYPES.JUMP, () => {
-      console.log(`[FSM] Jump animation completed, checking landing state`);
+      //console.log(`[FSM] Jump animation completed, checking landing state`);
       // Animation completed - check if we should transition
       // This will be handled by landing detection in game.js
     });
@@ -226,7 +226,7 @@ class JumpingState extends AnimationState {
   update(entity, dt) {
     // Check if landed during jump animation
     if (entity.onGround) {
-      console.log(`[FSM] Landed during jump animation, transitioning to movement state`);
+      //console.log(`[FSM] Landed during jump animation, transitioning to movement state`);
       // Determine next state based on movement
       if (this.hasMovementInput(entity)) {
         return 'walking';
@@ -267,7 +267,7 @@ class AttackLightState extends AnimationState {
     if (entity.animation && entity.animation.animationTime >= entity.animation.animationDefinition.duration) {
       // Reset damage dealt flag for next attacks
       entity.damageDealt = false;
-      console.log(`[FSM] Attack light completed (def.duration: ${entity.animation.animationDefinition.duration}s, animTime: ${entity.animation.animationTime}s), returning to movement`);
+      //console.log(`[FSM] Attack light completed (def.duration: ${entity.animation.animationDefinition.duration}s, animTime: ${entity.animation.animationTime}s), returning to movement`);
       // Return to appropriate movement state
       if (this.hasMovementInput(entity)) {
         return 'walking';
@@ -311,24 +311,24 @@ class AttackMediumState extends AnimationState {
   enter(entity) {
     super.enter(entity);
     try {
-      console.log(`[DEBUG ATTACK_3] AttackMediumState enter - setting ATTACK_3 animation`);
+      //console.log(`[DEBUG ATTACK_3] AttackMediumState enter - setting ATTACK_3 animation`);
       entity.animation.setAnimation(window.ANIMATION_TYPES.ATTACK_3, true);
 
-      console.log(`[DEBUG ATTACK_3] AttackMediumState enter - damageDealt was: ${entity.damageDealt}`);
+      //console.log(`[DEBUG ATTACK_3] AttackMediumState enter - damageDealt was: ${entity.damageDealt}`);
       entity.damageDealt = false;
-      console.log(`[DEBUG ATTACK_3] AttackMediumState enter - damageDealt set to: false`);
+      //console.log(`[DEBUG ATTACK_3] AttackMediumState enter - damageDealt set to: false`);
 
-      console.log(`[DEBUG ATTACK_3] AttackMediumState enter - consuming resources`);
+      //console.log(`[DEBUG ATTACK_3] AttackMediumState enter - consuming resources`);
       if (entity.entityType !== 'enemy') {
         const resourceManager = window.getResourceManager(entity);
         resourceManager.consumeSkillResources('basic_attack_medium');
-        console.log(`[DEBUG ATTACK_3] AttackMediumState enter - resources consumed successfully`);
+        //console.log(`[DEBUG ATTACK_3] AttackMediumState enter - resources consumed successfully`);
       }
 
-      console.log(`[DEBUG ATTACK_3] AttackMediumState enter completed successfully`);
+      //console.log(`[DEBUG ATTACK_3] AttackMediumState enter completed successfully`);
     } catch (error) {
-      console.error(`[DEBUG ATTACK_3] Error in AttackMediumState.enter:`, error);
-      console.error(`[DEBUG ATTACK_3] Error stack:`, error.stack);
+      //console.error(`[DEBUG ATTACK_3] Error in AttackMediumState.enter:`, error);
+      //console.error(`[DEBUG ATTACK_3] Error stack:`, error.stack);
     }
   }
 
@@ -366,7 +366,7 @@ class AttackMediumState extends AnimationState {
         // console.log(`[DEBUG UPDATE] Animation not completed yet`);
       }
     } else {
-      console.log(`[DEBUG UPDATE] No entity.animation - cannot check completion`);
+      //console.log(`[DEBUG UPDATE] No entity.animation - cannot check completion`);
     }
   }
 
@@ -647,13 +647,13 @@ class AnimationStateMachine {
 
   changeState(newStateName) {
     if (!this.states.has(newStateName)) {
-      console.error(`[FSM] Unknown state: ${newStateName}`);
+      //console.error(`[FSM] Unknown state: ${newStateName}`);
       return false;
     }
 
     // Check if transition is allowed
     if (this.currentState && !this.currentState.canTransitionTo(newStateName)) {
-      console.warn(`[FSM] Transition to ${newStateName} not allowed from ${this.currentState.name}`);
+      //console.warn(`[FSM] Transition to ${newStateName} not allowed from ${this.currentState.name}`);
       return false;
     }
 
@@ -678,7 +678,7 @@ class AnimationStateMachine {
     // Update current state and check for transition
     const transitionResult = this.currentState.update(this.entity, dt);
     if (transitionResult) {
-      console.log(`[FSM] State ${this.currentState.name} requesting transition to: ${transitionResult}`);
+      //console.log(`[FSM] State ${this.currentState.name} requesting transition to: ${transitionResult}`);
       this.changeState(transitionResult);
     }
   }
@@ -761,7 +761,7 @@ class AnimationStateMachine {
     if (newState) {
       this.currentState = newState;
       newState.enter(this.entity);
-      console.log(`[FSM] Force changed to state: ${stateName}`);
+      //console.log(`[FSM] Force changed to state: ${stateName}`);
       return true;
     }
     return false;
@@ -780,20 +780,20 @@ class EnemyIdleState extends AnimationState {
 
   enter(entity) {
     super.enter(entity);
-    console.log(`[DEBUG] EnemyIdleState.enter: START - isThinking=${entity.isThinking}, aiTimer=${entity.aiTimer}, pendingCommand=`, entity.pendingCommand);
+    //console.log(`[DEBUG] EnemyIdleState.enter: START - isThinking=${entity.isThinking}, aiTimer=${entity.aiTimer}, pendingCommand=`, entity.pendingCommand);
 
     // Protect thinking phase from interruptions OR preserve pending commands
     const shouldProtect = (entity.isThinking && entity.aiTimer < 0) || entity.pendingCommand;
-    console.log(`[DEBUG] EnemyIdleState.enter: shouldProtect calculation: (${entity.isThinking} && ${entity.aiTimer < 0}) || ${!!entity.pendingCommand} = ${shouldProtect}`);
+    //console.log(`[DEBUG] EnemyIdleState.enter: shouldProtect calculation: (${entity.isThinking} && ${entity.aiTimer < 0}) || ${!!entity.pendingCommand} = ${shouldProtect}`);
 
     if (shouldProtect) {
-      console.log(`[ENEMY IDLE] Protecting thinking phase OR pending command (aiTimer: ${entity.aiTimer}, hasPending: ${!!entity.pendingCommand})`);
-      console.log(`[DEBUG] EnemyIdleState.enter: state preserved, pendingCommand =`, entity.pendingCommand);
+      //console.log(`[ENEMY IDLE] Protecting thinking phase OR pending command (aiTimer: ${entity.aiTimer}, hasPending: ${!!entity.pendingCommand})`);
+      //console.log(`[DEBUG] EnemyIdleState.enter: state preserved, pendingCommand =`, entity.pendingCommand);
       // Don't change animation or reset damage flags - preserve state
       return;
     }
 
-    console.log(`[DEBUG] EnemyIdleState.enter: normal idle logic, preserving pendingCommand`);
+    //console.log(`[DEBUG] EnemyIdleState.enter: normal idle logic, preserving pendingCommand`);
     // Normal idle enter logic - preserve any pending commands
     // entity.pendingCommand = null; // REMOVED: Don't clear pending commands
     entity.isThinking = false;
@@ -848,15 +848,15 @@ class EnemyWalkingState extends AnimationState {
     }
 
     // DEBUG: Добави тези логи
-    console.log(`[ENEMY WALKING ENTER] targetZ=${entity.targetZ}, vz before=${entity.vz}`);
+    //console.log(`[ENEMY WALKING ENTER] targetZ=${entity.targetZ}, vz before=${entity.vz}`);
 
     // Don't reset vz if we're in vertical movement mode (has targetZ)
     // This allows vertical movement commands to work properly
     if (!entity.targetZ) {
       entity.vz = 0;
-      console.log(`[ENEMY WALKING ENTER] Reset vz to 0 (no targetZ)`);
+      //console.log(`[ENEMY WALKING ENTER] Reset vz to 0 (no targetZ)`);
     } else {
-      console.log(`[ENEMY WALKING ENTER] Kept vz=${entity.vz} (has targetZ)`);
+      //console.log(`[ENEMY WALKING ENTER] Kept vz=${entity.vz} (has targetZ)`);
     }
   }
 

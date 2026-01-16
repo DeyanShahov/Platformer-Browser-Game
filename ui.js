@@ -36,7 +36,7 @@ function renderCharacterPortrait(ctx, player, x, y, size = 60) {
   ctx.font = '18px Arial';
   ctx.textAlign = 'right';
   const playerIndex = window.players.indexOf(player) + 1;
-  ctx.fillText(`P${playerIndex}`, x - 12, y + size/2 + 8);
+  ctx.fillText(`P${playerIndex}`, x - 12, y + size / 2 + 8);
 
   // Portrait background
   ctx.fillStyle = '#222';
@@ -88,9 +88,9 @@ function renderPlayerPortraits(ctx) {
   // Define half-screen positions for up to 4 players
   const halfPositions = [
     { x: 40, y: 10 },           // Top-left half (Player 1)
-    { x: CANVAS_WIDTH/2 - 100, y: 10 },    // Top-right half (Player 2) - moved left for larger UI
+    { x: CANVAS_WIDTH / 2 - 100, y: 10 },    // Top-right half (Player 2) - moved left for larger UI
     { x: 40, y: 950 },          // Player 3 - moved up slightly for larger UI
-    { x: CANVAS_WIDTH/2 - 100, y: 950 }   // Player 4 - moved left and up for larger UI
+    { x: CANVAS_WIDTH / 2 - 100, y: 950 }   // Player 4 - moved left and up for larger UI
   ];
 
   players.forEach((player, index) => {
@@ -132,22 +132,22 @@ function setupStartScreenInput() {
 }
 
 function handleStartScreenKeyDown(e) {
-  console.log('[DEBUG] KeyDown:', e.key, e.code, 'gameState:', window.gameState);
+  //console.log('[DEBUG] KeyDown:', e.key, e.code, 'gameState:', window.gameState);
 
   // Original key tracking system restored
   if (window.gameState === 'start') {
-    console.log('[DEBUG] Processing key in start screen');
+    //console.log('[DEBUG] Processing key in start screen');
     // Track both key and code
     startScreenKeys[e.key] = true;
     startScreenCodes[e.code] = true;
 
     if (!startScreenKeysPressed[e.key]) {
       startScreenKeysPressed[e.key] = true;
-      console.log('[DEBUG] Set startScreenKeysPressed[' + e.key + '] = true');
+      //console.log('[DEBUG] Set startScreenKeysPressed[' + e.key + '] = true');
     }
     if (!startScreenCodesPressed[e.code]) {
       startScreenCodesPressed[e.code] = true;
-      console.log('[DEBUG] Set startScreenCodesPressed[' + e.code + '] = true');
+      //console.log('[DEBUG] Set startScreenCodesPressed[' + e.code + '] = true');
     }
   }
 }
@@ -251,7 +251,7 @@ function renderStartScreen() {
     }
   });
 
-// Check for input - original system restored
+  // Check for input - original system restored
   handleStartScreenInput();
 }
 
@@ -275,45 +275,45 @@ function isStartScreenCodePressed(code) {
 }
 
 function handleStartScreenInput() {
-  console.log('[DEBUG] handleStartScreenInput called');
+  //console.log('[DEBUG] handleStartScreenInput called');
 
   // Handle keyboard input for start screen - original logic restored
   if (isStartScreenKeyPressed('1') || isStartScreenCodePressed('Digit1')) {
-    console.log('[DEBUG] Key 1/Digit1 pressed, calling joinPlayer(1)');
+    //console.log('[DEBUG] Key 1/Digit1 pressed, calling joinPlayer(1)');
     if (window.joinPlayer) {
       window.joinPlayer(1);
     } else {
-      console.error('[DEBUG] window.joinPlayer not found!');
+      //console.error('[DEBUG] window.joinPlayer not found!');
     }
   }
   if (isStartScreenKeyPressed('2') || isStartScreenCodePressed('Digit2')) {
-    console.log('[DEBUG] Key 2/Digit2 pressed, calling joinPlayer(2)');
+    //console.log('[DEBUG] Key 2/Digit2 pressed, calling joinPlayer(2)');
     if (window.joinPlayer) {
       window.joinPlayer(2);
     } else {
-      console.error('[DEBUG] window.joinPlayer not found!');
+      //console.error('[DEBUG] window.joinPlayer not found!');
     }
   }
   if (isStartScreenKeyPressed('3') || isStartScreenCodePressed('Digit3')) {
-    console.log('[DEBUG] Key 3/Digit3 pressed, calling joinPlayer(3)');
+    //console.log('[DEBUG] Key 3/Digit3 pressed, calling joinPlayer(3)');
     if (window.joinPlayer) {
       window.joinPlayer(3);
     } else {
-      console.error('[DEBUG] window.joinPlayer not found!');
+      //console.error('[DEBUG] window.joinPlayer not found!');
     }
   }
   if (isStartScreenKeyPressed('4') || isStartScreenCodePressed('Digit4')) {
-    console.log('[DEBUG] Key 4/Digit4 pressed, calling joinPlayer(4)');
+    //console.log('[DEBUG] Key 4/Digit4 pressed, calling joinPlayer(4)');
     if (window.joinPlayer) {
       window.joinPlayer(4);
     } else {
-      console.error('[DEBUG] window.joinPlayer not found!');
+      //console.error('[DEBUG] window.joinPlayer not found!');
     }
   }
 
   // Handle arrow keys for character selection (only key, not code - prevents double triggering)
   if (isStartScreenKeyPressed('ArrowLeft')) {
-    console.log('[DEBUG] ArrowLeft pressed for character selection');
+    //console.log('[DEBUG] ArrowLeft pressed for character selection');
     // Find the first joined player and select previous character
     const joinedPlayers = Array.from(window.activePlayers || []);
     if (joinedPlayers.length > 0) {
@@ -324,7 +324,7 @@ function handleStartScreenInput() {
     }
   }
   if (isStartScreenKeyPressed('ArrowRight')) {
-    console.log('[DEBUG] ArrowRight pressed for character selection');
+    //console.log('[DEBUG] ArrowRight pressed for character selection');
     // Find the first joined player and select next character
     const joinedPlayers = Array.from(window.activePlayers || []);
     if (joinedPlayers.length > 0) {
@@ -337,9 +337,9 @@ function handleStartScreenInput() {
 
   // Handle Enter key to confirm current player's selection
   if (isStartScreenKeyPressed('Enter') || isStartScreenCodePressed('Enter')) {
-    console.log('[UI] Enter pressed (WORKING) - confirming current player selection');
-    console.log('[UI] isStartScreenKeyPressed("Enter"):', isStartScreenKeyPressed('Enter'));
-    console.log('[UI] isStartScreenCodePressed("Enter"):', isStartScreenCodePressed('Enter'));
+    //console.log('[UI] Enter pressed (WORKING) - confirming current player selection');
+    //console.log('[UI] isStartScreenKeyPressed("Enter"):', isStartScreenKeyPressed('Enter'));
+    //console.log('[UI] isStartScreenCodePressed("Enter"):', isStartScreenCodePressed('Enter'));
     // Find the first joined player who has a selection but hasn't confirmed
     const joinedPlayers = Array.from(window.activePlayers || []);
     for (const playerId of joinedPlayers) {
@@ -348,7 +348,7 @@ function handleStartScreenInput() {
       const hasConfirmed = Object.values(window.confirmedSelections || {}).includes(playerId);
 
       if (hasSelection && !hasConfirmed) {
-        console.log(`[DEBUG] Confirming selection for player ${playerId}`);
+        //console.log(`[DEBUG] Confirming selection for player ${playerId}`);
         if (window.confirmSelection) {
           window.confirmSelection(playerId);
         }

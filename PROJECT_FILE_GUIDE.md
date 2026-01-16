@@ -115,6 +115,57 @@ This comprehensive guide documents every file in the Platformer Browser Game pro
 
 ## 🏗️ RECENT ARCHITECTURAL CHANGES (January 2026)
 
+### BT Memory & AI Logging Enhancement System - COMPLETED ✅ **[CRITICAL AI IMPROVEMENT]**
+**Dynamic blocked behaviors system with comprehensive AI decision logging and unique enemy instance identification**
+
+#### Problem Solved:
+- **Before:** BT had no memory of interrupted commands, causing infinite loops when enemies hit boundaries or entities
+- **Issue:** No unique enemy identification in logs, impossible to track individual enemy thinking processes
+- **Impact:** Enemies repeated same failed actions endlessly, debug logs showed identical enemy IDs
+
+#### Solution Implemented:
+- **Dynamic Blocked Behaviors Set:** Prevents enemies from repeating interrupted commands by remembering failures
+- **Unique Enemy Instance IDs:** Each enemy gets unique instanceId for clear log differentiation
+- **Comprehensive AI Logging:** Full tracking of interruption → constraint → BT decision flow
+- **Interruption Detection:** Automatic blocking of patrol directions when hitting boundaries/entities
+- **BT Memory Integration:** Dynamic constraints passed to BT for intelligent decision filtering
+
+#### Key Changes:
+1. **`base_enemy.js`**: Added static instance counter, unique IDs, dynamic blocked behaviors, comprehensive logging
+2. **`collision.js`**: Enhanced boundary detection with interruption signals
+3. **`Behavior Tree/enemyAI_BT.js`**: Constraint-aware decision making with dynamic filtering
+4. **`BT_MEMORY_IMPROVEMENT.md`**: Complete system documentation
+
+#### Technical Implementation:
+- **Instance ID System:** `static instanceCounter` assigns unique IDs (1, 2, 3...) to each enemy instance
+- **Dynamic Blocked Set:** `this.dynamicBlocked.add('patrol_right')` prevents repeating failed actions
+- **Interruption Flow:** Boundary hit → blocked behavior added → BT consults with constraints → selects alternative
+- **Comprehensive Logging:** `[BT_QUERY]`, `[BT_CONSTRAINTS]`, `[BT_DECISION]`, `[NORMAL BEHAVIOR]`, `[COMMAND INTERRUPTED]`
+
+#### Benefits Achieved:
+- **No More Infinite Loops:** Enemies learn from failures and choose different actions
+- **Clear Enemy Identification:** Each enemy has unique ID in all logs for easy tracking
+- **Intelligent Behavior:** BT filters blocked options and selects viable alternatives
+- **Complete AI Transparency:** Full logging of thinking process from interruption to decision
+- **Debug-Friendly:** Easy to trace why specific enemy made specific decision
+
+#### Files Affected:
+- `base_enemy.js` - Instance IDs, blocked behaviors, logging system
+- `collision.js` - Boundary interruption detection
+- `Behavior Tree/enemyAI_BT.js` - Constraint-aware BT decisions
+- `PROJECT_FILE_GUIDE.md` - Documentation update
+
+#### Architectural Benefits Achieved:
+- **Memory-Persistent AI:** Enemies remember what doesn't work and adapt behavior
+- **Unique Entity Tracking:** Every enemy instance distinguishable in logs and debugging
+- **Constraint-Based Intelligence:** BT decisions respect physical limitations and past failures
+- **Comprehensive Debugging:** Complete AI decision flow visible for troubleshooting
+- **Scalable Solution:** Works with any number of simultaneous enemies and constraints
+
+---
+
+## 🏗️ RECENT ARCHITECTURAL CHANGES (January 2026)
+
 ### Strategic Z-First Enemy Chase System - COMPLETED ✅ **[CRITICAL AI IMPROVEMENT]**
 **Fixed enemy stuck states when player is at different Z-depths with intelligent repositioning and deadlock prevention**
 
