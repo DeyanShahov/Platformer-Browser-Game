@@ -53,6 +53,9 @@ class AnimationRenderer {
   drawDebugBoxes(entity, drawX, drawY) {
     if (!entity.animation) return;
 
+    // Check debug flags before drawing any boxes
+    if (!DEBUG_MODE.SHOW_HITBOXES) return;
+
     // Use per-frame data whenever available in the animation definition
     const currentStateName = entity.stateMachine ? entity.stateMachine.getCurrentStateName() : null;
     const currentFrame = entity.animation ? entity.animation.currentFrame : 0;
@@ -98,9 +101,11 @@ class AnimationRenderer {
     }
 
     // Orange border = Hurt box (dynamic during attacks/idle, constant otherwise)
-    this.ctx.strokeStyle = 'orange';
-    this.ctx.lineWidth = 2;
-    this.ctx.strokeRect(hurtBoxPos.x, hurtBoxPos.y, hurtBoxPos.width, hurtBoxPos.height);
+    if (DEBUG_MODE.SHOW_HURT_BOXES) {
+      this.ctx.strokeStyle = 'orange';
+      this.ctx.lineWidth = 2;
+      this.ctx.strokeRect(hurtBoxPos.x, hurtBoxPos.y, hurtBoxPos.width, hurtBoxPos.height);
+    }
 
     // Draw dimensions text
     this.ctx.fillStyle = 'orange';
@@ -122,7 +127,7 @@ class AnimationRenderer {
     this.ctx.fillText(`${boxType}: ${Math.round(hurtBoxPos.width)}x${Math.round(hurtBoxPos.height)}`, hurtBoxPos.x - 60, hurtBoxPos.y - 5);
 
     // Draw attack box if entity is attacking
-    if (entity.stateMachine && entity.stateMachine.isInAttackState() && entity.animation?.animationDefinition) {
+    if (DEBUG_MODE.SHOW_ATTACK_BOXES && entity.stateMachine && entity.stateMachine.isInAttackState() && entity.animation?.animationDefinition) {
       const currentFrame = entity.animation.currentFrame;
       const animationDef = entity.animation.animationDefinition;
 
@@ -173,8 +178,8 @@ class AnimationRenderer {
       this.ctx.fillRect(entity.x, entity.y - entity.h - zOffset, entity.w, entity.h);
     }
 
-    // Debug: Draw yellow collision box border for player (always visible during development)
-    if (entity.entityType === 'player') {
+    // Debug: Draw yellow collision box border for player
+    if (DEBUG_MODE.SHOW_PLAYER_BOX && entity.entityType === 'player') {
       this.ctx.strokeStyle = 'yellow';
       this.ctx.lineWidth = 3;
       this.ctx.strokeRect(entity.x, entity.y - entity.h - zOffset, entity.w, entity.h);

@@ -39,3 +39,31 @@ const ACTION_TYPES = {
 
 // Таймерите за изпълнение и cooldown вече са преместени в SKILL_TREE
 // като executionTime и cooldownTime свойства за data-driven подход
+
+// Debug visualization flags - set to false for production/release builds
+// Usage: Set individual flags to false to disable specific visualizations
+// Or set SHOW_HITBOXES to false to disable all hitbox drawing
+// Runtime toggle: window.toggleDebugBoxes() in browser console
+const DEBUG_MODE = {
+  SHOW_HITBOXES: true,        // Master switch for all hitbox types
+  SHOW_PLAYER_BOX: true,      // Yellow collision box for player
+  SHOW_HURT_BOXES: true,      // Orange hurt boxes for entities
+  SHOW_ATTACK_BOXES: true,    // Red attack boxes during attacks
+  SHOW_ENTITY_LABELS: false,  // Entity type and ID labels
+  SHOW_DAMAGE_NUMBERS: true,  // Floating damage numbers
+};
+
+// Runtime debug toggle function
+function toggleDebugBoxes() {
+  DEBUG_MODE.SHOW_HITBOXES = !DEBUG_MODE.SHOW_HITBOXES;
+  console.log(`Debug hitboxes: ${DEBUG_MODE.SHOW_HITBOXES ? 'ENABLED' : 'DISABLED'}`);
+  console.log('Individual controls:');
+  console.log('- DEBUG_MODE.SHOW_PLAYER_BOX (yellow)');
+  console.log('- DEBUG_MODE.SHOW_HURT_BOXES (orange)');
+  console.log('- DEBUG_MODE.SHOW_ATTACK_BOXES (red)');
+}
+
+// Make toggle function globally available
+if (typeof window !== 'undefined') {
+  window.toggleDebugBoxes = toggleDebugBoxes;
+}
