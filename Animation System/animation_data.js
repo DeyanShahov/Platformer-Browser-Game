@@ -445,8 +445,8 @@ const BLUE_SLIME_ANIMATION_DEFINITIONS = {
     frameWidth: 120,
     frameHeight: 128,
     frameStarts: [0, 128, 256],
-    duration: 1,
-    frameDurations: [0.333, 0.333, 0.333],
+    duration: 3,
+    frameDurations: [1.0, 1.0, 1.0],
     frameData: [
       {
         hitBox: { x: 70, y: 0, width: 98, height: 60 },

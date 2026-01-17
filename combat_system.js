@@ -114,13 +114,13 @@ class CombatCalculator {
     const attackPower = this.calculateAttackPower(attacker, skillType);
     const defense = this.calculateDefense(defender);
 
-      // Get skill info for damage modifier
-      const skillInfo = window.skillTreeManager ? window.skillTreeManager.getSkillInfo(skillType) : null;
-      if (skillType === 'basic_attack_medium') {
-        console.log(`[DEBUG ATTACK_3] Skill tree manager lookup for ${skillType}:`, window.skillTreeManager ? 'EXISTS' : 'NULL');
-        console.log(`[DEBUG ATTACK_3] Skill info for ${skillType}:`, skillInfo);
-      }
-      const skillModifier = skillInfo ? skillInfo.damageModifier || 0 : 0;
+    // Get skill info for damage modifier
+    const skillInfo = window.skillTreeManager ? window.skillTreeManager.getSkillInfo(skillType) : null;
+    if (skillType === 'basic_attack_medium') {
+      console.log(`[DEBUG ATTACK_3] Skill tree manager lookup for ${skillType}:`, window.skillTreeManager ? 'EXISTS' : 'NULL');
+      console.log(`[DEBUG ATTACK_3] Skill info for ${skillType}:`, skillInfo);
+    }
+    const skillModifier = skillInfo ? skillInfo.damageModifier || 0 : 0;
 
     // console.log(`[DAMAGE CALC] Attacker: ${attacker.characterInfo?.getDisplayName() || 'Unknown'}, Skill: ${skillType}`);
     // console.log(`[DAMAGE CALC] Attack Power: ${attackPower}, Defense: ${defense}, Skill Modifier: ${skillModifier}`);
@@ -346,7 +346,10 @@ class CombatResolver {
     // Check for enemy defeat - работи за всички противници, не само за window.enemy
     const defenderDied = defender.health <= 0;
     if (defenderDied && defender.entityType === 'enemy' && !defender.isDying) {
-      // Enemy was defeated - start death sequence instead of immediate removal
+      // Enemy was defeated - call enemy.die() FIRST for FSM transition and animation
+      defender.die(); // ← НОВО: Извикай enemy death логика за анимация и FSM
+
+      // Then start combat death sequence
       this.startEnemyDeathSequence(attacker, defender);
     }
 
@@ -435,25 +438,10 @@ class CombatResolver {
 
     defeatedEnemy.deathTimer += dt;
 
-    // 3 blinks total, each blink is 0.5 seconds (0.25 visible, 0.25 invisible)
-    const blinkDuration = 0.5; // 0.5 seconds per blink
-    const totalDeathTime = blinkDuration * 3; // 1.5 seconds total
+    // Wait for death animation to complete (handled by enemy.updateDeath())
+    // No more legacy blink effect - animation system handles visual death sequence
 
-    if (defeatedEnemy.deathTimer >= totalDeathTime && !defeatedEnemy.defeatHandled) {
-      // Death animation complete - remove enemy (only once)
-      defeatedEnemy.defeatHandled = true;
-      handleEnemyDefeat(null, defeatedEnemy); // Call global function since handleEnemyDefeat moved to game.js
-      return true; // Enemy is dead and removed
-    }
-
-    // Calculate blink state
-    const currentBlink = Math.floor(defeatedEnemy.deathTimer / blinkDuration);
-    const timeInBlink = defeatedEnemy.deathTimer % blinkDuration;
-
-    // Alternate visibility every 0.25 seconds within each blink
-    defeatedEnemy.visible = (timeInBlink < 0.25);
-
-    return false; // Enemy still dying
+    return false; // Enemy still dying (animation system will handle cleanup)
   }
 
   // Check if attacker can afford skill (without consuming)

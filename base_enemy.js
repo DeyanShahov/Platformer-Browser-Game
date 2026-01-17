@@ -236,12 +236,16 @@ class BaseEnemy {
   // AI Update - FSM controls execution, BT provides strategic decisions
   updateAI(players, dt) {
     // console.log(`[BASE ENEMY UPDATE] Before update: vz=${this.vz}, targetZ=${this.targetZ}`);
-    if (this.isDying) return;
+    if (this.isDying) {
+      // For dying enemies, handle death animation directly (bypass FSM)
+      this.updateDeath(dt);
+      return;
+    }
 
     // Update BT context with current game state (for when BT is consulted)
     this.updateBTContext(players);
 
-    // FSM handles all movement and animation logic
+    // FSM handles all movement and animation logic for living enemies
     // BT is consulted only for strategic decisions (behavior transitions)
     this.updateFSMBehavior(players, dt);
 
@@ -287,6 +291,10 @@ class BaseEnemy {
       case 'enemy_attack_medium':
       case 'enemy_attack_heavy':
         this.updateAttackBehavior(players, dt, behaviors);
+        break;
+
+      case 'enemy_dead':
+        this.updateDeath(dt);
         break;
 
       default:
@@ -1502,34 +1510,25 @@ class BaseEnemy {
       console.warn(`[ENEMY_DIE] No stateMachine available for ${this.constructor.name}`);
     }
 
-    // Remove from combat system after death animation (1 second)
-    setTimeout(() => {
-      if (window.enemyCombatManager) {
-        window.enemyCombatManager.unregisterEnemy(this);
-      }
-    }, 1000); // 1 second delay to match animation duration
+    // Note: Combat system handles unregistering from combat manager after animation completes
   }
 
   // Update death animation (wait for animation completion)
   updateDeath(dt) {
-    if (!this.isDying) {
-      console.log(`[ENEMY_DEATH_UPDATE] updateDeath called but !isDying`);
-      return;
-    }
-
-    console.log(`[ENEMY_DEATH_UPDATE] updateDeath called, deathTimer before: ${this.deathTimer}, dt: ${dt}`);
+    if (!this.isDying) return;
 
     this.deathTimer += dt;
 
-    console.log(`[ENEMY_DEATH_UPDATE] deathTimer after: ${this.deathTimer}, threshold: 1.0`);
+    // Get death animation duration dynamically from animation definition
+    const deathAnimationDuration = this.animation?.animationDefinition?.duration || 3.0;
 
-    // Wait for animation to complete (1 second for BLUE_SLIME_ANIMATION_TYPES.DEAD)
-    if (this.deathTimer >= 1.0) {
-      console.log(`[ENEMY_DEATH_UPDATE] Setting visible = false`);
+    // Wait for animation to complete (use dynamic duration instead of hardcoded 3.0)
+    if (this.deathTimer >= deathAnimationDuration) {
       this.visible = false;
-      // Entity will be removed by game cleanup
-    } else {
-      console.log(`[ENEMY_DEATH_UPDATE] Still waiting for animation, visible = true`);
+      // Trigger enemy defeat handling (moved from combat system to here)
+      if (window.handleEnemyDefeat) {
+        window.handleEnemyDefeat(null, this); // Call global function from game.js
+      }
     }
   }
 
@@ -1716,49 +1715,6 @@ class BlueSlime extends BaseEnemy {
     }
 
     return damage;
-  }
-
-  // Death sequence
-  die() {
-    this.isDying = true;
-    this.health = 0;
-
-    console.log(`[BLUE SLIME] Blue Slime defeated!`);
-
-    // Transition to death state (animation will be handled by FSM)
-    if (this.stateMachine) {
-      this.stateMachine.handleAction('die');
-    }
-
-    // Remove from combat system after death animation (1 second)
-    setTimeout(() => {
-      if (window.enemyCombatManager) {
-        window.enemyCombatManager.unregisterEnemy(this);
-      }
-    }, 1000); // 1 second delay to match animation duration
-  }
-
-  // Update death animation (wait for animation completion)
-  updateDeath(dt) {
-    if (!this.isDying) {
-      console.log(`[ENEMY_DEATH_UPDATE] updateDeath called but !isDying`);
-      return;
-    }
-
-    console.log(`[ENEMY_DEATH_UPDATE] updateDeath called, deathTimer before: ${this.deathTimer}, dt: ${dt}`);
-
-    this.deathTimer += dt;
-
-    console.log(`[ENEMY_DEATH_UPDATE] deathTimer after: ${this.deathTimer}, threshold: 1.0`);
-
-    // Wait for animation to complete (1 second for BLUE_SLIME_ANIMATION_TYPES.DEAD)
-    if (this.deathTimer >= 1.0) {
-      console.log(`[ENEMY_DEATH_UPDATE] Setting visible = false`);
-      this.visible = false;
-      // Entity will be removed by game cleanup
-    } else {
-      console.log(`[ENEMY_DEATH_UPDATE] Still waiting for animation, visible = true`);
-    }
   }
 
   // Get experience reward for defeating this enemy

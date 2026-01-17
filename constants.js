@@ -49,5 +49,6 @@ const DEBUG_MODE = {
   SHOW_HURT_BOXES: false,      // Orange hurt boxes for entities
   SHOW_ATTACK_BOXES: false,    // Red attack boxes during attacks
   SHOW_ENTITY_LABELS: false,   // White text with Z-coordinates and render order
-  SHOW_DAMAGE_NUMBERS: true,  // Floating damage numbers
+  SHOW_DAMAGE_NUMBERS: true,   // Floating damage numbers
+  SHOW_HIT_EFFECTS: false,     // White hit circles when entities are hit
 };

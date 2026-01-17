@@ -190,8 +190,8 @@ class AnimationRenderer {
       this.ctx.fillText(`${entity.w}x${entity.h}`, entity.x + entity.w / 2 - 20, entity.y - entity.h - zOffset - 5);
     }
 
-    // Hit visualizations
-    if (entity.hit) {
+    // Hit visualizations (controlled by debug flag)
+    if (DEBUG_MODE.SHOW_HIT_EFFECTS && entity.hit) {
       // Get current hit box position using the same logic as debug boxes
       let hitBoxCenter = { x: entity.x + entity.w / 2, y: entity.y - entity.h / 2 - zOffset };
 

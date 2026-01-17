@@ -218,6 +218,54 @@ This comprehensive guide documents every file in the Platformer Browser Game pro
 
 ## 🏗️ RECENT ARCHITECTURAL CHANGES (January 2026)
 
+### Enemy Death System Refactoring - COMPLETED ✅ **[CRITICAL IMPROVEMENT]**
+**Unified enemy death logic with dynamic animation duration and eliminated legacy blink effects**
+
+#### Problem Solved:
+- **Before:** Enemy death used legacy blink effects with hardcoded 3-second duration, causing visual artifacts and inconsistent timing
+- **Issue:** Multiple update cycles for dying enemies, blink effects persisted during death animations, hardcoded timing values
+- **Impact:** Poor death animation quality, visual artifacts, difficult to modify death durations for different enemy types
+
+#### Solution Implemented:
+- **Unified Death Update Cycle:** Single enemy update loop handles both AI and death states
+- **Dynamic Animation Duration:** Death timing extracted from animation data instead of hardcoded values
+- **Eliminated Legacy Blink:** Removed visual artifacts and inconsistent death effects
+- **Clean State Management:** Proper enemy removal after animation completion
+
+#### Key Changes:
+1. **`base_enemy.js`**: Added dynamic death animation duration extraction, unified updateAI logic
+2. **`game.js`**: Consolidated enemy update cycles, removed duplicate death handling
+3. **`combat_system.js`**: Removed legacy blink logic, simplified death sequence
+4. **`Animation System/animation_renderer.js`**: Added debug control for hit effects
+5. **`constants.js`**: Added SHOW_HIT_EFFECTS debug flag
+
+#### Technical Implementation:
+- **Dynamic Duration:** `const deathAnimationDuration = this.animation?.animationDefinition?.duration || 3.0;`
+- **Unified Update:** Single enemy loop handles AI, movement, and death states
+- **Clean Death Flow:** Animation → Dynamic Duration → `handleEnemyDefeat()` → Enemy Removal
+- **Debug Control:** `SHOW_HIT_EFFECTS: false` prevents visual artifacts during death
+
+#### Benefits Achieved:
+- **Clean Death Animations:** No more blink effects or visual artifacts during enemy death
+- **Flexible Timing:** Different enemy types can have different death animation durations
+- **Maintainable Code:** No hardcoded magic numbers, animation-driven timing
+- **Performance Optimized:** Single update cycle instead of multiple competing loops
+- **Better UX:** Smooth, consistent death animations across all enemy types
+
+#### Files Affected:
+- `base_enemy.js` - Dynamic death duration, unified update logic
+- `game.js` - Consolidated enemy update cycles
+- `combat_system.js` - Removed legacy blink logic
+- `Animation System/animation_renderer.js` - Hit effects debug control
+- `constants.js` - Added SHOW_HIT_EFFECTS flag
+
+#### Architectural Benefits Achieved:
+- **Unified Update Architecture:** Single source of truth for enemy state updates
+- **Animation-Driven Logic:** Death behavior follows animation data, not hardcoded values
+- **Clean State Transitions:** Proper death sequence without competing update cycles
+- **Extensible Design:** Easy to add different death animations for new enemy types
+- **Debug-Friendly:** Comprehensive control over visual effects during development
+
 ### Combat System Unification - COMPLETED ✅ **[MAJOR IMPROVEMENT]**
 
 ## 🏗️ RECENT ARCHITECTURAL CHANGES (January 2026)

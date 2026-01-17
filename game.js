@@ -1153,8 +1153,7 @@ function update(dt) {
   // Ако имаме активно меню, не ъпдейтвай играчите и враговете.
   // Това ефективно "паузира" играта.
   if (!menuActive) {
-    // Централизирана обработка на смърт за всички умиращи елементи
-    updateDeathSequences(dt);
+    // Обработка на смърт вече е обединена с enemy update цикъла по-долу
 
     // Обновяване на всички играчи
     if (window.gameState) {
@@ -1167,14 +1166,18 @@ function update(dt) {
         }
       });
 
-      // Обновяване на всички противници (само живи и не умиращи)
+      // Обновяване на всички противници (живи и умиращи)
       const enemies = window.gameState.getEntitiesByType('enemy');
       enemies.forEach(enemy => {
-        if (!enemy.isDying) { // Не обновяваме AI за умиращи противници
+        if (!enemy.isDying) {
+          // Живи противници - AI и движение
           // Apply enemy physics FIRST (boundary clamping affects Z position)
           handleEnemyMovement(enemy, dt);
           // Then update AI with correct Z position after boundary clamping
           updateEnemyAI(enemy, dt);
+        } else {
+          // Умиращи противници - само смъртна анимация
+          enemy.updateDeath(dt);
         }
       });
     } else {
@@ -1275,20 +1278,7 @@ function handleEnemyMovement(enemy, dt) {
   }
 }
 
-function updateDeathSequences(dt) {
-  if (window.gameState) {
-    const allEntities = window.gameState.getAllEntities();
 
-    for (const entity of allEntities) {
-      if (entity.isDying && entity.entityType === 'enemy') {
-        const isDead = window.combatResolver.updateEnemyDeath(entity, dt);
-        if (isDead) {
-          //console.log(`[GAME] Enemy ${entity.id} death sequence completed and removed`);
-        }
-      }
-    }
-  }
-}
 
 // Game loop
 let last = 0;
