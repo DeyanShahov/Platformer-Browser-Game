@@ -406,6 +406,70 @@ class Player {
 // Global variables for skill tree timing
 let lastSkillTreeToggleTime = 0; // Timestamp to prevent rapid toggling
 
+// Calculate hit box position using the same logic as AnimationRenderer
+function calculateHitBoxPosition(entity) {
+  // Calculate Z-depth offset
+  const zOffset = entity.z * 1.0;
+
+  // Drawing position (same as AnimationRenderer)
+  const drawX = entity.x;
+  const drawY = entity.y - entity.h - zOffset;
+
+  // Try to use per-frame hit box data (same as AnimationRenderer)
+  if (entity.animation?.animationDefinition?.frameData) {
+    const currentFrame = entity.animation.currentFrame;
+    const frameData = entity.animation.animationDefinition.frameData[currentFrame];
+    if (frameData?.hitBox) {
+      // Use per-frame hit box data
+      const hitBox = frameData.hitBox;
+
+      // Calculate hit box position (same logic as AnimationRenderer.calculateBoxPosition)
+      let boxX = drawX + hitBox.x;
+      let boxY;
+
+      // Different positioning for different entity types (same as AnimationRenderer)
+      if (entity.animationEntityType !== 'blue_slime') {
+        // SPRITE ENTITIES (players) - position relative to sprite coordinates
+        boxY = drawY + entity.h / 2 - hitBox.y;
+      } else {
+        // RECTANGLE ENTITIES (Blue Slime) - position at bottom
+        boxY = drawY + entity.h - hitBox.height;
+      }
+
+      return {
+        x: boxX,
+        y: boxY,
+        width: hitBox.width,
+        height: hitBox.height
+      };
+    }
+  }
+
+  // Fallback to standard collision dimensions if no animation data
+  return {
+    x: drawX,
+    y: drawY + entity.h - (entity.collisionH || entity.h),
+    width: entity.collisionW || entity.w,
+    height: entity.collisionH || entity.h
+  };
+}
+
+// Centralized damage number positioning function - now uses hit box coordinates
+function addDamageNumberToTarget(attacker, target, damage, isCritical = false) {
+  // Get hit box position using the same calculation as collision system
+  const hitBoxPos = calculateHitBoxPosition(target);
+
+  // Position damage number above the top of the hit box, centered horizontally
+  const damageX = hitBoxPos.x + hitBoxPos.width / 2;  // Center of hit box
+  const damageY = hitBoxPos.y - 15;                   // 15px above top of hit box
+
+  // Debug logging
+  console.log(`[DAMAGE_NUMBER] Target: ${target.entityType}, HitBox: x=${hitBoxPos.x.toFixed(1)}, y=${hitBoxPos.y.toFixed(1)}, w=${hitBoxPos.width}, h=${hitBoxPos.height}`);
+  console.log(`[DAMAGE_NUMBER] Damage position: x=${damageX.toFixed(1)}, y=${damageY.toFixed(1)}, damage=${damage}, critical=${isCritical}`);
+
+  window.damageNumberManager.addDamageNumber(damageX, damageY, damage, isCritical);
+}
+
 function updatePlayer(player, playerIndex, dt) {
   //console.log('[UPDATE_PLAYER] Called with player:', player, 'index:', playerIndex, 'type:', typeof player);
 
@@ -467,9 +531,8 @@ function updatePlayer(player, playerIndex, dt) {
           // Add damage number for visual feedback
           if (combatEvent && combatEvent.actualDamage > 0) {
             //console.log(`[ATTACK] Applying ${combatEvent.actualDamage} damage`);
-            const damageX = enemy.x + enemy.w + 5;
-            const damageY = enemy.y - enemy.h - 15;
-            window.damageNumberManager.addDamageNumber(damageX, damageY, combatEvent.actualDamage, combatEvent.damageResult.isCritical);
+            // Damage numbers appear centered above the target (enemy)
+            addDamageNumberToTarget(player, enemy, combatEvent.actualDamage, combatEvent.damageResult.isCritical);
           } else {
             //console.log(`[ATTACK] No damage applied - combat event:`, combatEvent);
           }
@@ -565,9 +628,8 @@ function updatePlayer(player, playerIndex, dt) {
 
         // Add damage number for visual feedback
         if (combatEvent && combatEvent.actualDamage > 0) {
-          const damageX = player.x + player.w / 2;
-          const damageY = player.y - 10;
-          window.damageNumberManager.addDamageNumber(damageX, damageY, combatEvent.actualDamage, combatEvent.damageResult.isCritical);
+          // Damage numbers appear centered above the target (player)
+          addDamageNumberToTarget(enemy, player, combatEvent.actualDamage, combatEvent.damageResult.isCritical);
         }
 
         // Set damageDealt flag to prevent multiple damage per attack (unified with player system)

@@ -218,6 +218,49 @@ This comprehensive guide documents every file in the Platformer Browser Game pro
 
 ## 🏗️ RECENT ARCHITECTURAL CHANGES (January 2026)
 
+### Hit Box-Based Damage Number Positioning - COMPLETED ✅ **[VISUAL IMPROVEMENT]**
+**Damage numbers now appear precisely above hit box locations for accurate visual feedback**
+
+#### Problem Solved:
+- **Before:** Damage numbers used entity center coordinates, appearing at inconsistent locations relative to actual hit areas
+- **Issue:** Numbers appeared at entity center (x + w/2) instead of where collision actually occurred
+- **Impact:** Poor visual feedback - damage numbers didn't clearly indicate where attacks landed
+
+#### Solution Implemented:
+- **Hit Box Coordinate System:** Damage numbers positioned using exact hit box coordinates from animation system
+- **Per-Frame Precision:** Uses current animation frame's hit box data for precise positioning
+- **Unified Calculation:** Single `calculateHitBoxPosition()` function with AnimationRenderer-compatible logic
+- **Entity Type Support:** Different positioning logic for players vs enemies (sprite vs rectangle entities)
+
+#### Key Changes:
+1. **`game.js`**: Added `calculateHitBoxPosition()` and updated `addDamageNumberToTarget()` functions
+2. **Coordinate Calculation:** Uses `entity.animation?.animationDefinition?.frameData` for per-frame hit boxes
+3. **Entity-Specific Logic:** Players use sprite-based positioning, enemies use rectangle-based positioning
+4. **Fallback Support:** Standard collision dimensions when animation data unavailable
+
+#### Technical Implementation:
+- **Hit Box Extraction:** `calculateHitBoxPosition(entity)` retrieves current frame's hit box coordinates
+- **Positioning Logic:** Damage numbers appear 15px above the top of the hit box
+- **Animation Integration:** Direct access to `entity.animation.animationDefinition.frameData[currentFrame]`
+- **Coordinate Mapping:** `hitBox.x`, `hitBox.y`, `hitBox.width`, `hitBox.height` for precise placement
+
+#### Benefits Achieved:
+- **Precise Visual Feedback:** Damage numbers appear exactly where attacks land on hit boxes
+- **Animation-Aware Positioning:** Numbers follow hit box changes during animation frames
+- **Clear Attack Indication:** Players can see exactly where their attacks connected
+- **Consistent Positioning:** Same calculation logic as collision and rendering systems
+- **Enhanced UX:** Much clearer visual indication of successful hits and damage dealt
+
+#### Files Affected:
+- `game.js` - Added hit box positioning functions and updated damage number placement
+
+#### Architectural Benefits Achieved:
+- **Collision System Integration:** Uses same hit box calculation as attack collision detection
+- **Animation System Compatibility:** Compatible with per-frame hit box changes during attacks
+- **Unified Coordinate System:** Consistent positioning across rendering, collision, and UI systems
+- **Extensible Design:** Easy to modify positioning offsets or add special effects
+- **Performance Optimized:** Minimal overhead, leverages existing animation data
+
 ### Enemy Death System Refactoring - COMPLETED ✅ **[CRITICAL IMPROVEMENT]**
 **Unified enemy death logic with dynamic animation duration and eliminated legacy blink effects**
 
