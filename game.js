@@ -1370,6 +1370,16 @@ function loop(ts) {
     window.enemyCombatManager.updateCooldowns(dt);
   }
 
+  // Update camera controller
+  if (window.cameraController) {
+    window.cameraController.update(dt);
+  }
+
+  // Update level manager (handles level transitions and completion checking)
+  if (window.levelManager) {
+    window.levelManager.update(dt);
+  }
+
   // Update resource regeneration for all entities
   if (window.resourceManagers) {
     for (const [entity, resourceManager] of window.resourceManagers) {

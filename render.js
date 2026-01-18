@@ -2,6 +2,13 @@
 function render() {
   ctx.clearRect(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT);
 
+  // Apply camera transform for scrolling levels
+  let cameraApplied = false;
+  if (window.cameraController && window.cameraController.applyTransform) {
+    window.cameraController.applyTransform();
+    cameraApplied = true;
+  }
+
   // DEBUG Z LINES - използвай реалния canvas размер и spawn позиция като baseline
   const realCanvasHeight = ctx.canvas.height; // Използвай реалния canvas размер
   const baselineY = realCanvasHeight - 600; // Spawn позиция спрямо реалния размер
@@ -23,7 +30,11 @@ function render() {
 
   // Render ALL entities in correct Z-order using centralized AnimationRenderer
   if (window.animationSystem?.renderer) {
-    window.animationSystem.renderer.drawAnimatedEntities(entities, true); // skip sorting since entities are pre-sorted
+    // Pass camera offsets to renderer if camera is active
+    const cameraX = cameraApplied && window.cameraController ? window.cameraController.x : 0;
+    const cameraY = cameraApplied && window.cameraController ? window.cameraController.y : 0;
+
+    window.animationSystem.renderer.drawAnimatedEntitiesWithCamera(entities, cameraX, cameraY);
   }
 
   // Render damage numbers
@@ -35,6 +46,21 @@ function render() {
   entities.forEach((entity, index) => {
     renderEntityLabels(entity, index);
   });
+
+  // Restore camera transform if it was applied
+  if (cameraApplied && window.cameraController && window.cameraController.restoreTransform) {
+    window.cameraController.restoreTransform();
+  }
+
+  // Render camera effects (flash, etc.) - must be after camera transform restore
+  if (window.cameraController && window.cameraController.renderEffects) {
+    window.cameraController.renderEffects();
+  }
+
+  // Render camera debug info (must be after camera transform restore)
+  if (window.cameraController && window.cameraController.drawDebug) {
+    window.cameraController.drawDebug(ctx);
+  }
 
   // Render UI on top of everything else
   if (window.UISystem) {
