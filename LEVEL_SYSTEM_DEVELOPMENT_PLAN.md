@@ -14,7 +14,7 @@
 - [х] Интеграция с UI System за level selection и прогрес индикатори
 
 ### **2. Конкретни Level Data Примери**
-- [ ] Създаване на tutorial level с BlueSlime за новачки
+- [х] Създаване на tutorial level с BlueSlime за новачки
 - [ ] Combat room level с multiple enemy types
 - [ ] Scrolling level с trigger-based spawning
 - [ ] Boss level с complex completion conditions
@@ -64,12 +64,12 @@
 ## 🔄 Implementation Roadmap Update
 
 ### **Phase 1: Core Infrastructure (Week 1-2)**
-- [ ] Create LevelManager and LevelData classes
-- [ ] Implement basic static level loading
-- [ ] Add entity spawning system
-- [ ] Create completion condition checking
-- [ ] **НОВО:** Integration с GameState system
-- [ ] **НОВО:** Basic UI framework за level selection
+- [x] Create LevelManager and LevelData classes
+- [x] Implement basic static level loading
+- [x] Add entity spawning system
+- [x] Create completion condition checking
+- [x] **НОВО:** Integration с GameState system
+- [x] **НОВО:** Basic UI framework за level selection
 
 ### **Phase 2: Level Types (Week 3-4)**
 - [ ] Implement scrolling level mechanics
