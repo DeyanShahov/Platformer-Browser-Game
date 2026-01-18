@@ -10,6 +10,9 @@ let detectedPlayers = 1; // Keyboard always available
 // Separate game state string from GameState instance
 window.gameStateString = 'start'; // 'start', 'playing'
 
+// Level system integration
+window.levelManager = null; // Will be initialized after game systems are ready
+
 // Character definitions - declared globally for UI access
 const characters = [
   { id: 'blue', name: 'Син герой', color: '#3AA0FF', position: 0 },
@@ -1482,6 +1485,19 @@ function initGameWithSelections() {
     // Initialize game state system
     window.gameState = new GameState();
     //console.log('[GAME] Game state initialized');
+
+    // Initialize level manager system (PHASE 1: Core Infrastructure)
+    if (window.LevelManager) {
+      window.levelManager = new window.LevelManager(
+        window.gameState,
+        window.animationSystem,
+        window.combatResolver, // Combat system
+        window.collisionSystem || {} // Collision system (fallback to empty object)
+      );
+      console.log('[GAME] Level manager initialized');
+    } else {
+      console.warn('[GAME] LevelManager not available, level system will not be initialized');
+    }
 
     // Clear global arrays for backwards compatibility
     window.players = [];
