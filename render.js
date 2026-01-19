@@ -57,16 +57,164 @@ function render() {
     window.cameraController.renderEffects();
   }
 
+  // Render exit points (must be after camera transform restore)
+  if (window.levelManager?.exitPointManager) {
+    const cameraX = window.cameraController ? window.cameraController.x : 0;
+    const cameraY = window.cameraController ? window.cameraController.y : 0;
+    window.levelManager.exitPointManager.render(ctx, cameraX, cameraY);
+  }
+
   // Render camera debug info (must be after camera transform restore)
   if (window.cameraController && window.cameraController.drawDebug) {
     window.cameraController.drawDebug(ctx);
   }
+
+  // Render level transition effects (fade overlays, etc.)
+  renderTransitionEffects(ctx);
 
   // Render UI on top of everything else
   if (window.UISystem) {
     window.UISystem.renderPlayerPortraits(ctx);
   }
 }
+
+// =========================
+// TRANSITION EFFECTS SYSTEM
+// =========================
+
+/**
+ * Render level transition effects (fade in/out, loading screens, etc.)
+ * @param {CanvasRenderingContext2D} ctx - Canvas context
+ */
+function renderTransitionEffects(ctx) {
+  if (!window.levelManager) return;
+
+  const transitionState = window.levelManager.transitionState;
+
+  switch (transitionState) {
+    case 'fading_out':
+      renderFadeTransition(ctx, 'out');
+      break;
+
+    case 'fading_in':
+      renderFadeTransition(ctx, 'in');
+      break;
+
+    case 'loading':
+      renderLoadingScreen(ctx);
+      break;
+  }
+}
+
+/**
+ * Render fade in/out transition overlay
+ * @param {CanvasRenderingContext2D} ctx - Canvas context
+ * @param {string} direction - 'in' or 'out'
+ */
+function renderFadeTransition(ctx, direction) {
+  if (!window.levelManager) return;
+
+  const transitionDuration = window.levelManager.transitionDuration || 2000;
+  const transitionTimer = window.levelManager.transitionTimer || 0;
+
+  // Calculate fade progress (0-1)
+  let progress;
+  if (direction === 'out') {
+    // Fade out: 0% to 100% opacity over first half
+    progress = Math.min(transitionTimer / (transitionDuration / 2), 1);
+  } else {
+    // Fade in: 100% to 0% opacity over second half
+    progress = Math.max(0, (transitionTimer - transitionDuration / 2) / (transitionDuration / 2));
+    progress = 1 - progress;
+  }
+
+  // Render fade overlay
+  ctx.save();
+  ctx.globalAlpha = progress;
+  ctx.fillStyle = '#000000'; // Black fade
+  ctx.fillRect(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT);
+  ctx.restore();
+
+  // Render transition text
+  if (progress > 0.3) {
+    renderTransitionText(ctx, progress);
+  }
+}
+
+/**
+ * Render loading screen during level transitions
+ * @param {CanvasRenderingContext2D} ctx - Canvas context
+ */
+function renderLoadingScreen(ctx) {
+  // Semi-transparent overlay
+  ctx.save();
+  ctx.globalAlpha = 0.8;
+  ctx.fillStyle = '#000000';
+  ctx.fillRect(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT);
+  ctx.restore();
+
+  // Loading text
+  ctx.save();
+  ctx.fillStyle = '#FFFFFF';
+  ctx.font = 'bold 24px Arial';
+  ctx.textAlign = 'center';
+  ctx.fillText('Loading...', CANVAS_WIDTH / 2, CANVAS_HEIGHT / 2 - 20);
+
+  // Loading level name if available
+  if (window.levelManager && window.levelManager.targetLevelId) {
+    ctx.font = '18px Arial';
+    ctx.fillText(`Loading ${window.levelManager.targetLevelId}`, CANVAS_WIDTH / 2, CANVAS_HEIGHT / 2 + 20);
+  }
+
+  ctx.restore();
+
+  // Simple loading animation (dots)
+  const dotCount = Math.floor(Date.now() / 300) % 4;
+  const dots = '.'.repeat(dotCount);
+  ctx.fillText(dots, CANVAS_WIDTH / 2 + 60, CANVAS_HEIGHT / 2 - 20);
+}
+
+/**
+ * Render transition text overlay
+ * @param {CanvasRenderingContext2D} ctx - Canvas context
+ * @param {number} opacity - Text opacity
+ */
+function renderTransitionText(ctx, opacity) {
+  if (!window.levelManager) return;
+
+  ctx.save();
+  ctx.globalAlpha = Math.min(opacity * 2, 1); // Text appears slightly after fade
+
+  // Level transition text
+  if (window.levelManager.currentLevel && window.levelManager.targetLevelId) {
+    const currentName = window.levelManager.currentLevel.name || window.levelManager.currentLevel.id;
+    const targetName = window.levelManager.targetLevelId;
+
+    ctx.fillStyle = '#FFFFFF';
+    ctx.font = 'bold 20px Arial';
+    ctx.textAlign = 'center';
+
+    ctx.fillText(`Leaving ${currentName}`, CANVAS_WIDTH / 2, CANVAS_HEIGHT / 2 - 40);
+    ctx.fillText(`Entering ${targetName}`, CANVAS_WIDTH / 2, CANVAS_HEIGHT / 2 - 10);
+  }
+
+  // Transition progress indicator - use new timing system
+  let progressPercent = 0;
+  if (window.levelManager && window.levelManager.transitionState !== 'none') {
+    const elapsed = performance.now() - window.levelManager.transitionStartTime;
+    const totalDuration = window.levelManager.totalTransitionDuration || 5000;
+    progressPercent = Math.min(100, Math.round((elapsed / totalDuration) * 100));
+  }
+
+  ctx.font = '16px Arial';
+  ctx.fillText(`Loading... ${progressPercent}%`, CANVAS_WIDTH / 2, CANVAS_HEIGHT / 2 + 40);
+
+  ctx.restore();
+}
+
+// =========================
+// ENTITY LABELS SYSTEM
+// =========================
 
 // Универсална система за надписи
 function renderEntityLabels(entity, index) {

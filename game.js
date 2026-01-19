@@ -1258,16 +1258,28 @@ function update(dt) {
 function updateEnemyAI(enemy, dt) {
   if (!enemy) return;
 
+  // console.log(`[ENEMY_AI_DEBUG] Updating enemy ${enemy.instanceId || 'unknown'}`);
+  // console.log(`[ENEMY_AI_DEBUG] Enemy health: ${enemy.health}, isDying: ${enemy.isDying}`);
+  // console.log(`[ENEMY_AI_DEBUG] Has updateAI method:`, !!enemy.updateAI, typeof enemy.updateAI);
+  // console.log(`[ENEMY_AI_DEBUG] Enemy methods:`, Object.getOwnPropertyNames(Object.getPrototypeOf(enemy)).filter(name => typeof enemy[name] === 'function'));
+
   // Normal AI only runs if enemy is alive and not dying
   if (enemy.health > 0 && !enemy.isDying) {
     // Get players array for AI decision making
     const players = window.gameState ? window.gameState.players : window.players || [];
+    // console.log(`[ENEMY_AI_DEBUG] Found ${players.length} players for AI`);
 
     // Use BT-based AI if available, otherwise fallback to simple AI
     if (enemy.updateAI && typeof enemy.updateAI === 'function') {
-      // BT-based AI (Blue Slime uses this)
-      enemy.updateAI(players, dt);
+      // console.log(`[ENEMY_AI_DEBUG] Using BT AI for enemy ${enemy.instanceId}`);
+      try {
+        enemy.updateAI(players, dt);
+        // console.log(`[ENEMY_AI_DEBUG] BT AI update completed`);
+      } catch (error) {
+        console.error(`[ENEMY_AI_DEBUG] BT AI update failed:`, error);
+      }
     } else {
+      // console.log(`[ENEMY_AI_DEBUG] No BT AI available, using fallback AI`);
       // Simple fallback AI for other enemies
       if (Math.random() < 0.01) { // 1% chance per frame to attack
         if (enemy.stateMachine && !enemy.stateMachine.isInAttackState()) {
@@ -1277,15 +1289,18 @@ function updateEnemyAI(enemy, dt) {
 
           // Trigger FSM attack
           enemy.stateMachine.handleAction(randomAttack);
-          //console.log(`[ENEMY AI] Enemy attacks with ${randomAttack}`);
+          // console.log(`[ENEMY_AI_DEBUG] Fallback AI: Enemy attacks with ${randomAttack}`);
         }
       }
     }
+  } else {
+    // console.log(`[ENEMY_AI_DEBUG] Enemy not updated - health: ${enemy.health}, isDying: ${enemy.isDying}`);
   }
 
   // Reset hit flag after a short time
   if (enemy.hit) {
     enemy.hit = false;
+    // console.log(`[ENEMY_AI_DEBUG] Reset hit flag`);
   }
 }
 
@@ -1378,6 +1393,24 @@ function loop(ts) {
   // Update level manager (handles level transitions and completion checking)
   if (window.levelManager) {
     window.levelManager.update(dt);
+
+    // Update exit points
+    if (window.levelManager.exitPointManager && window.gameState) {
+      const players = window.gameState.getEntitiesByType('player');
+      window.levelManager.exitPointManager.update(players, dt);
+    }
+
+    // Update trigger spawner
+    if (window.levelManager.triggerSpawner && window.gameState) {
+      const players = window.gameState.getEntitiesByType('player');
+      window.levelManager.triggerSpawner.update(players, dt);
+    }
+
+    // Update dynamic entity manager
+    if (window.levelManager.dynamicEntityManager && window.gameState) {
+      const players = window.gameState.getEntitiesByType('player');
+      window.levelManager.dynamicEntityManager.update(players, dt);
+    }
   }
 
   // Update resource regeneration for all entities
@@ -1496,6 +1529,15 @@ function initGameWithSelections() {
     window.gameState = new GameState();
     //console.log('[GAME] Game state initialized');
 
+    // Initialize camera controller for level system
+    if (window.CameraController) {
+      const canvas = document.getElementById("game");
+      window.cameraController = new window.CameraController(canvas);
+      console.log('[GAME] Camera controller initialized');
+    } else {
+      console.warn('[GAME] CameraController not available');
+    }
+
     // Initialize level manager system (PHASE 1: Core Infrastructure)
     if (window.LevelManager) {
       window.levelManager = new window.LevelManager(
@@ -1569,8 +1611,13 @@ function initGameWithSelections() {
       }
     });
 
+
+
     //console.log('[GAME] Final game state debug:', window.gameState.getDebugInfo());
 
+    // LEGACY ENEMY CREATION CODE - COMMENTED OUT
+    // Now enemies are spawned through the level system
+    /*
     // Create enemies using the new enemy data system
     // Create enemies using the new enemy data system
     // TEST: Adding 3 extra enemies for verification (Total 4)
@@ -1604,6 +1651,7 @@ function initGameWithSelections() {
         }
       }
     });
+    */
 
     // Initialize menu system
     if (window.initMenu) {
@@ -1616,11 +1664,35 @@ function initGameWithSelections() {
     // Start game loop
     requestAnimationFrame(loop);
 
+    // 1. Активирай camera following
+    if (window.cameraController && window.gameState.players.length > 0) {
+      window.cameraController.followEntity(window.gameState.players[0]);
+      console.log('[TEST] Camera following player');
+    }
+
+    // 2. Зареди tutorial level
+    if (window.levelManager) {
+      window.levelManager.loadLevel('tutorial_1');
+      console.log('[TEST] Loaded tutorial level with exit point');
+    }
+
+    // 3. Покажи debug информация
+    setInterval(() => {
+      if (window.levelManager?.exitPointManager) {
+        console.log('Exit Points:', window.levelManager.exitPointManager.getDebugInfo());
+      }
+      if (window.levelManager?.triggerSpawner) {
+        console.log('Triggers:', window.levelManager.triggerSpawner.getDebugInfo());
+      }
+    }, 5000);
+
     //console.log('[GAME] Game initialization completed successfully');
   }).catch(error => {
     console.error('[GAME] Failed to initialize animation system:', error);
   });
 }
+
+
 
 // Export start screen variables and functions for UI access
 window.characters = characters;
@@ -1660,6 +1732,12 @@ function handleEnemyDefeat(attacker, defeatedEnemy) {
     console.log(`[COMBAT] ${attacker.characterInfo.getDisplayName()} gained ${experienceReward} experience!`);
   }
 
+  // Update level manager completion status
+  if (window.levelManager) {
+    window.levelManager.completionStatus.defeatedEnemies = (window.levelManager.completionStatus.defeatedEnemies || 0) + 1;
+    console.log(`[COMPLETION] Enemy defeated! Total defeated: ${window.levelManager.completionStatus.defeatedEnemies}`);
+  }
+
   // Remove enemy from the game world via game state
   removeEnemyFromGame(defeatedEnemy);
 
@@ -1694,10 +1772,14 @@ function onEnemyDefeated(attacker, defeatedEnemy) {
   // Future: trigger quest updates, loot drops, achievements, etc.
   console.log(`[COMBAT] Enemy defeat processing complete`);
 
+  // LEGACY RESPAWN SYSTEM - COMMENTED OUT
+  // Now level system handles respawning through triggers
+  /*
   // For now, trigger respawn after a short delay
   setTimeout(() => {
     respawnEnemy();
   }, 2000); // 2 second delay before respawn
+  */
 }
 
 // Respawn enemy (for testing purposes)

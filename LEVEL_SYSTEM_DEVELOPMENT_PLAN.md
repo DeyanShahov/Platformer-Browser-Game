@@ -72,12 +72,12 @@
 - [x] **НОВО:** Basic UI framework за level selection
 
 ### **Phase 2: Level Types (Week 3-4)**
-- [ ] Implement scrolling level mechanics
-- [ ] Add camera following system
-- [ ] Create exit point and transition system
-- [ ] Add fade transition effects
-- [ ] **НОВО:** Trigger-based enemy spawning
-- [ ] **НОВО:** Dynamic entity management
+- [x] Implement scrolling level mechanics
+- [x] Add camera following system
+- [x] Create exit point and transition system
+- [x] Add fade transition effects
+- [x] **НОВО:** Trigger-based enemy spawning
+- [x] **НОВО:** Dynamic entity management
 
 ### **Phase 3: Progression & Save (Week 5-6)**
 - [ ] Implement progression tracking
