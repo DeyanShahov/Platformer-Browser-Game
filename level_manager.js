@@ -864,13 +864,20 @@ class LevelManager {
                             { type: 'enemy', enemyType: 'blue_slime', level: 2, x: 800, y: 500, z: 0 }
                         ]
                     },
-                    // Time-based trigger - spawn enemy after 10 seconds
+                    // Time-based trigger - spawn 5 enemies every 5 seconds with random positions
                     {
                         id: 'time_spawn_1',
                         type: 'time_delay',
-                        delay: 10000, // 10 seconds
+                        delay: 5000,      // Първо спавнване след 5 секунди
+                        interval: 5000,   // Повторно спавнване през 5 секунди
+                        maxCount: 5,      // Общо 5 спавнвания
                         entities: [
-                            { type: 'enemy', enemyType: 'blue_slime', level: 1, x: 200, y: 300, z: 0 }
+                            {
+                                type: 'enemy',
+                                enemyType: 'blue_slime',
+                                level: 1,
+                                randomPosition: true  // Random позиция в границите на нивото
+                            }
                         ]
                     }
                 ],

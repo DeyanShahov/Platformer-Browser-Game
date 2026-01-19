@@ -180,10 +180,35 @@ class TriggerSpawner {
     evaluateTimeDelayTrigger(trigger) {
         if (!trigger.startTime) {
             trigger.startTime = this.lastUpdateTime;
+            // Нов параметър - брояч на спавнвания (само ако има maxCount)
+            if (trigger.maxCount > 1) {
+                trigger.spawnCount = 0;
+            }
         }
 
-        const elapsed = this.lastUpdateTime - trigger.startTime;
-        return elapsed >= (trigger.delay || 0);
+        // **Стара логика** (еднократно изпълнение) - ако няма interval/maxCount
+        if (!trigger.interval && (!trigger.maxCount || trigger.maxCount <= 1)) {
+            const elapsed = this.lastUpdateTime - trigger.startTime;
+            return elapsed >= (trigger.delay || 0);
+        }
+
+        // **Нова логика** (многократно изпълнение) - ако има interval/maxCount
+        if (trigger.maxCount && trigger.spawnCount >= trigger.maxCount) {
+            return false; // Спрете ако е достигнат лимитът
+        }
+
+        const timeSinceLastSpawn = this.lastUpdateTime - (trigger.lastSpawnTime || trigger.startTime);
+        const targetDelay = trigger.interval || trigger.delay || 0;
+
+        if (timeSinceLastSpawn >= targetDelay) {
+            trigger.lastSpawnTime = this.lastUpdateTime;
+            if (trigger.maxCount) {
+                trigger.spawnCount = (trigger.spawnCount || 0) + 1;
+            }
+            return true;
+        }
+
+        return false;
     }
 
     /**
@@ -265,8 +290,13 @@ class TriggerSpawner {
                 break;
         }
 
-        // Mark as triggered
-        trigger.triggered = true;
+        // **Нова логика** - не задавайте triggered = true ако има maxCount > 1
+        if (!trigger.maxCount || trigger.maxCount <= 1) {
+            trigger.triggered = true; // Стара логика - еднократно
+        } else {
+            // Нова логика - позволете повторни изпълнения
+            trigger.triggered = false;
+        }
     }
 
     /**
@@ -313,6 +343,15 @@ class TriggerSpawner {
         const spawnedIds = [];
 
         for (const entityConfig of trigger.entities) {
+            // **Нова опция** - random позиция ако е зададено
+            if (entityConfig.randomPosition && this.levelManager.currentLevel?.boundaries) {
+                const boundaries = this.levelManager.currentLevel.boundaries;
+                entityConfig.x = boundaries.left + Math.random() * (boundaries.right - boundaries.left);
+                entityConfig.y = boundaries.top + Math.random() * (boundaries.bottom - boundaries.top);
+                entityConfig.z = boundaries.zMin + Math.random() * (boundaries.zMax - boundaries.zMin);
+                console.log(`[TriggerSpawner] Generated random position: (${entityConfig.x.toFixed(1)}, ${entityConfig.y.toFixed(1)}, ${entityConfig.z.toFixed(1)})`);
+            }
+
             try {
                 const entityId = await this.levelManager.spawnEntity(entityConfig);
                 spawnedIds.push(entityId);
