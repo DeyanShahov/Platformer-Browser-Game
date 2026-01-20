@@ -31,6 +31,7 @@ class ExitPoint {
         this.triggerType = config.triggerType || 'area_enter'; // 'area_enter', 'area_touch', 'manual'
         this.autoActivate = config.autoActivate !== false; // Auto-activate when conditions met
         this.activationDelay = config.activationDelay || 0; // Delay before activation
+        this.activationMode = config.activationMode || 'always'; // 'always', 'after_completion', 'never'
 
         // Transition properties
         this.targetLevelId = config.targetLevelId || null;
@@ -75,11 +76,20 @@ class ExitPoint {
      * @param {Object} player - Player entity
      */
     isPlayerInTriggerArea(player) {
-        // Simple AABB collision check
-        const playerLeft = player.x - player.collisionW / 2;
-        const playerRight = player.x + player.collisionW / 2;
-        const playerTop = player.y - player.collisionH;
-        const playerBottom = player.y;
+        // Use accurate hit box coordinates (same as combat system and damage numbers)
+        const playerHitBox = window.calculateHitBoxPosition ?
+            window.calculateHitBoxPosition(player) :
+            {
+                x: player.x - (player.collisionW || player.w) / 2,
+                y: player.y - (player.collisionH || player.h),
+                width: player.collisionW || player.w,
+                height: player.collisionH || player.h
+            };
+
+        const playerLeft = playerHitBox.x;
+        const playerRight = playerHitBox.x + playerHitBox.width;
+        const playerTop = playerHitBox.y;
+        const playerBottom = playerHitBox.y + playerHitBox.height;
 
         const exitLeft = this.x - this.width / 2;
         const exitRight = this.x + this.width / 2;
@@ -94,6 +104,12 @@ class ExitPoint {
 
         // Check Z overlap (for 2.5D levels)
         const zOverlap = Math.abs(player.z - this.z) <= this.depth / 2;
+
+        // Debug logging for collision detection
+        // console.log(`[ExitPoint] Collision check for ${this.id}:`);
+        // console.log(`  Player hitbox: x=${playerLeft.toFixed(1)}-${playerRight.toFixed(1)}, y=${playerTop.toFixed(1)}-${playerBottom.toFixed(1)}, z=${player.z.toFixed(1)}`);
+        // console.log(`  Exit area: x=${exitLeft.toFixed(1)}-${exitRight.toFixed(1)}, y=${exitTop.toFixed(1)}-${exitBottom.toFixed(1)}, z=${this.z.toFixed(1)}`);
+        // console.log(`  Overlaps: X=${xOverlap}, Y=${yOverlap}, Z=${zOverlap}, Total=${xOverlap && yOverlap && zOverlap}`);
 
         return xOverlap && yOverlap && zOverlap;
     }
@@ -127,22 +143,56 @@ class ExitPoint {
      * @param {Object} triggeringPlayer - Player who triggered it
      */
     activate(triggeringPlayer) {
-        console.log(`[ExitPoint] Activating exit point: ${this.id}`);
+        console.log(`[ExitPoint] Activating exit point: ${this.id} with mode: ${this.activationMode}`);
 
-        // Notify level manager of completion
+        // DEBUG: Check all critical values
+        console.log(`[ExitPoint] DEBUG - levelManager exists: ${!!window.levelManager}`);
+        console.log(`[ExitPoint] DEBUG - targetLevelId: ${this.targetLevelId}`);
+        console.log(`[ExitPoint] DEBUG - transitionType: ${this.transitionType}`);
+        console.log(`[ExitPoint] DEBUG - triggeringPlayer: ${triggeringPlayer ? 'EXISTS' : 'NULL'}`);
+
+        // Check activation mode and level completion
+        const levelCompleted = window.levelManager ?
+            window.levelManager.getLevelCompleted() : false;
+
+        console.log(`[ExitPoint] Level completed: ${levelCompleted}, activation mode: ${this.activationMode}`);
+
+        switch (this.activationMode) {
+            case 'always':
+                // Always active - proceed with transition
+                console.log(`[ExitPoint] ${this.id} is always active - proceeding with transition`);
+                break;
+
+            case 'after_completion':
+                if (!levelCompleted) {
+                    console.log(`[ExitPoint] ${this.id} requires level completion first - blocking transition`);
+                    return; // Don't activate if level not completed
+                }
+                console.log(`[ExitPoint] ${this.id} level completed - proceeding with transition`);
+                break;
+
+            case 'never':
+                console.log(`[ExitPoint] ${this.id} is never activatable - blocking transition`);
+                return; // Never activate
+
+            default:
+                console.warn(`[ExitPoint] Unknown activation mode: ${this.activationMode} - blocking transition`);
+                return;
+        }
+
+        // Proceed with transition
         if (window.levelManager && this.targetLevelId) {
+            console.log(`[ExitPoint] Starting transition to: ${this.targetLevelId}`);
             window.levelManager.startTransition(this.targetLevelId, this.transitionType);
+        } else {
+            console.warn(`[ExitPoint] Cannot start transition - levelManager or targetLevelId missing`);
         }
 
-        // Trigger camera effects
-        if (window.cameraController) {
-            // Add screen flash for dramatic effect
-            window.cameraController.flash('#FFFFFF', 0.3);
-        }
+        // Camera flash removed - transition system handles visual effects
 
         // Play sound effect (placeholder)
         // TODO: Integrate with audio system when available
-        console.log(`[ExitPoint] Transition to level: ${this.targetLevelId}`);
+        console.log(`[ExitPoint] Transition initiated to level: ${this.targetLevelId}`);
 
         // Emit event for UI updates
         if (window.eventSystem) {
@@ -192,18 +242,37 @@ class ExitPoint {
 
         ctx.globalAlpha = currentOpacity;
 
-        // Draw exit point indicator
+        // Draw exit point indicator based on activation state
+        let indicatorColor, fillColor, lineWidth;
+
         if (this.isTriggered) {
             // Triggered state - more vibrant
-            ctx.strokeStyle = '#FFFF00';
-            ctx.lineWidth = 4;
-            ctx.fillStyle = 'rgba(255, 255, 0, 0.3)';
+            indicatorColor = '#FFFF00';
+            fillColor = 'rgba(255, 255, 0, 0.3)';
+            lineWidth = 4;
         } else {
-            // Normal state
-            ctx.strokeStyle = this.color;
-            ctx.lineWidth = 2;
-            ctx.fillStyle = 'rgba(0, 255, 0, 0.2)';
+            // Check if exit point is activatable based on activation mode
+            const levelCompleted = window.levelManager ?
+                window.levelManager.getLevelCompleted() : false;
+            const canActivate = this.activationMode === 'always' ||
+                (this.activationMode === 'after_completion' && levelCompleted);
+
+            if (canActivate) {
+                // Active state - normal green
+                indicatorColor = this.color;
+                fillColor = 'rgba(0, 255, 0, 0.2)';
+                lineWidth = 2;
+            } else {
+                // Inactive state - red/gray to show it's not yet available
+                indicatorColor = '#FF4444';
+                fillColor = 'rgba(255, 68, 68, 0.1)';
+                lineWidth = 2;
+            }
         }
+
+        ctx.strokeStyle = indicatorColor;
+        ctx.lineWidth = lineWidth;
+        ctx.fillStyle = fillColor;
 
         // Draw main rectangle
         ctx.fillRect(
@@ -325,14 +394,6 @@ class ExitPoint {
     // =========================
     // STATE MANAGEMENT
     // =========================
-
-    /**
-     * Activate the exit point
-     */
-    activate() {
-        this.isActive = true;
-        console.log(`[ExitPoint] Activated: ${this.id}`);
-    }
 
     /**
      * Deactivate the exit point

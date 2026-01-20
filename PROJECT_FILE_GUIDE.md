@@ -11,6 +11,56 @@ This comprehensive guide documents every file in the Platformer Browser Game pro
 
 ## 🏗️ RECENT ARCHITECTURAL CHANGES (January 2026)
 
+### Level Transition System Overhaul - COMPLETED ✅ **[CRITICAL FIX]**
+**Fixed visual flashes during level transitions with game pause system and streamlined state management**
+
+#### Problem Solved:
+- **Before:** Visual flashes during level loading, game logic continued running during transitions, intermediate 'showing_ui' state caused timing issues
+- **Issue:** Game entities were visible during brief moments between fade out and loading screen, causing jarring visual artifacts
+- **Impact:** Poor user experience during level transitions, especially noticeable on tutorial_1 → combat_room_1
+
+#### Solution Implemented:
+- **Game Pause System:** Complete game logic suspension during transitions using `gamePaused` flag
+- **Streamlined Transition States:** Removed problematic 'showing_ui' intermediate state
+- **Direct State Flow:** Fade out → Loading screen (no intermediate black overlay)
+- **Enhanced Visual Logging:** Detailed tracking of each rendering phase for debugging
+
+#### Key Changes:
+1. **`level_manager.js`**: Added game pause system with `this.gamePaused` flag and transition lifecycle management
+2. **`game.js`**: Added pause check in main update loop to skip game logic during transitions
+3. **`render.js`**: Removed 'showing_ui' state rendering, added detailed visual phase logging
+4. **Transition Flow:** Simplified from 5 states to 4 states, eliminating flash-causing intermediate state
+
+#### Technical Implementation:
+- **Game Pause Flag:** `this.gamePaused = true` during transitions, `false` when complete
+- **Update Loop Check:** `if (window.levelManager?.gamePaused) return;` prevents game logic execution
+- **Streamlined States:** 'fading_out' → 'loading' → 'hiding_ui' → 'fading_in'
+- **Visual Logging:** `[VISUAL] Rendering Fade Out/Loading Screen/Fade In` for debugging
+
+#### Benefits Achieved:
+- **No Visual Flashes:** Seamless transitions without game scene visibility during loading
+- **Game Logic Pause:** No completion checks, entity updates, or AI during transitions
+- **Cleaner State Management:** Fewer states reduce complexity and potential bugs
+- **Better Performance:** Reduced unnecessary computations during loading phases
+- **Debug Friendly:** Comprehensive logging enables easy transition debugging
+
+#### Files Affected:
+- `level_manager.js` - Game pause system and streamlined transition states
+- `game.js` - Pause check in main update loop
+- `render.js` - Removed 'showing_ui' case and added visual logging
+- `PROJECT_FILE_GUIDE.md` - Documentation update
+
+#### Architectural Benefits Achieved:
+- **System-Wide Pause:** Clean separation between gameplay and transition phases
+- **Simplified State Machine:** Fewer states reduce complexity and potential bugs
+- **Performance Conscious:** Game logic suspension prevents unnecessary computations
+- **User Experience:** Professional, smooth level transitions
+- **Maintainable Code:** Clear pause/unpause lifecycle with proper cleanup
+
+---
+
+## 🏗️ RECENT ARCHITECTURAL CHANGES (January 2026)
+
 ### AI System Distance Calculation & Stability Fixes - COMPLETED ✅ **[CRITICAL IMPROVEMENT]**
 **Fixed premature enemy attacks and distance calculation issues with unified measurement system**
 

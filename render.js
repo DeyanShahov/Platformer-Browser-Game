@@ -93,14 +93,27 @@ function renderTransitionEffects(ctx) {
 
   switch (transitionState) {
     case 'fading_out':
+      console.log(`[VISUAL] Rendering Fade Out`);
       renderFadeTransition(ctx, 'out');
       break;
 
+    // case 'showing_ui':
+    //   console.log(`[VISUAL] Rendering Full Black Overlay (showing_ui)`);
+    //   // Full black overlay during UI transition to prevent flash
+    //   ctx.save();
+    //   ctx.globalAlpha = 1.0;
+    //   ctx.fillStyle = '#000000';
+    //   ctx.fillRect(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT);
+    //   ctx.restore();
+    //   break;
+
     case 'fading_in':
+      console.log(`[VISUAL] Rendering Fade In`);
       renderFadeTransition(ctx, 'in');
       break;
 
     case 'loading':
+      console.log(`[VISUAL] Rendering Loading Screen`);
       renderLoadingScreen(ctx);
       break;
   }
@@ -114,23 +127,33 @@ function renderTransitionEffects(ctx) {
 function renderFadeTransition(ctx, direction) {
   if (!window.levelManager) return;
 
-  const transitionDuration = window.levelManager.transitionDuration || 2000;
-  const transitionTimer = window.levelManager.transitionTimer || 0;
+  // Calculate elapsed time using LevelManager's transitionStartTime
+  const elapsed = performance.now() - window.levelManager.transitionStartTime;
+  const totalDuration = window.levelManager.totalTransitionDuration || 5000;
 
   // Calculate fade progress (0-1)
   let progress;
+  let alpha;
   if (direction === 'out') {
-    // Fade out: 0% to 100% opacity over first half
-    progress = Math.min(transitionTimer / (transitionDuration / 2), 1);
+    // Fade out: gradually increase opacity during fade out phase
+    progress = Math.min(elapsed / window.levelManager.fadeDuration, 1);
+
+    // When fade out is complete, render full black overlay to prevent flash
+    alpha = (progress >= 1.0) ? 1.0 : progress;
   } else {
-    // Fade in: 100% to 0% opacity over second half
-    progress = Math.max(0, (transitionTimer - transitionDuration / 2) / (transitionDuration / 2));
-    progress = 1 - progress;
+    // Fade in: gradually decrease opacity during fade in phase
+    const fadeInStart = window.levelManager.fadeDuration + window.levelManager.loadingDuration;
+    const fadeInElapsed = elapsed - fadeInStart;
+    progress = Math.max(0, 1 - (fadeInElapsed / window.levelManager.fadeDuration));
+    alpha = progress;
   }
+
+  // Ensure alpha is between 0 and 1
+  alpha = Math.max(0, Math.min(1, alpha));
 
   // Render fade overlay
   ctx.save();
-  ctx.globalAlpha = progress;
+  ctx.globalAlpha = alpha;
   ctx.fillStyle = '#000000'; // Black fade
   ctx.fillRect(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT);
   ctx.restore();
@@ -146,9 +169,9 @@ function renderFadeTransition(ctx, direction) {
  * @param {CanvasRenderingContext2D} ctx - Canvas context
  */
 function renderLoadingScreen(ctx) {
-  // Semi-transparent overlay
+  // Full opaque overlay to completely hide game during loading
   ctx.save();
-  ctx.globalAlpha = 0.8;
+  ctx.globalAlpha = 1.0;
   ctx.fillStyle = '#000000';
   ctx.fillRect(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT);
   ctx.restore();

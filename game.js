@@ -1211,6 +1211,11 @@ function handleCharacterStatsKeys() {
 }
 
 function update(dt) {
+  // Skip updates if game is paused during transitions
+  if (window.levelManager?.gamePaused) {
+    return;
+  }
+
   // Handle skill tree and character stats key inputs
   handleSkillTreeKeys();
   handleCharacterStatsKeys();

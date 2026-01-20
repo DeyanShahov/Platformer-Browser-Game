@@ -42,9 +42,13 @@ class LevelManager {
         this.loadingDuration = 3000;   // Phase 2: Loading screen (3 seconds)
         this.totalTransitionDuration = this.fadeDuration + this.loadingDuration;
 
-        // Completion tracking
+        // Game pause during transitions
+        this.gamePaused = false;
+
+        // Completion tracking - per-level using Map
         this.completionConditions = [];
         this.completionStatus = {};
+        this.levelCompletions = new Map(); // levelId -> completed status
 
         console.log('[LevelManager] Initialized with dependency injection');
     }
@@ -316,20 +320,33 @@ class LevelManager {
     checkCompletionConditions() {
         if (!this.completionConditions.length) return false;
 
-        console.log(`[COMPLETION] Checking ${this.completionConditions.length} completion conditions`);
+        // Only log detailed info when conditions actually change
         let allMet = true;
+        let hasChanges = false;
 
         for (const condition of this.completionConditions) {
+            const wasMet = condition.met;
             const isMet = this.evaluateCompletionCondition(condition);
             condition.met = isMet;
-            console.log(`[COMPLETION] Condition ${condition.type}: ${isMet ? 'MET' : 'NOT MET'}`);
+
+            if (wasMet !== isMet) {
+                hasChanges = true;
+                console.log(`[COMPLETION] Condition ${condition.type}: ${isMet ? 'MET' : 'NOT MET'}`);
+            }
+
             if (!isMet) allMet = false;
         }
 
-        console.log(`[COMPLETION] All conditions met: ${allMet}, levelCompleted: ${this.levelCompleted}`);
+        const levelCompleted = this.getLevelCompleted();
+        const shouldComplete = allMet && !levelCompleted;
 
-        if (allMet && !this.levelCompleted) {
-            this.levelCompleted = true;
+        // Log summary only when there are changes or completion happens
+        if (hasChanges || shouldComplete) {
+            console.log(`[COMPLETION] All conditions met: ${allMet}, levelCompleted: ${levelCompleted}`);
+        }
+
+        if (shouldComplete) {
+            this.setLevelCompleted(this.currentLevel.id, true);
             console.log(`[COMPLETION] Level ${this.currentLevel.id} COMPLETED! Triggering completion logic...`);
             this.onLevelCompleted();
         }
@@ -461,6 +478,10 @@ class LevelManager {
         this.targetLevelId = targetLevelId;
         this.transitionType = transitionType;
 
+        // Pause game during transition
+        this.gamePaused = true;
+        console.log(`[LevelManager] Game paused during transition`);
+
         // Don't pause animations - it breaks dt timing
         // if (this.animationSystem?.pauseAllAnimations) {
         //     this.animationSystem.pauseAllAnimations();
@@ -484,17 +505,20 @@ class LevelManager {
                 // Phase 1: Screen dimming (no UI yet)
                 if (elapsed >= this.fadeDuration) {
                     console.log(`[TRANSITION] Phase 1 complete - showing loading UI`);
-                    this.transitionState = 'showing_ui';
-                    this.showLoadingUI();
+                    // this.transitionState = 'showing_ui';
+                    // this.showLoadingUI();
+                    // Skip showing_ui and go directly to loading
+                    this.transitionState = 'loading';
+                    this.performTransitionLoad();
                 }
                 break;
 
-            case 'showing_ui':
-                // Phase 2: Show loading screen and start level loading
-                console.log(`[TRANSITION] Phase 2 - showing loading screen`);
-                this.transitionState = 'loading';
-                this.performTransitionLoad();
-                break;
+            // case 'showing_ui':
+            //     // Phase 2: Show loading screen and start level loading
+            //     console.log(`[TRANSITION] Phase 2 - showing loading screen`);
+            //     this.transitionState = 'loading';
+            //     this.performTransitionLoad();
+            //     break;
 
             case 'loading':
                 // Phase 2: Loading screen active - wait for level load to complete
@@ -516,6 +540,11 @@ class LevelManager {
                     console.log(`[TRANSITION] All phases complete - transition finished`);
                     this.transitionState = 'none';
                     this.transitionStartTime = 0;
+
+                    // Unpause game after transition completes
+                    this.gamePaused = false;
+                    console.log(`[LevelManager] Game unpaused after transition`);
+
                     console.log(`[TRANSITION] Level transition to ${this.targetLevelId} completed`);
                 }
                 break;
@@ -752,6 +781,29 @@ class LevelManager {
     }
 
     // =========================
+    // LEVEL COMPLETION TRACKING
+    // =========================
+
+    /**
+     * Get completion status for a specific level
+     * @param {string} levelId - Level identifier (defaults to current level)
+     * @returns {boolean} Whether the level is completed
+     */
+    getLevelCompleted(levelId = this.currentLevel?.id) {
+        return this.levelCompletions.get(levelId) || false;
+    }
+
+    /**
+     * Set completion status for a specific level
+     * @param {string} levelId - Level identifier
+     * @param {boolean} completed - Completion status
+     */
+    setLevelCompleted(levelId, completed) {
+        this.levelCompletions.set(levelId, completed);
+        console.log(`[LevelManager] Level ${levelId} completion status set to: ${completed}`);
+    }
+
+    // =========================
     // UTILITY METHODS
     // =========================
 
@@ -789,12 +841,36 @@ class LevelManager {
             window.uiSystem.showLevelComplete(this.currentLevel);
         }
 
-        // Auto-transition to next level after delay
-        setTimeout(() => {
-            if (this.currentLevel.nextLevelId) {
-                this.startTransition(this.currentLevel.nextLevelId, 'fade');
-            }
-        }, 3000); // 3 second delay
+        // Handle transition based on mode
+        const transitionMode = this.currentLevel.transitionMode || 'manual_via_exit';
+        console.log(`[LevelManager] Level ${this.currentLevel.id} transition mode: ${transitionMode}`);
+
+        switch (transitionMode) {
+            case 'automatic':
+                // Automatic transition after delay
+                console.log(`[LevelManager] Auto-transitioning in 3 seconds`);
+                setTimeout(() => {
+                    if (this.currentLevel.nextLevelId) {
+                        this.startTransition(this.currentLevel.nextLevelId, 'fade');
+                    }
+                }, 3000); // 3 second delay
+                break;
+
+            case 'manual_via_exit':
+                // Wait for player to use exit point
+                console.log(`[LevelManager] Waiting for player to use exit point`);
+                // Exit points will handle transition when activated
+                break;
+
+            case 'none':
+                // No transition - end of game or special level
+                console.log(`[LevelManager] No transition - level complete`);
+                break;
+
+            default:
+                console.warn(`[LevelManager] Unknown transition mode: ${transitionMode} - defaulting to manual_via_exit`);
+                break;
+        }
     }
 
     /**
@@ -806,7 +882,7 @@ class LevelManager {
         this.updateTransition(dt);
 
         // Check completion conditions
-        if (this.currentLevel && !this.levelCompleted) {
+        if (this.currentLevel && !this.getLevelCompleted()) {
             this.checkCompletionConditions();
         }
     }
@@ -822,7 +898,7 @@ class LevelManager {
         const mockLevels = {
             'tutorial_1': {
                 id: 'tutorial_1',
-                name: 'First Steps',
+                name: 'First Steps - Always Active Door',
                 type: 'static',
                 boundaries: { left: 0, right: 1200, top: 0, bottom: 800, zMin: -50, zMax: 50 },
                 entities: [
@@ -841,14 +917,16 @@ class LevelManager {
                     targetLevelId: 'combat_room_1',
                     transitionType: 'fade',
                     transitionDirection: 'right',
-                    color: '#00FF00'
+                    color: '#00FF00',
+                    activationMode: 'after_completion'  // Type 1: Always active
                 }],
+                transitionMode: 'manual_via_exit',  // No automatic transition
                 nextLevelId: 'combat_room_1'
             },
 
             'combat_room_1': {
                 id: 'combat_room_1',
-                name: 'Combat Training',
+                name: 'Combat Training - Automatic Transition',
                 type: 'static',
                 boundaries: { left: 0, right: 1200, top: 0, bottom: 800, zMin: -50, zMax: 50 },
                 entities: [
@@ -885,6 +963,36 @@ class LevelManager {
                     type: 'enemies_defeated',
                     targetCount: 3 // Now 3 enemies total
                 }],
+                exitPoints: [], // No exit points for automatic transition
+                transitionMode: 'automatic', // Type 3: Automatic transition
+                nextLevelId: 'boss_level'
+            },
+
+            'boss_level': {
+                id: 'boss_level',
+                name: 'Boss Level - Conditional Portal',
+                type: 'static',
+                boundaries: { left: 0, right: 1200, top: 0, bottom: 800, zMin: -50, zMax: 50 },
+                entities: [
+                    { type: 'enemy', enemyType: 'blue_slime', level: 3, x: 600, y: 300, z: 0 } // Boss enemy
+                ],
+                completionConditions: [{
+                    type: 'enemies_defeated',
+                    targetCount: 1 // Kill the boss
+                }],
+                exitPoints: [{
+                    id: 'boss_portal',
+                    x: 600,
+                    y: 500,
+                    width: 100,
+                    height: 100,
+                    targetLevelId: 'end_game',
+                    transitionType: 'fade',
+                    transitionDirection: 'up',
+                    color: '#FF00FF',
+                    activationMode: 'after_completion'  // Type 2: Activates after boss defeat
+                }],
+                transitionMode: 'manual_via_exit', // Wait for portal activation
                 nextLevelId: 'end_game'
             },
 

@@ -39,6 +39,7 @@ class LevelData {
         this.exitPoints = config.exitPoints || [];
         this.nextLevelId = config.nextLevelId || null;
         this.transitionType = config.transitionType || 'fade';
+        this.transitionMode = config.transitionMode || 'manual_via_exit'; // 'automatic', 'manual_via_exit', 'none'
 
         // UI and tutorial settings
         this.ui = config.ui || null;
