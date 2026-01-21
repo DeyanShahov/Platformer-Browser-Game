@@ -35,6 +35,9 @@ class LevelData {
         // Completion conditions
         this.completionConditions = config.completionConditions || [];
 
+        // Trigger-based spawning system
+        this.triggers = config.triggers || [];
+
         // Transition settings
         this.exitPoints = config.exitPoints || [];
         this.nextLevelId = config.nextLevelId || null;
@@ -71,7 +74,7 @@ class LevelData {
         if (!this.name) errors.push('Level name is required');
 
         // Type validation
-        const validTypes = ['static', 'scrolling_horizontal', 'scrolling_vertical'];
+        const validTypes = ['static', 'scrolling_horizontal', 'scrolling_vertical', 'end_game'];
         if (!validTypes.includes(this.type)) {
             errors.push(`Invalid level type: ${this.type}. Must be one of: ${validTypes.join(', ')}`);
         }
@@ -252,6 +255,7 @@ class LevelData {
             boundaries: { ...this.boundaries },
             entities: this.entities.map(entity => ({ ...entity })),
             neutralObjects: this.neutralObjects.map(obj => ({ ...obj })),
+            triggers: this.triggers.map(trigger => ({ ...trigger })),
             completionConditions: this.completionConditions.map(cond => ({ ...cond })),
             difficultyMultiplier: this.difficultyMultiplier,
             baseExperience: this.baseExperience,
@@ -361,90 +365,12 @@ function createLevelFromPreset(presetName, customConfig) {
     return new LevelData(levelConfig);
 }
 
-// =========================
-// LEVEL REGISTRY SYSTEM
-// =========================
 
-class LevelRegistry {
-    constructor() {
-        this.levels = new Map();
-        this.categories = new Map();
-    }
-
-    /**
-     * Register a level in the registry
-     * @param {LevelData} levelData - Level data to register
-     */
-    registerLevel(levelData) {
-        if (!(levelData instanceof LevelData)) {
-            throw new Error('Must register LevelData instance');
-        }
-
-        this.levels.set(levelData.id, levelData);
-        console.log(`[LevelRegistry] Registered level: ${levelData.id}`);
-    }
-
-    /**
-     * Get level by ID
-     * @param {string} levelId - Level identifier
-     */
-    getLevel(levelId) {
-        return this.levels.get(levelId) || null;
-    }
-
-    /**
-     * Get all registered levels
-     */
-    getAllLevels() {
-        return Array.from(this.levels.values());
-    }
-
-    /**
-     * Get levels by category
-     * @param {string} category - Category name
-     */
-    getLevelsByCategory(category) {
-        return this.getAllLevels().filter(level => {
-            // Add category logic when implemented
-            return true; // Placeholder
-        });
-    }
-
-    /**
-     * Check if level exists
-     * @param {string} levelId - Level identifier
-     */
-    hasLevel(levelId) {
-        return this.levels.has(levelId);
-    }
-
-    /**
-     * Remove level from registry
-     * @param {string} levelId - Level identifier
-     */
-    unregisterLevel(levelId) {
-        const removed = this.levels.delete(levelId);
-        if (removed) {
-            console.log(`[LevelRegistry] Unregistered level: ${levelId}`);
-        }
-        return removed;
-    }
-
-    /**
-     * Clear all levels
-     */
-    clear() {
-        this.levels.clear();
-        this.categories.clear();
-        console.log('[LevelRegistry] Cleared all levels');
-    }
-}
 
 // =========================
 // GLOBAL EXPORTS
 // =========================
 
 window.LevelData = LevelData;
-window.LevelRegistry = LevelRegistry;
 window.LEVEL_PRESETS = LEVEL_PRESETS;
 window.createLevelFromPreset = createLevelFromPreset;

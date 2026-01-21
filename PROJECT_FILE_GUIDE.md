@@ -115,6 +115,72 @@ This comprehensive guide documents every file in the Platformer Browser Game pro
 
 ## 🏗️ RECENT ARCHITECTURAL CHANGES (January 2026)
 
+### Level System Reorganization - COMPLETED ✅ **[ARCHITECTURAL REFACTORING]**
+**Reorganized level system files into dedicated Level System directory with improved structure and documentation**
+
+#### Problem Solved:
+- **Before:** Level system files scattered across root directory (`level_data.js`, `level_manager.js`) and data directory (`data/level_loader.js`)
+- **Issue:** Poor organization, inconsistent file locations, difficulty finding level-related code
+- **Impact:** Hard to maintain, confusing project structure, unclear system boundaries
+
+#### Solution Implemented:
+- **Dedicated Level System Directory:** All level-related files moved to `Level System/` directory
+- **Structured Subdirectories:** Individual level files organized in `Level System/levels/` with category subdirectories
+- **Clean Separation:** Level data, loading, management, and individual levels properly separated
+- **Updated Documentation:** Comprehensive documentation of new structure and integration points
+
+#### Key Changes:
+1. **`Level System/` Directory Structure:**
+   ```
+   Level System/
+   ├── level_data.js       # LevelData class and validation
+   ├── level_registry.js   # LevelRegistry for level management
+   ├── level_loader.js     # Level loading utilities
+   ├── level_manager.js    # LevelManager for game integration
+   └── levels/
+       ├── tutorial/
+       │   └── tutorial_1.js
+       ├── combat/
+       │   └── combat_room_1.js
+       ├── boss/
+       │   └── boss_level.js
+       └── special/
+           └── end_game.js
+   ```
+
+2. **File Reorganization:**
+   - `level_data.js` → `Level System/level_data.js`
+   - `level_manager.js` → `Level System/level_manager.js`
+   - `data/level_loader.js` → `Level System/level_loader.js`
+   - Created `Level System/level_registry.js`
+   - Individual levels moved to categorized subdirectories
+
+3. **Updated HTML Integration:**
+   - All script tags updated to use new `Level System/` paths
+   - Proper loading order maintained (data → registry → loader → manager → levels)
+
+#### Benefits Achieved:
+- **Clear System Boundaries:** All level-related code in one location
+- **Improved Maintainability:** Easy to find and modify level system components
+- **Scalable Structure:** Simple to add new level categories and individual levels
+- **Developer Experience:** Clear separation between core systems and level definitions
+- **Documentation Alignment:** PROJECT_FILE_GUIDE.md updated with new structure
+
+#### Files Affected:
+- All level system files moved and reorganized
+- `js_platformer_z_depth_demo.html` - Updated script paths
+- `PROJECT_FILE_GUIDE.md` - Added comprehensive Level Systems section
+
+#### Architectural Benefits Achieved:
+- **System Organization:** Clear separation between game engine and level content
+- **Maintainability:** All level code in dedicated directory structure
+- **Extensibility:** Easy to add new level types and categories
+- **Developer Productivity:** Intuitive file organization and navigation
+
+---
+
+## 🏗️ RECENT ARCHITECTURAL CHANGES (January 2026)
+
 ### Dual Strategy Enemy Chase System - COMPLETED ✅ **[MAJOR AI IMPROVEMENT]**
 **Implemented intelligent dual-strategy repositioning system with X-overlap detection and attack completion timing fixes**
 
@@ -828,6 +894,7 @@ This comprehensive guide documents every file in the Platformer Browser Game pro
 
 ```
 Platformer Browser Game/
+├── 🎮 Level System/ (Level management, data, registry)
 ├── 🎮 Core Systems (Game loop, state, rendering)
 ├── 👥 Character Systems (Players, stats, progression)
 ├── ⚔️ Combat Systems (Damage, abilities, balance)

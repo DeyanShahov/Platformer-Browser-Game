@@ -12,6 +12,15 @@ class LevelManager {
         this.combatSystem = combatSystem;
         this.collisionSystem = collisionSystem;
 
+        // Level registry system - use shared instance
+        this.levelRegistry = null;
+        if (window.LevelRegistry) {
+            this.levelRegistry = window.LevelRegistry.getInstance();
+            console.log(`[LevelManager] Using shared LevelRegistry with ${this.levelRegistry.levels.size} registered levels`);
+        } else {
+            console.warn('[LevelManager] LevelRegistry not available, falling back to mock data');
+        }
+
         // Exit point system
         this.exitPointManager = null;
         if (window.ExitPointManager) {
@@ -812,7 +821,17 @@ class LevelManager {
      * @param {string} levelId - Level identifier
      */
     getLevelData(levelId) {
-        // For now, return mock data - will be replaced with actual registry
+        // Try to get from registry first
+        if (this.levelRegistry) {
+            const levelData = this.levelRegistry.getLevel(levelId);
+            if (levelData) {
+                console.log(`[LevelManager] Retrieved level ${levelId} from registry`);
+                return levelData;
+            }
+        }
+
+        // Fallback to mock data if registry not available or level not found
+        console.warn(`[LevelManager] Level ${levelId} not found in registry, falling back to mock data`);
         return this.getMockLevelData(levelId);
     }
 
@@ -894,122 +913,122 @@ class LevelManager {
     /**
      * Temporary mock level data - will be replaced with actual registry
      */
-    getMockLevelData(levelId) {
-        const mockLevels = {
-            'tutorial_1': {
-                id: 'tutorial_1',
-                name: 'First Steps - Always Active Door',
-                type: 'static',
-                boundaries: { left: 0, right: 1200, top: 0, bottom: 800, zMin: -50, zMax: 50 },
-                entities: [
-                    { type: 'enemy', enemyType: 'blue_slime', level: 1, x: 600, y: 400, z: 0, aiBehavior: 'passive' }
-                ],
-                completionConditions: [{
-                    type: 'enemies_defeated',
-                    targetCount: 1
-                }],
-                exitPoints: [{
-                    id: 'tutorial_exit',
-                    x: 1100,
-                    y: 400,
-                    width: 80,
-                    height: 80,
-                    targetLevelId: 'combat_room_1',
-                    transitionType: 'fade',
-                    transitionDirection: 'right',
-                    color: '#00FF00',
-                    activationMode: 'after_completion'  // Type 1: Always active
-                }],
-                transitionMode: 'manual_via_exit',  // No automatic transition
-                nextLevelId: 'combat_room_1'
-            },
+    // getMockLevelData(levelId) {
+    //     const mockLevels = {
+    //         'tutorial_1': {
+    //             id: 'tutorial_1',
+    //             name: 'First Steps - Always Active Door',
+    //             type: 'static',
+    //             boundaries: { left: 0, right: 1200, top: 0, bottom: 800, zMin: -50, zMax: 50 },
+    //             entities: [
+    //                 { type: 'enemy', enemyType: 'blue_slime', level: 1, x: 600, y: 400, z: 0, aiBehavior: 'passive' }
+    //             ],
+    //             completionConditions: [{
+    //                 type: 'enemies_defeated',
+    //                 targetCount: 1
+    //             }],
+    //             exitPoints: [{
+    //                 id: 'tutorial_exit',
+    //                 x: 1100,
+    //                 y: 400,
+    //                 width: 80,
+    //                 height: 80,
+    //                 targetLevelId: 'combat_room_1',
+    //                 transitionType: 'fade',
+    //                 transitionDirection: 'right',
+    //                 color: '#00FF00',
+    //                 activationMode: 'after_completion'  // Type 1: Always active
+    //             }],
+    //             transitionMode: 'manual_via_exit',  // No automatic transition
+    //             nextLevelId: 'combat_room_1'
+    //         },
 
-            'combat_room_1': {
-                id: 'combat_room_1',
-                name: 'Combat Training - Automatic Transition',
-                type: 'static',
-                boundaries: { left: 0, right: 1200, top: 0, bottom: 800, zMin: -50, zMax: 50 },
-                entities: [
-                    { type: 'enemy', enemyType: 'blue_slime', level: 1, x: 400, y: 300, z: 0 }
-                ],
-                triggers: [
-                    // Area-based trigger - spawn enemy when player moves right
-                    {
-                        id: 'area_spawn_1',
-                        type: 'area_enter',
-                        area: { x: 600, y: 400, width: 100, height: 100 },
-                        entities: [
-                            { type: 'enemy', enemyType: 'blue_slime', level: 2, x: 800, y: 500, z: 0 }
-                        ]
-                    },
-                    // Time-based trigger - spawn 5 enemies every 5 seconds with random positions
-                    {
-                        id: 'time_spawn_1',
-                        type: 'time_delay',
-                        delay: 5000,      // Първо спавнване след 5 секунди
-                        interval: 5000,   // Повторно спавнване през 5 секунди
-                        maxCount: 5,      // Общо 5 спавнвания
-                        entities: [
-                            {
-                                type: 'enemy',
-                                enemyType: 'blue_slime',
-                                level: 1,
-                                randomPosition: true  // Random позиция в границите на нивото
-                            }
-                        ]
-                    }
-                ],
-                completionConditions: [{
-                    type: 'enemies_defeated',
-                    targetCount: 3 // Now 3 enemies total
-                }],
-                exitPoints: [], // No exit points for automatic transition
-                transitionMode: 'automatic', // Type 3: Automatic transition
-                nextLevelId: 'boss_level'
-            },
+    //         'combat_room_1': {
+    //             id: 'combat_room_1',
+    //             name: 'Combat Training - Automatic Transition',
+    //             type: 'static',
+    //             boundaries: { left: 0, right: 1200, top: 0, bottom: 800, zMin: -50, zMax: 50 },
+    //             entities: [
+    //                 { type: 'enemy', enemyType: 'blue_slime', level: 1, x: 400, y: 300, z: 0 }
+    //             ],
+    //             triggers: [
+    //                 // Area-based trigger - spawn enemy when player moves right
+    //                 {
+    //                     id: 'area_spawn_1',
+    //                     type: 'area_enter',
+    //                     area: { x: 600, y: 400, width: 100, height: 100 },
+    //                     entities: [
+    //                         { type: 'enemy', enemyType: 'blue_slime', level: 2, x: 800, y: 500, z: 0 }
+    //                     ]
+    //                 },
+    //                 // Time-based trigger - spawn 5 enemies every 5 seconds with random positions
+    //                 {
+    //                     id: 'time_spawn_1',
+    //                     type: 'time_delay',
+    //                     delay: 5000,      // Първо спавнване след 5 секунди
+    //                     interval: 5000,   // Повторно спавнване през 5 секунди
+    //                     maxCount: 5,      // Общо 5 спавнвания
+    //                     entities: [
+    //                         {
+    //                             type: 'enemy',
+    //                             enemyType: 'blue_slime',
+    //                             level: 1,
+    //                             randomPosition: true  // Random позиция в границите на нивото
+    //                         }
+    //                     ]
+    //                 }
+    //             ],
+    //             completionConditions: [{
+    //                 type: 'enemies_defeated',
+    //                 targetCount: 3 // Now 3 enemies total
+    //             }],
+    //             exitPoints: [], // No exit points for automatic transition
+    //             transitionMode: 'automatic', // Type 3: Automatic transition
+    //             nextLevelId: 'boss_level'
+    //         },
 
-            'boss_level': {
-                id: 'boss_level',
-                name: 'Boss Level - Conditional Portal',
-                type: 'static',
-                boundaries: { left: 0, right: 1200, top: 0, bottom: 800, zMin: -50, zMax: 50 },
-                entities: [
-                    { type: 'enemy', enemyType: 'blue_slime', level: 3, x: 600, y: 300, z: 0 } // Boss enemy
-                ],
-                completionConditions: [{
-                    type: 'enemies_defeated',
-                    targetCount: 1 // Kill the boss
-                }],
-                exitPoints: [{
-                    id: 'boss_portal',
-                    x: 600,
-                    y: 500,
-                    width: 100,
-                    height: 100,
-                    targetLevelId: 'end_game',
-                    transitionType: 'fade',
-                    transitionDirection: 'up',
-                    color: '#FF00FF',
-                    activationMode: 'after_completion'  // Type 2: Activates after boss defeat
-                }],
-                transitionMode: 'manual_via_exit', // Wait for portal activation
-                nextLevelId: 'end_game'
-            },
+    //         'boss_level': {
+    //             id: 'boss_level',
+    //             name: 'Boss Level - Conditional Portal',
+    //             type: 'static',
+    //             boundaries: { left: 0, right: 1200, top: 0, bottom: 800, zMin: -50, zMax: 50 },
+    //             entities: [
+    //                 { type: 'enemy', enemyType: 'blue_slime', level: 3, x: 600, y: 300, z: 0 } // Boss enemy
+    //             ],
+    //             completionConditions: [{
+    //                 type: 'enemies_defeated',
+    //                 targetCount: 1 // Kill the boss
+    //             }],
+    //             exitPoints: [{
+    //                 id: 'boss_portal',
+    //                 x: 600,
+    //                 y: 500,
+    //                 width: 100,
+    //                 height: 100,
+    //                 targetLevelId: 'end_game',
+    //                 transitionType: 'fade',
+    //                 transitionDirection: 'up',
+    //                 color: '#FF00FF',
+    //                 activationMode: 'after_completion'  // Type 2: Activates after boss defeat
+    //             }],
+    //             transitionMode: 'manual_via_exit', // Wait for portal activation
+    //             nextLevelId: 'end_game'
+    //         },
 
-            'end_game': {
-                id: 'end_game',
-                name: 'Game Complete',
-                type: 'end_game',  // Special level type
-                boundaries: { left: 0, right: 1200, top: 0, bottom: 800, zMin: -50, zMax: 50 },
-                entities: [],       // No enemies
-                completionConditions: [], // No completion conditions
-                exitPoints: [],     // No exit points
-                nextLevelId: null   // End of game
-            }
-        };
+    //         'end_game': {
+    //             id: 'end_game',
+    //             name: 'Game Complete',
+    //             type: 'end_game',  // Special level type
+    //             boundaries: { left: 0, right: 1200, top: 0, bottom: 800, zMin: -50, zMax: 50 },
+    //             entities: [],       // No enemies
+    //             completionConditions: [], // No completion conditions
+    //             exitPoints: [],     // No exit points
+    //             nextLevelId: null   // End of game
+    //         }
+    //     };
 
-        return mockLevels[levelId] || null;
-    }
+    //     return mockLevels[levelId] || null;
+    // }
 }
 
 // =========================
