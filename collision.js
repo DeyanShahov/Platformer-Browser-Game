@@ -739,6 +739,93 @@ function calculateEntityDistance(entity1, entity2) {
 }
 
 // ===========================================
+// PLAYER MOVEMENT SYSTEM - MOVED FROM game.js (PHASE 4)
+// ===========================================
+
+// Обработка на движение и колизии за играч
+function handleMovement(player, dt, canvasHeight, gravity, zMin, zMax) {
+  // Prevent movement during attack animations
+  if (player.stateMachine && player.stateMachine.isInAttackState()) {
+    // During attack, character should not move - set velocity to 0
+    player.vx = 0;
+    player.vz = 0;
+    return; // Skip movement processing during attacks
+  }
+
+  // Check X movement collision with correction instead of blocking
+  const proposedX = player.x + player.vx * dt;
+
+  // Apply collision correction - simple boundary correction like the old system
+  const correctedX = applyCollisionCorrection(player, proposedX, player.y, player.z, 'x');
+  player.x = correctedX;
+
+  // Опит за движение по Z
+  const proposedZ = player.z + player.vz * dt;
+  const clampedZ = Math.min(Math.max(proposedZ, zMin), zMax);
+
+  //Check Z movement collision
+  if (canMoveTo(player, player.x, player.y, clampedZ)) {
+    player.z = clampedZ;
+  }
+
+  // X movement is now handled entirely by collision correction above
+  // No additional player.x += player.vx * dt; needed
+
+  // Гравитация
+  player.vy += gravity * dt;
+  player.y += player.vy * dt;
+
+  // Apply screen boundaries to keep player within screen bounds
+  const boundaryResult = window.applyScreenBoundaries(player);
+  if (boundaryResult.wasLimited) {
+    // Stop movement if we hit a boundary
+    player.vx = 0;
+    player.vz = 0;
+  }
+
+  // Земя - използвай spawn позицията вместо hardcoded 100px
+  const groundY = canvasHeight - 600; // Съответства на spawnY в main.js
+  if (player.y >= groundY) {
+    // Check if this is the first frame of landing (transition from air to ground)
+    const wasInAir = !player.onGround;
+
+    player.y = groundY;
+    player.vy = 0;
+    player.onGround = true;
+
+    if (wasInAir) {
+      //console.log(`[JUMP] Player landed on ground (y: ${groundY})`);
+
+      // Check if player was jumping - force FSM transition
+      if (player.animation && player.animation.currentAnimation === window.ANIMATION_TYPES.JUMP) {
+        //console.log(`[JUMP] Player was jumping, forcing FSM transition on landing`);
+        // Clear force flag first
+        player.animation.forceAnimation = false;
+
+        // Force FSM transition by calling JumpingState update
+        if (player.stateMachine && player.stateMachine.currentState.name === 'jumping') {
+          // Temporarily set justEntered to false so update() will run
+          const wasJustEntered = player.stateMachine.currentState.justEntered;
+          player.stateMachine.currentState.justEntered = false;
+
+          const transition = player.stateMachine.currentState.update(player, 0);
+          if (transition) {
+            //console.log(`[JUMP] Landing transition to: ${transition}`);
+            player.stateMachine.changeState(transition);
+          }
+
+          // Restore justEntered flag
+          player.stateMachine.currentState.justEntered = wasJustEntered;
+        }
+      }
+    }
+  } else {
+    // Player is in air
+    player.onGround = false;
+  }
+}
+
+// ===========================================
 // GLOBAL EXPORTS
 // ===========================================
 
@@ -751,3 +838,4 @@ window.getCurrentHitBoxDimensions = getCurrentHitBoxDimensions;
 window.getCurrentHitBoxPosition = getCurrentHitBoxPosition;
 window.checkEntityCollision = checkEntityCollision;
 window.calculateEntityDistance = calculateEntityDistance;
+window.handleMovement = handleMovement;

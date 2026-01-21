@@ -1,5 +1,4 @@
-# 🎮 Platformer Browser Game - Project File Guide
-
+sega 
 ## 📋 Document Overview
 
 This comprehensive guide documents every file in the Platformer Browser Game project. It serves as a reference for developers to understand existing systems and avoid creating duplicate functionality when adding new features.
@@ -1548,8 +1547,8 @@ Platformer Browser Game/
 **Dependencies:** `constants.js`
 **Integration Points:** Game update loop
 
-### `collision.js` - Collision Detection System **[RECENTLY ENHANCED - AI DISTANCE FIXES]**
-**Purpose:** Advanced collision detection and resolution with unified AI distance calculation system
+### `collision.js` - Collision Detection System **[RECENTLY ENHANCED - AI DISTANCE FIXES + PLAYER MOVEMENT]**
+**Purpose:** Advanced collision detection and resolution with unified AI distance calculation system and player movement physics
 **Responsibilities:**
 - 3D collision detection with Z-depth
 - Collision buffer systems
@@ -1561,6 +1560,8 @@ Platformer Browser Game/
 - Movement validation **[MOVED HERE]**
 - AI behavior constraints **[MOVED HERE]**
 - Screen boundary enforcement **[MOVED HERE]**
+- **Player movement physics and collision handling** **[MOVED FROM game.js - PHASE 4]**
+- **Ground collision and landing state transitions** **[MOVED FROM game.js - PHASE 4]**
 **Key Functions:**
 - `checkCollisionWithBuffer()` - Main collision check
 - `checkHitboxCollision(attacker, target, params)` - Attack collision **[MOVED HERE]**
@@ -1569,6 +1570,7 @@ Platformer Browser Game/
 - `applyScreenBoundaries(entity)` - Boundary enforcement **[MOVED HERE]**
 - `calculateEntityDistance(entity1, entity2)` - **Unified distance calculation with 3D support** **[NEW - AI FIXES]**
 - `isAnimationSystemReadyForEntity(entity)` - **Animation readiness validation** **[NEW - AI FIXES]**
+- **`handleMovement(player, dt, canvasHeight, gravity, zMin, zMax)` - Player physics and movement** **[MOVED FROM game.js - PHASE 4]**
 - `resolveCollision()` - Collision response
 - `getCollisionBounds(entity)` - Boundary calculation
 **Key Features:**
@@ -1576,10 +1578,11 @@ Platformer Browser Game/
 - **Animation Readiness Checks:** Prevents calculations before system initialization **[NEW]**
 - **3D Distance Support:** Includes depth (Z-axis) for accurate 2.5D gameplay **[NEW]**
 - **Enhanced Logging:** Clear diagnostic information about animation system status **[NEW]**
-**Global Exports:** All major collision functions exported globally for cross-module use
+- **Player Movement Integration:** Complete movement physics with gravity, ground collision, and FSM transitions **[PHASE 4]**
+**Global Exports:** All major collision functions exported globally for cross-module use, including `handleMovement` **[PHASE 4]**
 **Dependencies:** `entities.js`, `constants.js`
 **Integration Points:** Physics, combat, AI, and game systems
-**Note:** Recent AI fixes (Jan 2026) added unified distance calculation system with animation system integration
+**Note:** Recent AI fixes (Jan 2026) added unified distance calculation system; Phase 4 (Jan 2026) moved player movement physics from game.js for better organization
 
 ---
 
