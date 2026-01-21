@@ -677,9 +677,9 @@ function update(dt) {
         if (!enemy.isDying) {
           // Живи противници - AI и движение
           // Apply enemy physics FIRST (boundary clamping affects Z position)
-          handleEnemyMovement(enemy, dt);
+          enemy.handleMovement(dt, CANVAS_HEIGHT, GRAVITY);
           // Then update AI with correct Z position after boundary clamping
-          updateEnemyAI(enemy, dt);
+          enemy.updateEnemyAI(dt, window.gameState.players, window.gameState);
         } else {
           // Умиращи противници - само смъртна анимация
           enemy.updateDeath(dt);
@@ -690,115 +690,28 @@ function update(dt) {
       players.forEach((player, index) => {
         updatePlayer(player, index, dt);
       });
-      updateEnemyAI(dt);
-    }
-  }
-}
-
-function updateEnemyAI(enemy, dt) {
-  if (!enemy) return;
-
-  // console.log(`[ENEMY_AI_DEBUG] Updating enemy ${enemy.instanceId || 'unknown'}`);
-  // console.log(`[ENEMY_AI_DEBUG] Enemy health: ${enemy.health}, isDying: ${enemy.isDying}`);
-  // console.log(`[ENEMY_AI_DEBUG] Has updateAI method:`, !!enemy.updateAI, typeof enemy.updateAI);
-  // console.log(`[ENEMY_AI_DEBUG] Enemy methods:`, Object.getOwnPropertyNames(Object.getPrototypeOf(enemy)).filter(name => typeof enemy[name] === 'function'));
-
-  // Normal AI only runs if enemy is alive and not dying
-  if (enemy.health > 0 && !enemy.isDying) {
-    // Get players array for AI decision making
-    const players = window.gameState ? window.gameState.players : window.players || [];
-    // console.log(`[ENEMY_AI_DEBUG] Found ${players.length} players for AI`);
-
-    // Use BT-based AI if available, otherwise fallback to simple AI
-    if (enemy.updateAI && typeof enemy.updateAI === 'function') {
-      // console.log(`[ENEMY_AI_DEBUG] Using BT AI for enemy ${enemy.instanceId}`);
-      try {
-        enemy.updateAI(players, dt);
-        // console.log(`[ENEMY_AI_DEBUG] BT AI update completed`);
-      } catch (error) {
-        console.error(`[ENEMY_AI_DEBUG] BT AI update failed:`, error);
-      }
-    } else {
-      // console.log(`[ENEMY_AI_DEBUG] No BT AI available, using fallback AI`);
-      // Simple fallback AI for other enemies
-      if (Math.random() < 0.01) { // 1% chance per frame to attack
-        if (enemy.stateMachine && !enemy.stateMachine.isInAttackState()) {
-          // Choose random attack type for FSM
-          const attackActions = ['attack_light', 'attack_medium', 'attack_heavy'];
-          const randomAttack = attackActions[Math.floor(Math.random() * attackActions.length)];
-
-          // Trigger FSM attack
-          enemy.stateMachine.handleAction(randomAttack);
-          // console.log(`[ENEMY_AI_DEBUG] Fallback AI: Enemy attacks with ${randomAttack}`);
-        }
+      // Fallback enemy update - use legacy enemy if available
+      if (window.enemy && !window.enemy.isDying) {
+        window.enemy.handleMovement(dt, CANVAS_HEIGHT, GRAVITY);
+        window.enemy.updateEnemyAI(dt, window.players || [], null);
       }
     }
-  } else {
-    // console.log(`[ENEMY_AI_DEBUG] Enemy not updated - health: ${enemy.health}, isDying: ${enemy.isDying}`);
-  }
-
-  // Reset hit flag after a short time
-  if (enemy.hit) {
-    enemy.hit = false;
-    // console.log(`[ENEMY_AI_DEBUG] Reset hit flag`);
   }
 }
 
-// Централизирана обработка на смърт за всички умиращи елементи
-// Handle enemy physics and movement (similar to player handleMovement)
-function handleEnemyMovement(enemy, dt) {
-  // console.log(`[HANDLE ENEMY MOVEMENT] START - x=${enemy.x}, z=${enemy.z}, vx=${enemy.vx}, vz=${enemy.vz}`);
+// ===========================================
+// PHASE 6: COORDINATION FUNCTIONS MOVED TO base_enemy.js
+// ===========================================
+// updateEnemyAI() - MOVED TO BaseEnemy.updateEnemyAI() instance method
+// handleEnemyMovement() - MOVED TO BaseEnemy.handleMovement() instance method
+// checkIfEntityIsInCollision() - MOVED TO BaseEnemy.checkIfInCollision() instance method
 
-  // Prevent movement during attack animations (like players)
-  if (enemy.stateMachine && enemy.stateMachine.isInAttackState()) {
-    enemy.vx = 0;
-    enemy.vz = 0;
-    return;
-  }
-
-  // Apply velocity to position (basic physics)
-  enemy.x += enemy.vx * dt;
-  enemy.y += enemy.vy * dt;
-  enemy.z += enemy.vz * dt;
-
-  // Basic gravity for enemies (if they can fall)
-  enemy.vy += GRAVITY * dt;
-
-  // Ground collision (similar to players)
-  const groundY = CANVAS_HEIGHT - 600; // Same ground level as players
-  if (enemy.y >= groundY) {
-    enemy.y = groundY;
-    enemy.vy = 0;
-    enemy.onGround = true;
-  } else {
-    enemy.onGround = false;
-  }
-
-  // Apply screen boundaries and check for interruption
-  const boundaryResult = window.applyScreenBoundaries(enemy);
-  // console.log(`[HANDLE ENEMY MOVEMENT] boundary check: wasLimited=${boundaryResult.wasLimited}`);
-
-  if (boundaryResult.wasLimited) {
-    // console.log(`[HANDLE ENEMY MOVEMENT] Boundary hit - stopping movement!`);
-    // Signal that boundary was hit - AI will handle BT consultation
-    enemy.boundaryInterrupted = true;
-  }
-
-  // Reset velocity after movement (AI will set it again next frame)
-  // Keep vx for continuous movement
-  enemy.vx = 0;  // Always reset vx (horizontal)
-
-  // Only reset vz if not in vertical movement mode
-  // console.log(`[HANDLE ENEMY MOVEMENT] Before vz reset: vz=${enemy.vz}, targetZ=${enemy.targetZ}`);
-  if (!enemy.targetZ) {
-    enemy.vz = 0;  // Only reset vz if not doing vertical movement
-    // console.log(`[HANDLE ENEMY MOVEMENT] Reset vz to 0 (no vertical movement)`);
-  } else {
-    // console.log(`[HANDLE ENEMY MOVEMENT] Kept vz=${enemy.vz} (vertical movement active)`);
-  }
-}
-
-
+// ===========================================
+// PHASE 6: COORDINATION FUNCTIONS MOVED TO base_enemy.js
+// ===========================================
+// updateEnemyAI() - MOVED TO BaseEnemy.updateEnemyAI() instance method
+// handleEnemyMovement() - MOVED TO BaseEnemy.handleMovement() instance method
+// checkIfEntityIsInCollision() - MOVED TO BaseEnemy.checkIfInCollision() instance method
 
 // Game loop
 let last = 0;
@@ -863,31 +776,10 @@ function loop(ts) {
   requestAnimationFrame(loop);
 }
 
-// Helper function to check if an entity is currently in collision with other entities
-function checkIfEntityIsInCollision(entity) {
-  // Get all other entities
-  const allEntities = window.gameState ? window.gameState.getAllEntities() :
-    [...players, window.enemy, window.ally].filter(e => e !== null && e !== undefined);
-  const others = allEntities.filter(e => e !== entity && e !== null && e !== undefined);
-
-  // Check collision with each other entity at current position
-  for (const other of others) {
-    const hasCollision = checkEntityCollision(
-      entity, other, 'movement',
-      {
-        entity1Pos: { x: entity.x, y: entity.y, z: entity.z }, // Current position
-        buffer: 0 // No buffer for precise collision check
-      }
-    );
-
-    if (hasCollision) {
-      //console.log(`[COLLISION_CHECK] Entity ${entity.entityType} is currently colliding with ${other.entityType}`);
-      return true;
-    }
-  }
-
-  return false;
-}
+// ===========================================
+// PHASE 6: COORDINATION FUNCTIONS MOVED TO base_enemy.js
+// ===========================================
+// checkIfEntityIsInCollision() - MOVED TO BaseEnemy.checkIfInCollision() instance method
 
 
 // ===========================================

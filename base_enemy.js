@@ -1532,6 +1532,137 @@ class BaseEnemy {
     }
   }
 
+  // ===========================================
+  // PHASE 6: COORDINATION FUNCTIONS MOVED FROM game.js
+  // ===========================================
+
+  // Update enemy AI coordination (moved from game.js updateEnemyAI function)
+  updateEnemyAI(dt, players, gameState) {
+    if (!this) return;
+
+    // console.log(`[ENEMY_AI_DEBUG] Updating enemy ${this.instanceId || 'unknown'}`);
+    // console.log(`[ENEMY_AI_DEBUG] Enemy health: ${this.health}, isDying: ${this.isDying}`);
+    // console.log(`[ENEMY_AI_DEBUG] Has updateAI method:`, !!this.updateAI, typeof this.updateAI);
+    // console.log(`[ENEMY_AI_DEBUG] Enemy methods:`, Object.getOwnPropertyNames(Object.getPrototypeOf(this)).filter(name => typeof this[name] === 'function'));
+
+    // Normal AI only runs if enemy is alive and not dying
+    if (this.health > 0 && !this.isDying) {
+      // Get players array for AI decision making
+      const playersArray = gameState ? gameState.players : players || [];
+      // console.log(`[ENEMY_AI_DEBUG] Found ${playersArray.length} players for AI`);
+
+      // Use BT-based AI if available, otherwise fallback to simple AI
+      if (this.updateAI && typeof this.updateAI === 'function') {
+        // console.log(`[ENEMY_AI_DEBUG] Using BT AI for enemy ${this.instanceId}`);
+        try {
+          this.updateAI(playersArray, dt);
+          // console.log(`[ENEMY_AI_DEBUG] BT AI update completed`);
+        } catch (error) {
+          console.error(`[ENEMY_AI_DEBUG] BT AI update failed:`, error);
+        }
+      } else {
+        // console.log(`[ENEMY_AI_DEBUG] No BT AI available, using fallback AI`);
+        // Simple fallback AI for other enemies
+        if (Math.random() < 0.01) { // 1% chance per frame to attack
+          if (this.stateMachine && !this.stateMachine.isInAttackState()) {
+            // Choose random attack type for FSM
+            const attackActions = ['attack_light', 'attack_medium', 'attack_heavy'];
+            const randomAttack = attackActions[Math.floor(Math.random() * attackActions.length)];
+
+            // Trigger FSM attack
+            this.stateMachine.handleAction(randomAttack);
+            // console.log(`[ENEMY_AI_DEBUG] Fallback AI: Enemy attacks with ${randomAttack}`);
+          }
+        }
+      }
+    } else {
+      // console.log(`[ENEMY_AI_DEBUG] Enemy not updated - health: ${this.health}, isDying: ${this.isDying}`);
+    }
+
+    // Reset hit flag after a short time
+    if (this.hit) {
+      this.hit = false;
+      // console.log(`[ENEMY_AI_DEBUG] Reset hit flag`);
+    }
+  }
+
+  // Handle enemy physics and movement (moved from game.js handleEnemyMovement function)
+  handleMovement(dt, canvasHeight, gravity) {
+    // console.log(`[HANDLE ENEMY MOVEMENT] START - x=${this.x}, z=${this.z}, vx=${this.vx}, vz=${this.vz}`);
+
+    // Prevent movement during attack animations (like players)
+    if (this.stateMachine && this.stateMachine.isInAttackState()) {
+      this.vx = 0;
+      this.vz = 0;
+      return;
+    }
+
+    // Apply velocity to position (basic physics)
+    this.x += this.vx * dt;
+    this.y += this.vy * dt;
+    this.z += this.vz * dt;
+
+    // Basic gravity for enemies (if they can fall)
+    this.vy += gravity * dt;
+
+    // Ground collision (similar to players)
+    const groundY = canvasHeight - 600; // Same ground level as players
+    if (this.y >= groundY) {
+      this.y = groundY;
+      this.vy = 0;
+      this.onGround = true;
+    } else {
+      this.onGround = false;
+    }
+
+    // Apply screen boundaries and check for interruption
+    const boundaryResult = window.applyScreenBoundaries ? window.applyScreenBoundaries(this) : { wasLimited: false };
+    // console.log(`[HANDLE ENEMY MOVEMENT] boundary check: wasLimited=${boundaryResult.wasLimited}`);
+
+    if (boundaryResult.wasLimited) {
+      // console.log(`[HANDLE ENEMY MOVEMENT] Boundary hit - stopping movement!`);
+      // Signal that boundary was hit - AI will handle BT consultation
+      this.boundaryInterrupted = true;
+    }
+
+    // Reset velocity after movement (AI will set it again next frame)
+    // Keep vx for continuous movement
+    this.vx = 0;  // Always reset vx (horizontal)
+
+    // Only reset vz if not in vertical movement mode
+    // console.log(`[HANDLE ENEMY MOVEMENT] Before vz reset: vz=${this.vz}, targetZ=${this.targetZ}`);
+    if (!this.targetZ) {
+      this.vz = 0;  // Only reset vz if not doing vertical movement
+      // console.log(`[HANDLE ENEMY MOVEMENT] Reset vz to 0 (no vertical movement)`);
+    } else {
+      // console.log(`[HANDLE ENEMY MOVEMENT] Kept vz=${this.vz} (vertical movement active)`);
+    }
+  }
+
+  // Check if entity is currently in collision with other entities (moved from game.js checkIfEntityIsInCollision function)
+  checkIfInCollision(gameState, players, enemy) {
+    // Get all other entities
+    const allEntities = gameState ? gameState.getAllEntities() :
+      [...players, enemy, window.ally].filter(e => e !== null && e !== undefined);
+    const others = allEntities.filter(e => e !== this && e !== null && e !== undefined);
+
+    // Check collision with each other entity at current position
+    for (const other of others) {
+      const hasCollision = window.checkEntityCollision ?
+        window.checkEntityCollision(this, other, 'movement', {
+          entity1Pos: { x: this.x, y: this.y, z: this.z }, // Current position
+          buffer: 0 // No buffer for precise collision check
+        }) : false;
+
+      if (hasCollision) {
+        //console.log(`[COLLISION_CHECK] Entity ${this.entityType} is currently colliding with ${other.entityType}`);
+        return true;
+      }
+    }
+
+    return false;
+  }
+
   // Get experience reward (should be overridden by subclasses)
   getExperienceReward() {
     return 100 + (this.level - 1) * 25;

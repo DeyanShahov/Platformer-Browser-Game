@@ -1425,26 +1425,33 @@ Platformer Browser Game/
 **Dependencies:** None (configuration)
 **Integration Points:** Used by all AI systems and script manager
 
-### `base_enemy.js` - Enemy Base Class **[RECENTLY ENHANCED - AI SYSTEM FIXES]**
-**Purpose:** Foundation class for all enemy types with unified distance calculation and BT context enrichment
+### `base_enemy.js` - Enemy Base Class **[PHASE 6 EXPANSION - ENEMY COORDINATION]**
+**Purpose:** Foundation class for all enemy types with unified distance calculation, BT context enrichment, and enemy coordination functions
 **Responsibilities:**
 - Common enemy behaviors and AI coordination
-- **BT context enrichment with physical dimensions** **[NEW - AI FIXES]**
-- **Animation system integration for real-time hitbox access** **[NEW - AI FIXES]**
+- **BT context enrichment with physical dimensions** **[AI FIXES]**
+- **Animation system integration for real-time hitbox access** **[AI FIXES]**
 - Combat participation and animation coordination
+- **Enemy AI coordination and movement physics** **[PHASE 6]**
+- **Collision detection and boundary handling** **[PHASE 6]**
 **Key Functions:**
 - `updateAI(players, dt)` - AI update cycle
 - `updateFSMBehavior()` - Behavior state management
-- `getThinkingDuration()` - AI timing **[NOW USES CONFIG]**
+- `getThinkingDuration()` - AI timing **[USES CONFIG]**
 - `consultBTForBehavior()` - BT integration **[USES UTILS]**
-- `updateBTContext(players)` - **BT context enrichment with physical dimensions** **[NEW - AI FIXES]**
+- `updateBTContext(players)` - **BT context enrichment with physical dimensions** **[AI FIXES]**
+- **`updateEnemyAI(dt, players, gameState)` - Enemy AI coordination** **[PHASE 6]**
+- **`handleMovement(dt, canvasHeight, gravity)` - Enemy physics and movement** **[PHASE 6]**
+- **`checkIfInCollision(gameState, players, enemy)` - Collision detection** **[PHASE 6]**
 **Key Features:**
-- **Unified Distance Context:** Provides complete entity dimensions (`w`, `h`, `collisionW`, `collisionH`, `zThickness`) to BT **[NEW]**
-- **Animation System Link:** Direct access to `window.animationSystem` for real-time hitbox data **[NEW]**
-- **Cross-system Consistency:** Same distance measurements used by AI "brain" and "body" systems **[NEW]**
-**Dependencies:** `Behavior Tree/enemyAI_BT.js`, `combat_system.js`, `collision.js`
-**Integration Points:** Extended by specific enemy types
-**Note:** Recent AI fixes (Jan 2026) added physical dimension context and animation system access for accurate distance calculations
+- **Unified Distance Context:** Provides complete entity dimensions (`w`, `h`, `collisionW`, `collisionH`, `zThickness`) to BT **[AI FIXES]**
+- **Animation System Link:** Direct access to `window.animationSystem` for real-time hitbox data **[AI FIXES]**
+- **Cross-system Consistency:** Same distance measurements used by AI "brain" and "body" systems **[AI FIXES]**
+- **Enemy Coordination Methods:** Moved from `game.js` for centralized enemy logic **[PHASE 6]**
+- **Instance Method Architecture:** All coordination functions now instance methods on enemy objects **[PHASE 6]**
+**Dependencies:** `Behavior Tree/enemyAI_BT.js`, `combat_system.js`, `collision.js`, `game.js`
+**Integration Points:** Extended by specific enemy types; coordination methods called by game loop
+**Note:** Phase 6 (Jan 2026) moved enemy coordination functions from game.js for better encapsulation; AI fixes (Jan 2026) added physical dimension context and animation system access
 
 ### `enemy_data.js` - Enemy Definitions & Stats
 **Purpose:** Static data definitions for enemy types
@@ -1791,6 +1798,53 @@ function renderUI() {
 
 ---
 
+### Game.js Refactoring - Phase 6: Enemy Coordination Centralization - COMPLETED ✅ **[ARCHITECTURAL REFACTORING]**
+**Moved enemy coordination functions from game.js to base_enemy.js for better encapsulation and separation of concerns**
+
+#### Problem Solved:
+- **Before:** Enemy coordination logic scattered between `game.js` (global functions) and `base_enemy.js` (instance methods)
+- **Issue:** Poor encapsulation, tight coupling, inconsistent architecture where enemy coordination was handled globally instead of by enemy objects themselves
+- **Impact:** Hard to maintain enemy behavior, difficult to add new enemy types, unclear separation between game loop and entity logic
+
+#### Solution Implemented:
+- **Enemy Coordination Centralization:** Moved three coordination functions from `game.js` to `base_enemy.js` as instance methods
+- **Parameter-Based Architecture:** Instance methods accept external dependencies (physics constants, game state)
+- **Clean Instance Method Design:** All enemy coordination now handled by enemy objects themselves
+- **Zero Functional Changes:** Identical behavior before/after refactoring
+
+#### Key Changes:
+1. **`base_enemy.js`**: Added three new instance methods (`updateEnemyAI`, `handleMovement`, `checkIfInCollision`)
+2. **`game.js`**: Updated call sites to use instance method syntax, removed moved functions
+3. **Function Signatures:** Converted from `globalFunction(enemy, params)` to `enemy.instanceMethod(params)`
+4. **Dependency Injection:** Methods accept physics constants and game state as parameters
+
+#### Technical Implementation:
+- **Instance Method Conversion:** Global functions became instance methods on `BaseEnemy` class
+- **Parameter Passing:** Physics constants (`canvasHeight`, `gravity`) and game state passed explicitly
+- **Call Site Updates:** `updateEnemyAI(enemy, dt)` → `enemy.updateEnemyAI(dt, players, gameState)`
+- **Function Preservation:** All original logic preserved, just relocated and made instance-based
+
+#### Benefits Achieved:
+- **Better Encapsulation:** Enemy coordination logic belongs to enemy objects
+- **Improved Maintainability:** Enemy behavior changes in one location (`base_enemy.js`)
+- **Consistent Architecture:** All enemy logic centralized in enemy classes
+- **Easier Extension:** New enemy types inherit coordination methods automatically
+- **Cleaner Game Loop:** `game.js` focuses on orchestration, not entity implementation
+
+#### Files Affected:
+- `base_enemy.js` - Added enemy coordination methods (+100 lines)
+- `game.js` - Updated call sites, removed coordination functions (-100 lines)
+- `PROJECT_FILE_GUIDE.md` - Documentation update
+
+#### Architectural Benefits Achieved:
+- **Object-Oriented Design:** Enemy objects handle their own coordination logic
+- **Separation of Concerns:** Game loop orchestrates, entities implement behavior
+- **Maintainable Codebase:** Enemy behavior modifications centralized
+- **Extensible Framework:** New enemy types inherit coordination capabilities
+- **Zero Breaking Changes:** Identical functionality with improved architecture
+
+---
+
 *Guide Version: 1.0*
-*Last Comprehensive Review: December 2025*
+*Last Comprehensive Review: January 2026*
 *Next Review Due: March 2026*

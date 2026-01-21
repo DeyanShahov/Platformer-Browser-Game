@@ -125,32 +125,39 @@
 **Risk Level:** HIGH (system initialization)
 
 #### **Functions to Move & Modify:**
-- [ ] `initGameWithSelections(gameState, players, characters, activePlayers, playerSelections, confirmedSelections, ...)` - Accept all system references
-- [ ] Complete initialization logic with all system setups (animation, camera, level manager, etc.)
+- [х] `initGameWithSelections(gameState, players, characters, activePlayers, playerSelections, confirmedSelections, ...)` - Accept all system references
+- [х] Complete initialization logic with all system setups (animation, camera, level manager, etc.)
 
 #### **Integration Requirements:**
-- [ ] Modify function signature to accept all required system references and state objects
-- [ ] Preserve all system initialization calls and dependencies
-- [ ] Export function globally with new signature
-- [ ] Update UI call site with parameter passing
+- [х] Modify function signature to accept all required system references and state objects
+- [х] Preserve all system initialization calls and dependencies
+- [х] Export function globally with new signature
+- [х] Update UI call site with parameter passing
 
 ---
 
-### **PHASE 6: Extend base_enemy.js with Coordination** 🤖 *[MEDIUM PRIORITY]*
+### **PHASE 6: Extend base_enemy.js with Coordination** 🤖 *[MEDIUM PRIORITY]* ✅ *[COMPLETED SUCCESSFULLY]*
 **Target File:** `base_enemy.js` *(EXTEND EXISTING)*
 **Rationale:** Enemy AI and movement already in base_enemy.js - extend with coordination
 **Estimated Size:** ~100 lines extracted
 **Risk Level:** LOW (coordination logic)
 
 #### **Functions to Move & Modify:**
-- [ ] `updateEnemyAI(enemy, dt, players, gameState)` - Accept players array and game state
-- [ ] `handleEnemyMovement(enemy, dt, CANVAS_HEIGHT, GRAVITY)` - Accept physics constants
-- [ ] `checkIfEntityIsInCollision(entity, gameState, players, enemy)` - Accept game state and entities
+- [x] `updateEnemyAI(dt, players, gameState)` - Converted to instance method accepting external dependencies
+- [x] `handleMovement(dt, canvasHeight, gravity)` - Converted to instance method with physics constants
+- [x] `checkIfInCollision(gameState, players, enemy)` - Converted to instance method with game state context
 
 #### **Integration Requirements:**
-- [ ] Modify function signatures to accept required parameters
-- [ ] Preserve BT system integration and AI calls
-- [ ] Export functions globally with new signatures
+- [x] Moved three global functions from game.js to base_enemy.js as instance methods
+- [x] Updated call sites in game.js to use new instance method signatures
+- [x] Preserved all existing behavior and BT system integration
+- [x] Maintained zero functional changes to gameplay
+
+#### **Integration Requirements:**
+- [x] Moved three global functions from game.js to base_enemy.js as instance methods
+- [x] Updated call sites in game.js to use new instance method signatures
+- [x] Preserved all existing behavior and BT system integration
+- [x] Maintained zero functional changes to gameplay
 
 ---
 
