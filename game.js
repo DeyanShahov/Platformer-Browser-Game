@@ -782,54 +782,7 @@ function loop(ts) {
 // checkIfEntityIsInCollision() - MOVED TO BaseEnemy.checkIfInCollision() instance method
 
 
-// ===========================================
-// ENTITY SORTING LOGIC - moved from render.js
-// ===========================================
 
-// Get sorted entities for rendering (game logic that was in render.js)
-function getSortedEntitiesForRendering() {
-  // Get all entities from game state or fallback to legacy system
-  const entities = window.gameState ? window.gameState.getAllEntities() :
-    [...players, window.enemy, window.ally].filter(e => e !== null && e !== undefined);
-
-  // Debug logging for backwards compatibility
-  if (!window.gameState && window.enemy && window.enemy.isDying) {
-    console.log('[RENDER] Enemy dying status (legacy):', {
-      enemyExists: window.enemy !== null,
-      isDying: window.enemy.isDying,
-      deathTimer: window.enemy.deathTimer,
-      defeatHandled: window.enemy.defeatHandled,
-      visible: window.enemy.visible,
-      entitiesCount: entities.length,
-      enemyInEntities: entities.includes(window.enemy)
-    });
-  }
-
-  // Sort entities by Z-order (effective Y position) for proper rendering
-  return entities.sort((a, b) => (a.y - a.z) - (b.y - b.z));
-}
-
-// ===========================================
-// ENEMY STATUS LOGIC - moved from render.js
-// ===========================================
-
-// Get enemy health status and color (game logic that was in render.js)
-function getEnemyHealthStatus(entity) {
-  if (!entity.enemyData) return null;
-
-  const healthPercent = entity.maxHealth > 0 ? (entity.health / entity.maxHealth) * 100 : 0;
-  const healthStatus = entity.health <= 0 ? '[Мъртъв]' :
-    healthPercent > 60 ? '[Жив]' :
-      healthPercent > 30 ? '[Ранен]' : '[Критично]';
-
-  // Color based on health
-  const healthColor = entity.health <= 0 ? '#FF0000' :  // Dead - red
-    healthPercent > 60 ? '#00FF00' :   // Healthy - green
-      healthPercent > 30 ? '#FFFF00' :   // Wounded - yellow
-        '#FF8800'; // Critical - orange
-
-  return { healthStatus, healthColor, healthPercent };
-}
 
 
 

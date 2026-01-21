@@ -26,7 +26,7 @@ function render() {
   ctx.stroke();
 
   // Get sorted entities using game logic (moved from render.js to game.js)
-  const entities = getSortedEntitiesForRendering();
+  const entities = getSortedEntitiesForRendering(window.gameState, window.players, window.enemy, window.ally);
 
   // Render ALL entities in correct Z-order using centralized AnimationRenderer
   if (window.animationSystem?.renderer) {
@@ -279,3 +279,60 @@ function renderDebugLabels(entity, index) {
   ctx.fillText(`Z:${entity.z.toFixed(1)} EffY:${effectiveY.toFixed(1)} Order:${index + 1}`,
     entity.x, entity.y - entity.h - entity.z + 80);
 }
+
+// ===========================================
+// PHASE 7: ENTITY SORTING LOGIC - moved from game.js
+// ===========================================
+
+// Get sorted entities for rendering (game logic that was in game.js)
+function getSortedEntitiesForRendering(gameState, players, enemy, ally) {
+  // Get all entities from game state or fallback to legacy system
+  const entities = gameState ? gameState.getAllEntities() :
+    [...players, enemy, ally].filter(e => e !== null && e !== undefined);
+
+  // Debug logging for backwards compatibility
+  if (!gameState && enemy && enemy.isDying) {
+    console.log('[RENDER] Enemy dying status (legacy):', {
+      enemyExists: enemy !== null,
+      isDying: enemy.isDying,
+      deathTimer: enemy.deathTimer,
+      defeatHandled: enemy.defeatHandled,
+      visible: enemy.visible,
+      entitiesCount: entities.length,
+      enemyInEntities: entities.includes(enemy)
+    });
+  }
+
+  // Sort entities by Z-order (effective Y position) for proper rendering
+  return entities.sort((a, b) => (a.y - a.z) - (b.y - b.z));
+}
+
+// ===========================================
+// PHASE 7: ENEMY STATUS LOGIC - moved from game.js
+// ===========================================
+
+// Get enemy health status and color (game logic that was in game.js)
+function getEnemyHealthStatus(entity) {
+  if (!entity.enemyData) return null;
+
+  const healthPercent = entity.maxHealth > 0 ? (entity.health / entity.maxHealth) * 100 : 0;
+  const healthStatus = entity.health <= 0 ? '[Мъртъв]' :
+    healthPercent > 60 ? '[Жив]' :
+      healthPercent > 30 ? '[Ранен]' : '[Критично]';
+
+  // Color based on health
+  const healthColor = entity.health <= 0 ? '#FF0000' :  // Dead - red
+    healthPercent > 60 ? '#00FF00' :   // Healthy - green
+      healthPercent > 30 ? '#FFFF00' :   // Wounded - yellow
+        '#FF8800'; // Critical - orange
+
+  return { healthStatus, healthColor, healthPercent };
+}
+
+// ===========================================
+// PHASE 7: GLOBAL EXPORTS
+// ===========================================
+
+// Export functions globally for backwards compatibility
+window.getSortedEntitiesForRendering = getSortedEntitiesForRendering;
+window.getEnemyHealthStatus = getEnemyHealthStatus;

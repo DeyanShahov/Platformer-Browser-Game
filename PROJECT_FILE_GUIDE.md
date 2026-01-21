@@ -10,6 +10,52 @@ This comprehensive guide documents every file in the Platformer Browser Game pro
 
 ## 🏗️ RECENT ARCHITECTURAL CHANGES (January 2026)
 
+### Game.js Refactoring - Phase 7: Extend render.js with Entity Sorting & Status Logic - COMPLETED ✅ **[ARCHITECTURAL REFACTORING]**
+**Moved entity sorting and enemy health status functions from game.js to render.js for better separation of rendering concerns**
+
+#### Problem Solved:
+- **Before:** Entity sorting logic (`getSortedEntitiesForRendering`) and enemy health status calculation (`getEnemyHealthStatus`) were in game.js
+- **Issue:** Rendering logic mixed with core game mechanics, poor separation of concerns, tight coupling between game state and rendering
+- **Impact:** Hard to modify rendering logic without affecting game mechanics, unclear responsibilities, code organization issues
+
+#### Solution Implemented:
+- **Entity Sorting Migration:** Moved `getSortedEntitiesForRendering()` from game.js to render.js with parameter-based design
+- **Enemy Status Migration:** Moved `getEnemyHealthStatus()` from game.js to render.js (no signature changes needed)
+- **Parameter Injection:** Updated `getSortedEntitiesForRendering` to accept game state parameters instead of accessing globals
+- **Global Exports:** Added global exports for backward compatibility
+- **Zero Functional Changes:** Identical behavior before/after refactoring
+
+#### Key Changes:
+1. **`render.js`**: Added `getSortedEntitiesForRendering(gameState, players, enemy, ally)` and `getEnemyHealthStatus(entity)`
+2. **`render.js`**: Updated function call to pass parameters: `getSortedEntitiesForRendering(window.gameState, window.players, window.enemy, window.ally)`
+3. **`render.js`**: Added global exports: `window.getSortedEntitiesForRendering`, `window.getEnemyHealthStatus`
+4. **`game.js`**: Removed moved functions and associated comments
+
+#### Technical Implementation:
+- **Parameter-Based Design:** Functions accept dependencies via parameters, not global access
+- **Rendering Logic Consolidation:** Entity sorting and status display now in rendering system
+- **Backward Compatibility:** Global exports maintain existing call sites
+- **Clean Separation:** Rendering concerns separated from game mechanics
+
+#### Benefits Achieved:
+- **Better Separation of Concerns:** Rendering logic in render.js, game mechanics in game.js
+- **Improved Maintainability:** Rendering changes don't affect game logic
+- **Cleaner Architecture:** Clear distinction between game state and visual representation
+- **Easier Testing:** Rendering functions can be tested independently
+- **Code Organization:** Related functionality grouped together
+
+#### Files Affected:
+- `render.js` - Added entity sorting and enemy status functions (+80 lines)
+- `game.js` - Removed moved functions (-80 lines)
+- `PROJECT_FILE_GUIDE.md` - Documentation update
+
+#### Architectural Benefits Achieved:
+- **System Organization:** Rendering logic properly separated from game mechanics
+- **Maintainability:** Changes to visual representation don't affect gameplay
+- **Testability:** Rendering functions isolated for independent testing
+- **Clean Architecture:** Clear boundaries between game state and presentation
+- **Zero Breaking Changes:** Identical functionality with improved organization
+
 ### Level Transition System Overhaul - COMPLETED ✅ **[CRITICAL FIX]**
 **Fixed visual flashes during level transitions with game pause system and streamlined state management**
 
@@ -1047,7 +1093,7 @@ Platformer Browser Game/
 **Dependencies:** None (fundamental constants)
 **Integration Points:** Imported by most game systems
 
-### `render.js` - UI Rendering Coordinator **[RECENTLY REFACTORED]**
+### `render.js` - UI Rendering Coordinator **[PHASE 7 EXPANSION - ENTITY SORTING & STATUS LOGIC]**
 **Purpose:** Orchestrates UI rendering and coordinates game rendering pipeline
 **Responsibilities:**
 - Canvas clearing and debug visualization (Z-lines)
