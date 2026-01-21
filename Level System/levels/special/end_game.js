@@ -129,27 +129,4 @@ const END_GAME_CONFIG = {
 // EXPORTS & REGISTRATION
 // =========================
 
-// Export for global scope
-if (typeof window !== 'undefined') {
-    window.END_GAME_CONFIG = END_GAME_CONFIG;
-
-    // Deferred auto-registration with LevelRegistry
-    function registerEndGameLevel() {
-        if (window.LevelRegistry && window.LevelData) {
-            try {
-                window.LevelRegistry.getInstance().registerLevel(new window.LevelData(END_GAME_CONFIG));
-                console.log('[LevelRegistration] Auto-registered end_game');
-            } catch (error) {
-                console.warn('[LevelRegistration] Failed to auto-register end_game:', error);
-                // Retry after a short delay
-                setTimeout(registerEndGameLevel, 50);
-            }
-        } else {
-            // LevelRegistry not ready yet, retry
-            setTimeout(registerEndGameLevel, 10);
-        }
-    }
-
-    // Start registration attempt
-    registerEndGameLevel();
-}
+registerLevelConfig(END_GAME_CONFIG);

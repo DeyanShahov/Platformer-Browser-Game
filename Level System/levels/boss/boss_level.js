@@ -126,27 +126,4 @@ const BOSS_LEVEL_CONFIG = {
 // EXPORTS & REGISTRATION
 // =========================
 
-// Export for global scope
-if (typeof window !== 'undefined') {
-    window.BOSS_LEVEL_CONFIG = BOSS_LEVEL_CONFIG;
-
-    // Deferred auto-registration with LevelRegistry
-    function registerBossLevel() {
-        if (window.LevelRegistry && window.LevelData) {
-            try {
-                window.LevelRegistry.getInstance().registerLevel(new window.LevelData(BOSS_LEVEL_CONFIG));
-                console.log('[LevelRegistration] Auto-registered boss_level');
-            } catch (error) {
-                console.warn('[LevelRegistration] Failed to auto-register boss_level:', error);
-                // Retry after a short delay
-                setTimeout(registerBossLevel, 50);
-            }
-        } else {
-            // LevelRegistry not ready yet, retry
-            setTimeout(registerBossLevel, 10);
-        }
-    }
-
-    // Start registration attempt
-    registerBossLevel();
-}
+registerLevelConfig(BOSS_LEVEL_CONFIG);

@@ -114,27 +114,4 @@ const COMBAT_ROOM_1_CONFIG = {
 // EXPORTS & REGISTRATION
 // =========================
 
-// Export for global scope
-if (typeof window !== 'undefined') {
-    window.COMBAT_ROOM_1_CONFIG = COMBAT_ROOM_1_CONFIG;
-
-    // Deferred auto-registration with LevelRegistry
-    function registerCombatRoom1Level() {
-        if (window.LevelRegistry && window.LevelData) {
-            try {
-                window.LevelRegistry.getInstance().registerLevel(new window.LevelData(COMBAT_ROOM_1_CONFIG));
-                console.log('[LevelRegistration] Auto-registered combat_room_1');
-            } catch (error) {
-                console.warn('[LevelRegistration] Failed to auto-register combat_room_1:', error);
-                // Retry after a short delay
-                setTimeout(registerCombatRoom1Level, 50);
-            }
-        } else {
-            // LevelRegistry not ready yet, retry
-            setTimeout(registerCombatRoom1Level, 10);
-        }
-    }
-
-    // Start registration attempt
-    registerCombatRoom1Level();
-}
+registerLevelConfig(COMBAT_ROOM_1_CONFIG);

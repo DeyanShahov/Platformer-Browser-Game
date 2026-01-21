@@ -84,27 +84,4 @@ const TUTORIAL_1_CONFIG = {
 // EXPORTS & REGISTRATION
 // =========================
 
-// Export for global scope
-if (typeof window !== 'undefined') {
-    window.TUTORIAL_1_CONFIG = TUTORIAL_1_CONFIG;
-
-    // Deferred auto-registration with LevelRegistry
-    function registerTutorial1Level() {
-        if (window.LevelRegistry && window.LevelData) {
-            try {
-                window.LevelRegistry.getInstance().registerLevel(new window.LevelData(TUTORIAL_1_CONFIG));
-                console.log('[LevelRegistration] Auto-registered tutorial_1');
-            } catch (error) {
-                console.warn('[LevelRegistration] Failed to auto-register tutorial_1:', error);
-                // Retry after a short delay
-                setTimeout(registerTutorial1Level, 50);
-            }
-        } else {
-            // LevelRegistry not ready yet, retry
-            setTimeout(registerTutorial1Level, 10);
-        }
-    }
-
-    // Start registration attempt
-    registerTutorial1Level();
-}
+registerLevelConfig(TUTORIAL_1_CONFIG);
