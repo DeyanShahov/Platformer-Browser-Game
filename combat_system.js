@@ -740,6 +740,98 @@ window.enemyCombatManager = new EnemyCombatManager();
 window.damageNumberManager = new DamageNumberManager();
 window.combatAttributes = new CombatAttributes();
 
+// ===========================================
+// COMBAT HELPER FUNCTIONS - moved from game.js (PHASE 2)
+// ===========================================
+
+// Calculate hit box position using the same logic as AnimationRenderer - MOVED FROM game.js
+function calculateHitBoxPosition(entity, animationSystem) {
+  // Calculate Z-depth offset
+  const zOffset = entity.z * 1.0;
+
+  // Drawing position (same as AnimationRenderer)
+  const drawX = entity.x;
+  const drawY = entity.y - entity.h - zOffset;
+
+  // Try to use per-frame hit box data (same as AnimationRenderer)
+  if (entity.animation?.animationDefinition?.frameData) {
+    const currentFrame = entity.animation.currentFrame;
+    const frameData = entity.animation.animationDefinition.frameData[currentFrame];
+    if (frameData?.hitBox) {
+      // Use per-frame hit box data
+      const hitBox = frameData.hitBox;
+
+      // Calculate hit box position (same logic as AnimationRenderer.calculateBoxPosition)
+      let boxX = drawX + hitBox.x;
+      let boxY;
+
+      // Different positioning for different entity types (same as AnimationRenderer)
+      if (entity.animationEntityType !== 'blue_slime') {
+        // SPRITE ENTITIES (players) - position relative to sprite coordinates
+        boxY = drawY + entity.h / 2 - hitBox.y;
+      } else {
+        // RECTANGLE ENTITIES (Blue Slime) - position at bottom
+        boxY = drawY + entity.h - hitBox.height;
+      }
+
+      return {
+        x: boxX,
+        y: boxY,
+        width: hitBox.width,
+        height: hitBox.height
+      };
+    }
+  }
+
+  // Fallback to standard collision dimensions if no animation data
+  return {
+    x: drawX,
+    y: drawY + entity.h - (entity.collisionH || entity.h),
+    width: entity.collisionW || entity.w,
+    height: entity.collisionH || entity.h
+  };
+}
+
+// Centralized damage number positioning function - now uses hit box coordinates - MOVED FROM game.js
+function addDamageNumberToTarget(attacker, target, damage, isCritical = false, damageNumberManager) {
+  // Get hit box position using the same calculation as collision system
+  const hitBoxPos = calculateHitBoxPosition(target, window.animationSystem);
+
+  // Position damage number above the top of the hit box, centered horizontally
+  const damageX = hitBoxPos.x + hitBoxPos.width / 2;  // Center of hit box
+  const damageY = hitBoxPos.y - 15;                   // 15px above top of hit box
+
+  // Debug logging
+  console.log(`[DAMAGE_NUMBER] Target: ${target.entityType}, HitBox: x=${hitBoxPos.x.toFixed(1)}, y=${hitBoxPos.y.toFixed(1)}, w=${hitBoxPos.width}, h=${hitBoxPos.height}`);
+  console.log(`[DAMAGE_NUMBER] Damage position: x=${damageX.toFixed(1)}, y=${damageY.toFixed(1)}, damage=${damage}, critical=${isCritical}`);
+
+  // Use the damage number manager parameter
+  if (damageNumberManager) {
+    damageNumberManager.addDamageNumber(damageX, damageY, damage, isCritical);
+  } else {
+    console.warn('[COMBAT] No damageNumberManager provided for damage number');
+  }
+}
+
+// ===========================================
+// SKILL TYPE MAPPING - moved from game.js (PHASE 2)
+// ===========================================
+
+// Map enemy animation attack types to combat skill types - MOVED FROM game.js
+function getCombatSkillType(enemyAttackType) {
+  switch (enemyAttackType) {
+    case 'ATTACK_1':
+      return 'basic_attack_light'; // Use player's basic attack for damage calculation
+    case 'ATTACK_2':
+      return 'secondary_attack_light';
+    case 'ATTACK_3':
+    case 'RUN_ATTACK':
+      return 'basic_attack_medium';
+    default:
+      return 'basic_attack_light'; // Default fallback
+  }
+}
+
 // Export functions and classes
 window.canPlayerPerformSkill = canPlayerPerformSkill;
 window.CombatCalculator = CombatCalculator;
@@ -747,3 +839,8 @@ window.CombatResolver = CombatResolver;
 window.EnemyCombatManager = EnemyCombatManager;
 window.DamageNumberManager = DamageNumberManager;
 window.CombatAttributes = CombatAttributes;
+
+// Export moved helper functions
+window.calculateHitBoxPosition = calculateHitBoxPosition;
+window.addDamageNumberToTarget = addDamageNumberToTarget;
+window.getCombatSkillType = getCombatSkillType;

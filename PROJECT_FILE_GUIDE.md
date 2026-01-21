@@ -1051,8 +1051,8 @@ Platformer Browser Game/
 
 ## ⚔️ COMBAT SYSTEMS
 
-### `combat_system.js` - Unified Combat Resolution Engine **[RECENTLY UNIFIED]**
-**Purpose:** Single combat system for all entities (players and enemies) - handles all damage calculations and resolution
+### `combat_system.js` - Unified Combat Resolution Engine **[PHASES 1 & 2 COMPLETED]**
+**Purpose:** Single combat system for all entities (players and enemies) - handles all damage calculations, resolution, and helper functions
 **Responsibilities:**
 - Unified attack/defense calculations for all entity types
 - Critical hit determination and damage mitigation
@@ -1061,20 +1061,29 @@ Platformer Browser Game/
 - Skill-based damage modifiers through skill tree integration
 - Combat event processing and damage application
 - Death sequence handling and experience rewards
+- **Combat helper functions and utilities** **[MOVED FROM game.js - PHASE 2]**
+- **Hit box calculations and damage positioning** **[MOVED FROM game.js - PHASE 2]**
+- **Enemy attack type mapping and skill resolution** **[MOVED FROM game.js - PHASE 2]**
 **Key Functions:**
 - `resolveAttack(attacker, defender, skillType)` - Full combat resolution with resource consumption
 - `resolveAttackNoResourceCheck(attacker, defender, skillType)` - Combat without resource checks (for enemies)
 - `calculateDamage(attacker, defender, skillType)` - Unified damage computation with skill modifiers
 - `calculateAttackPower(attacker, skillType)` - Attack power with entity type branching (player vs enemy)
 - `applyDamage(defender, damage)` - Damage application and hit feedback
+- **Combat Helper Functions [PHASE 2]:**
+  - `calculateHitBoxPosition(entity, animationSystem)` - Hit box calculations with animation system
+  - `addDamageNumberToTarget(attacker, target, damage, isCritical, damageNumberManager)` - Damage visual feedback
+  - `getCombatSkillType(enemyAttackType)` - Enemy attack type mapping ('ATTACK_1' → 'basic_attack_light')
 **Key Features:**
 - **Entity Type Branching:** Different logic for players (with resources) vs enemies (no resources)
 - **Skill Tree Integration:** All attacks use skill tree parameters for consistent balance
 - **Resource Abstraction:** Clean separation between combat calculation and resource management
 - **Unified Pipeline:** Single damage calculation system eliminates code duplication
-**Dependencies:** `character_info.js`, `entities.js`, `game_state.js`
+- **Combat Utilities:** Hit box calculations, damage positioning, and attack type mapping **[PHASE 2]**
+**Dependencies:** `character_info.js`, `entities.js`, `game_state.js`, `window.animationSystem`, `window.damageNumberManager`
 **Integration Points:** Core combat system called by all attack interactions
-**Note:** Recent unification (Jan 2026) eliminated separate enemy damage logic, now all entities use this unified system
+**Global Exports:** `window.calculateHitBoxPosition`, `window.addDamageNumberToTarget`, `window.getCombatSkillType` **[PHASE 2]**
+**Note:** Recent unification (Jan 2026) eliminated separate enemy damage logic; Phase 2 added combat helper functions from game.js
 
 ### `skills.js` - Skill Progression & Implementation **[RECENTLY REFACTORED]**
 **Purpose:** Contains skill progression systems and individual skill implementations
@@ -1394,12 +1403,15 @@ Platformer Browser Game/
 
 ## 🎨 UI & INTERFACE SYSTEMS
 
-### `ui.js` - UI Rendering & Display **[RECENTLY REFACTORED]**
-**Purpose:** Core UI rendering and display management
+### `ui.js` - UI Rendering & Character Selection **[PHASES 1 & 2 COMPLETED]**
+**Purpose:** Core UI rendering, display management, and character selection system
 **Responsibilities:**
 - UI state management and coordination
 - Component coordination
 - Input handling for UI
+- Character selection logic and state management **[MOVED FROM game.js - PHASE 1]**
+- Player joining/leaving mechanics **[MOVED FROM game.js - PHASE 1]**
+- Character navigation and confirmation **[MOVED FROM game.js - PHASE 1]**
 - Accessibility features
 **Key Functions:**
 - `initUI()` - UI initialization
@@ -1407,9 +1419,26 @@ Platformer Browser Game/
 - `renderUI()` - UI drawing
 - `renderPlayerPortraits()` - Character selection display **[MOVED HERE]**
 - `renderCharacterStatusUI()` - Status overlays **[MOVED HERE]**
-**Dependencies:** `render.js`
-**Integration Points:** Main UI coordinator
-**Note:** Game initialization logic moved to `game.js`
+- **Character Selection Functions [PHASE 1]:**
+  - `updatePlayerDetection(detectedPlayersRef)` - Device detection with parameter
+  - `updatePlayerStatus(activePlayers, detectedPlayers)` - Player status display
+  - `joinPlayer(playerId, activePlayers, playerSelections, detectedPlayersRef)` - Player joining
+  - `removePlayer(playerId, activePlayers, playerSelections, confirmedSelections)` - Player removal
+  - `assignFirstAvailableCharacter(playerId, characters, playerSelections)` - Auto-assignment
+  - `selectCharacter(playerId, direction, characters, playerSelections, confirmedSelections)` - Navigation
+  - `confirmSelection(playerId, playerSelections, confirmedSelections)` - Selection confirmation
+  - `updateSelectionUI(charId, playerSelections)` - UI indicator updates
+  - `updateStartButton(activePlayers, confirmedSelections)` - Start button state
+  - `isCharacterTaken(charId, excludePlayerId, playerSelections)` - Character availability
+**Key State Variables [PHASE 1]:**
+- `playerSelections` - Temporary character selections
+- `confirmedSelections` - Confirmed character choices
+- `activePlayers` - Set of joined players
+- `detectedPlayers` - Device count tracking
+**Dependencies:** `render.js`, `constants.js`, `window.characters`
+**Integration Points:** Main UI coordinator, character selection system
+**Global Exports:** `window.UISystem` - All functions and state variables
+**Note:** Character selection system moved from `game.js` (Phase 1), uses parameter-passing for clean architecture
 
 ### `menu.js` - Menu System **[RECENTLY REFACTORED]**
 **Purpose:** Game menus and navigation with state management

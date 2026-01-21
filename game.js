@@ -2,10 +2,11 @@
 // GLOBAL DECLARATIONS - Available immediately when file loads
 // ===========================================
 
-let playerSelections = {}; // Temporary selections
-let confirmedSelections = {}; // Confirmed/final selections
-let activePlayers = new Set(); // Track which players have joined
-let detectedPlayers = 1; // Keyboard always available
+// CHARACTER SELECTION SYSTEM MOVED TO ui.js (PHASE 1)
+// let playerSelections = {}; // Temporary selections - MOVED TO ui.js
+// let confirmedSelections = {}; // Confirmed/final selections - MOVED TO ui.js
+// let activePlayers = new Set(); // Track which players have joined - MOVED TO ui.js
+// let detectedPlayers = 1; // Keyboard always available - MOVED TO ui.js
 
 // Separate game state string from GameState instance
 window.gameStateString = 'start'; // 'start', 'playing'
@@ -23,231 +24,41 @@ const characters = [
 
 // Make globally available immediately
 window.characters = characters;
-window.activePlayers = activePlayers;
-window.playerSelections = playerSelections;
-window.confirmedSelections = confirmedSelections;
+// CHARACTER SELECTION SYSTEM MOVED TO ui.js (PHASE 1)
+// window.activePlayers = activePlayers;     // MOVED TO ui.js
+// window.playerSelections = playerSelections; // MOVED TO ui.js
+// window.confirmedSelections = confirmedSelections; // MOVED TO ui.js
 
 // Game logic and loop
 
-function updatePlayerDetection() {
-  const gamepads = navigator.getGamepads();
-  let controllerCount = 0;
-  for (let i = 0; i < gamepads.length; i++) {
-    if (gamepads[i]) controllerCount++;
-  }
-  detectedPlayers = 1 + controllerCount; // Keyboard + controllers
-
-  // Update status with joined players info
-  updatePlayerStatus();
-}
-
-function updatePlayerStatus() {
-  const statusEl = document.getElementById('playerStatus');
-  const joinedPlayers = Array.from(activePlayers).sort();
-
-  if (joinedPlayers.length === 0) {
-    // No players joined yet - show join instructions
-    statusEl.textContent = 'Press 1-4 to join as Player X';
-  } else {
-    // Show joined players and device detection
-    const joinedText = `Players joined: ${joinedPlayers.join(', ')}`;
-    const deviceText = detectedPlayers > 1 ? ` | ${detectedPlayers} devices detected` : '';
-    statusEl.textContent = joinedText + deviceText;
-  }
-}
-
-function joinPlayer(playerId) {
-  //console.log(`[DEBUG] joinPlayer(${playerId}) called`);
-  if (!activePlayers.has(playerId)) {
-    //console.log(`[DEBUG] Adding player ${playerId} to activePlayers`);
-    activePlayers.add(playerId);
-    //console.log(`Player ${playerId} joined!`);
-
-    // Auto-assign first available character
-    assignFirstAvailableCharacter(playerId);
-
-    // Auto-confirm for Players 3 & 4 (console testing only)
-    if (playerId >= 3) {
-      confirmSelection(playerId);
-    }
-
-    updatePlayerStatus();
-
-    // Reset start button state - new player needs to confirm selection
-    updateStartButton();
-  } else {
-    //console.log(`[DEBUG] Player ${playerId} already active`);
-  }
-}
-
-function removePlayer(playerId) {
-  if (activePlayers.has(playerId)) {
-    activePlayers.delete(playerId);
-
-    // Clean up selections for this player
-    for (let charId in playerSelections) {
-      if (playerSelections[charId] === playerId) {
-        delete playerSelections[charId];
-        updateSelectionUI(charId);
-      }
-    }
-
-    for (let charId in confirmedSelections) {
-      if (confirmedSelections[charId] === playerId) {
-        delete confirmedSelections[charId];
-        updateSelectionUI(charId);
-      }
-    }
-
-    updatePlayerStatus();
-    updateStartButton();
-
-    //console.log(`Player ${playerId} removed!`);
-  }
-}
-
-function assignFirstAvailableCharacter(playerId) {
-  // Find first available character (not taken by any player)
-  for (let i = 0; i < window.characters.length; i++) {
-    const char = window.characters[i];
-    if (!isCharacterTaken(char.id, null)) { // null = check if taken by anyone
-      playerSelections[char.id] = playerId;
-      updateSelectionUI(char.id);
-      //console.log(`Player ${playerId} auto-assigned to ${char.name}`);
-      break;
-    }
-  }
-}
-
-function selectCharacter(playerId, direction) {
-  // Find current selection for this player
-  let currentIndex = -1;
-  for (let charId in playerSelections) {
-    if (playerSelections[charId] === playerId) {
-      currentIndex = window.characters.findIndex(c => c.id === charId);
-      break;
-    }
-  }
-
-  // Calculate new index (skip taken characters)
-  let attempts = 0;
-  let newIndex = currentIndex;
-
-  do {
-    if (direction === 'next') {
-      newIndex = (newIndex + 1) % window.characters.length;
-    } else if (direction === 'previous') {
-      newIndex = newIndex <= 0 ? window.characters.length - 1 : newIndex - 1;
-    }
-    attempts++;
-  } while (isCharacterTaken(window.characters[newIndex].id, playerId) && attempts < window.characters.length);
-
-  // If we couldn't find an available character, don't change selection
-  if (isCharacterTaken(window.characters[newIndex].id, playerId)) {
-    return;
-  }
-
-  // Clear previous selection and confirmed selection for this player
-  for (let charId in playerSelections) {
-    if (playerSelections[charId] === playerId) {
-      delete playerSelections[charId];
-      updateSelectionUI(charId);
-    }
-  }
-
-  // Remove any confirmed selections for this player (they must reconfirm)
-  for (let charId in confirmedSelections) {
-    if (confirmedSelections[charId] === playerId) {
-      delete confirmedSelections[charId];
-      // Update UI for the old confirmed character
-      updateSelectionUI(charId);
-      //console.log(`Player ${playerId} changed selection, removed confirmed choice`);
-      break; // Should only have one confirmed selection per player
-    }
-  }
-
-  // Set new selection (temporarily highlight)
-  const newChar = window.characters[newIndex];
-  playerSelections[newChar.id] = playerId;
-  updateSelectionUI(newChar.id);
-
-  // Update start button since confirmed selections may have changed
-  updateStartButton();
-}
-
-function isCharacterTaken(charId, excludePlayerId) {
-  // Check if character is selected by another player
-  for (let selectedCharId in playerSelections) {
-    if (selectedCharId === charId && playerSelections[selectedCharId] !== excludePlayerId) {
-      return true;
-    }
-  }
-  return false;
-}
-
-function confirmSelection(playerId) {
-  // Find if player has a selection
-  let selectedChar = null;
-  for (let charId in playerSelections) {
-    if (playerSelections[charId] === playerId) {
-      selectedChar = charId;
-      break;
-    }
-  }
-
-  if (selectedChar) {
-    // Move from temporary to confirmed selections
-    confirmedSelections[selectedChar] = playerId;
-
-    // Mark as confirmed (permanent)
-    const indicator = document.getElementById(`selection-${selectedChar}`);
-    if (indicator) {
-      indicator.textContent = `Player ${playerId}`;
-      indicator.classList.add('confirmed');
-    }
-
-    //console.log(`Player ${playerId} confirmed selection of ${window.characters.find(c => c.id === selectedChar).name}`);
-
-    // Check if we can start the game
-    updateStartButton();
-  }
-}
-
-function updateSelectionUI(charId) {
-  const indicator = document.getElementById(`selection-${charId}`);
-  if (indicator) {
-    const playerId = playerSelections[charId];
-    if (playerId) {
-      indicator.textContent = `P${playerId}`;
-      indicator.classList.remove('confirmed');
-    } else {
-      indicator.textContent = '';
-    }
-  }
-}
-
-function updateStartButton() {
-  const startBtn = document.getElementById('startGameBtn');
-
-  // Check if all joined players have confirmed their selections
-  const joinedPlayers = Array.from(activePlayers);
-  const allConfirmed = joinedPlayers.every(playerId => {
-    // Check if this player has a confirmed selection
-    return Object.values(confirmedSelections).includes(playerId);
-  });
-
-  const hasSelections = Object.keys(confirmedSelections).length > 0;
-
-  if (joinedPlayers.length === 1) {
-    // Single player - just needs any selection
-    startBtn.disabled = !hasSelections;
-    startBtn.textContent = hasSelections ? 'Start Game' : 'Select Character First';
-  } else {
-    // Multiple players - all must confirm
-    startBtn.disabled = !allConfirmed;
-    startBtn.textContent = allConfirmed ? 'Start Game' : 'All Players Must Confirm Selection';
-  }
-}
+// ===========================================
+// CHARACTER SELECTION SYSTEM MOVED TO ui.js (PHASE 1)
+// ===========================================
+// All character selection functions and variables have been moved to ui.js
+// with proper parameter passing to maintain functionality
+//
+// MOVED FUNCTIONS (now in ui.js):
+// - updatePlayerDetection(detectedPlayersRef)
+// - updatePlayerStatus(activePlayers, detectedPlayers)
+// - joinPlayer(playerId, activePlayers, playerSelections, detectedPlayersRef)
+// - removePlayer(playerId, activePlayers, playerSelections, confirmedSelections)
+// - assignFirstAvailableCharacter(playerId, characters, playerSelections)
+// - selectCharacter(playerId, direction, characters, playerSelections, confirmedSelections)
+// - isCharacterTaken(charId, excludePlayerId, playerSelections)
+// - confirmSelection(playerId, playerSelections, confirmedSelections)
+// - updateSelectionUI(charId, playerSelections)
+// - updateStartButton(activePlayers, confirmedSelections)
+//
+// MOVED VARIABLES (now in ui.js):
+// - playerSelections
+// - confirmedSelections
+// - activePlayers
+// - detectedPlayers
+//
+// CALL SITE UPDATES (in ui.js):
+// - All window.functionName() calls updated to window.UISystem.functionName()
+// - All calls now pass required parameters explicitly
+// - State is passed via references and collections
 
 // Player class - moved from entities.js
 class Player {
@@ -409,69 +220,11 @@ class Player {
 // Global variables for skill tree timing
 let lastSkillTreeToggleTime = 0; // Timestamp to prevent rapid toggling
 
-// Calculate hit box position using the same logic as AnimationRenderer
-function calculateHitBoxPosition(entity) {
-  // Calculate Z-depth offset
-  const zOffset = entity.z * 1.0;
-
-  // Drawing position (same as AnimationRenderer)
-  const drawX = entity.x;
-  const drawY = entity.y - entity.h - zOffset;
-
-  // Try to use per-frame hit box data (same as AnimationRenderer)
-  if (entity.animation?.animationDefinition?.frameData) {
-    const currentFrame = entity.animation.currentFrame;
-    const frameData = entity.animation.animationDefinition.frameData[currentFrame];
-    if (frameData?.hitBox) {
-      // Use per-frame hit box data
-      const hitBox = frameData.hitBox;
-
-      // Calculate hit box position (same logic as AnimationRenderer.calculateBoxPosition)
-      let boxX = drawX + hitBox.x;
-      let boxY;
-
-      // Different positioning for different entity types (same as AnimationRenderer)
-      if (entity.animationEntityType !== 'blue_slime') {
-        // SPRITE ENTITIES (players) - position relative to sprite coordinates
-        boxY = drawY + entity.h / 2 - hitBox.y;
-      } else {
-        // RECTANGLE ENTITIES (Blue Slime) - position at bottom
-        boxY = drawY + entity.h - hitBox.height;
-      }
-
-      return {
-        x: boxX,
-        y: boxY,
-        width: hitBox.width,
-        height: hitBox.height
-      };
-    }
-  }
-
-  // Fallback to standard collision dimensions if no animation data
-  return {
-    x: drawX,
-    y: drawY + entity.h - (entity.collisionH || entity.h),
-    width: entity.collisionW || entity.w,
-    height: entity.collisionH || entity.h
-  };
-}
-
-// Centralized damage number positioning function - now uses hit box coordinates
-function addDamageNumberToTarget(attacker, target, damage, isCritical = false) {
-  // Get hit box position using the same calculation as collision system
-  const hitBoxPos = calculateHitBoxPosition(target);
-
-  // Position damage number above the top of the hit box, centered horizontally
-  const damageX = hitBoxPos.x + hitBoxPos.width / 2;  // Center of hit box
-  const damageY = hitBoxPos.y - 15;                   // 15px above top of hit box
-
-  // Debug logging
-  console.log(`[DAMAGE_NUMBER] Target: ${target.entityType}, HitBox: x=${hitBoxPos.x.toFixed(1)}, y=${hitBoxPos.y.toFixed(1)}, w=${hitBoxPos.width}, h=${hitBoxPos.height}`);
-  console.log(`[DAMAGE_NUMBER] Damage position: x=${damageX.toFixed(1)}, y=${damageY.toFixed(1)}, damage=${damage}, critical=${isCritical}`);
-
-  window.damageNumberManager.addDamageNumber(damageX, damageY, damage, isCritical);
-}
+// ===========================================
+// COMBAT HELPER FUNCTIONS - MOVED TO combat_system.js (PHASE 2)
+// ===========================================
+// calculateHitBoxPosition(entity, animationSystem) - MOVED TO combat_system.js
+// addDamageNumberToTarget(attacker, target, damage, isCritical, damageNumberManager) - MOVED TO combat_system.js
 
 function updatePlayer(player, playerIndex, dt) {
   //console.log('[UPDATE_PLAYER] Called with player:', player, 'index:', playerIndex, 'type:', typeof player);
@@ -535,7 +288,7 @@ function updatePlayer(player, playerIndex, dt) {
           if (combatEvent && combatEvent.actualDamage > 0) {
             //console.log(`[ATTACK] Applying ${combatEvent.actualDamage} damage`);
             // Damage numbers appear centered above the target (enemy)
-            addDamageNumberToTarget(player, enemy, combatEvent.actualDamage, combatEvent.damageResult.isCritical);
+            window.addDamageNumberToTarget(player, enemy, combatEvent.actualDamage, combatEvent.damageResult.isCritical, window.damageNumberManager);
           } else {
             //console.log(`[ATTACK] No damage applied - combat event:`, combatEvent);
           }
@@ -632,7 +385,7 @@ function updatePlayer(player, playerIndex, dt) {
         // Add damage number for visual feedback
         if (combatEvent && combatEvent.actualDamage > 0) {
           // Damage numbers appear centered above the target (player)
-          addDamageNumberToTarget(enemy, player, combatEvent.actualDamage, combatEvent.damageResult.isCritical);
+          window.addDamageNumberToTarget(enemy, player, combatEvent.actualDamage, combatEvent.damageResult.isCritical, window.damageNumberManager);
         }
 
         // Set damageDealt flag to prevent multiple damage per attack (unified with player system)
@@ -1561,14 +1314,14 @@ function initGameWithSelections() {
     //console.log('[GAME] window.players cleared and set to:', window.players);
 
     // Create players based on confirmed selections (sorted by player ID for consistent ordering)
-    const selectedChars = Object.keys(window.playerSelections).sort((a, b) =>
-      window.playerSelections[a] - window.playerSelections[b]
+    const selectedChars = Object.keys(window.UISystem.playerSelections).sort((a, b) =>
+      window.UISystem.playerSelections[a] - window.UISystem.playerSelections[b]
     );
     //console.log('[GAME] Creating players for selectedChars:', selectedChars);
 
     selectedChars.forEach((charId, index) => {
       const char = window.characters.find(c => c.id === charId);
-      const playerId = window.playerSelections[charId];
+      const playerId = window.UISystem.playerSelections[charId];
       const playerKey = `player${playerId}`;
 
       //console.log(`[GAME] Creating player ${playerId} with key ${playerKey}, controls exist:`, !!window.controls[playerKey]);
@@ -1616,48 +1369,6 @@ function initGameWithSelections() {
       }
     });
 
-
-
-    //console.log('[GAME] Final game state debug:', window.gameState.getDebugInfo());
-
-    // LEGACY ENEMY CREATION CODE - COMMENTED OUT
-    // Now enemies are spawned through the level system
-    /*
-    // Create enemies using the new enemy data system
-    // Create enemies using the new enemy data system
-    // TEST: Adding 3 extra enemies for verification (Total 4)
-    const enemyConfigs = [
-      { x: 250, z: 0 },   // Original
-      // { x: 300, z: -100 }, // Left, back
-      // { x: 600, z: 100 },  // Right, front
-      // { x: 800, z: 30 },   // Far right, middle
-      // { x: 300, z: -140 }, // Left, back
-      // { x: 500, z: 170 },
-      // { x: 700, z: -170 }, // Left, back
-      // { x: 800, z: 200 },
-      // { x: 100, z: -200 }, // Left, back
-      // { x: 200, z: -350 },
-    ];
-
-    enemyConfigs.forEach((config, index) => {
-      const scaleFactor = CANVAS_WIDTH / 900;
-      const blueSlime = createBlueSlime(config.x * scaleFactor, Math.max(200, CANVAS_HEIGHT - 600), config.z, 1);
-
-      window.gameState.addEntity(blueSlime, 'enemy');
-      //console.log(`[GAME] Blue Slime ${index + 1} added to game state`);
-
-      // Register with animation system
-      if (window.animationSystem && window.animationSystem.isInitialized) {
-        const blueSlimeAnimation = window.animationSystem.registerEntity(blueSlime, 'blue_slime');
-
-        // Create FSM after animation registration
-        if (window.EnemyAnimationStateMachine) {
-          blueSlime.stateMachine = new window.EnemyAnimationStateMachine(blueSlime);
-        }
-      }
-    });
-    */
-
     // Initialize menu system
     if (window.initMenu) {
       window.initMenu();
@@ -1699,20 +1410,8 @@ function initGameWithSelections() {
 
 
 
-// Export start screen variables and functions for UI access
-window.characters = characters;
-window.activePlayers = activePlayers;
-window.playerSelections = playerSelections;
-window.updatePlayerDetection = updatePlayerDetection;
-window.joinPlayer = joinPlayer;
-window.removePlayer = removePlayer;
-window.selectCharacter = selectCharacter;
-window.confirmSelection = confirmSelection;
-window.updatePlayerStatus = updatePlayerStatus;
-window.updateSelectionUI = updateSelectionUI;
-window.updateStartButton = updateStartButton;
-window.isCharacterTaken = isCharacterTaken;
-window.initGameWithSelections = initGameWithSelections;
+// CHARACTER SELECTION SYSTEM EXPORTS MOVED TO ui.js (PHASE 1)
+// All exports now available through window.UISystem
 
 
 
