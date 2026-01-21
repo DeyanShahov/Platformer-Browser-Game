@@ -424,12 +424,8 @@ class CombatResolver {
     defeatedEnemy.blinkCount = 0;
     defeatedEnemy.visible = true;
 
-    // Award experience immediately
-    const experienceReward = 200; // 200 XP for enemy defeat
-    if (attacker.characterInfo) {
-      attacker.characterInfo.addExperience(experienceReward, attacker);
-      console.log(`[COMBAT] ${attacker.characterInfo.getDisplayName()} gained ${experienceReward} experience!`);
-    }
+    // Handle the full enemy defeat process (XP awarding, level completion, removal)
+    handleEnemyDefeat(attacker, defeatedEnemy, window.levelManager);
   }
 
   // Update enemy death sequence (called from game loop)
@@ -832,6 +828,122 @@ function getCombatSkillType(enemyAttackType) {
   }
 }
 
+// ===========================================
+// PHASE 8: ENEMY DEFEAT FUNCTIONS MOVED FROM game.js
+// ===========================================
+
+// Handle enemy defeat
+function handleEnemyDefeat(attacker, defeatedEnemy, levelManager) {
+  console.log(`[COMBAT] handleEnemyDefeat called with attacker:`, attacker, `defeatedEnemy:`, defeatedEnemy);
+
+  console.log(`[COMBAT] Enemy defeated! ${attacker ? `Awarding experience to ${attacker.characterInfo?.getDisplayName() || 'Player'}` : 'Experience already awarded'}`);
+
+  // Award experience to the attacker (only if attacker is provided)
+  if (attacker && attacker.characterInfo) {
+    const experienceReward = 200; // 200 XP for enemy defeat
+    attacker.characterInfo.addExperience(experienceReward, attacker);
+    console.log(`[COMBAT] ${attacker.characterInfo.getDisplayName()} gained ${experienceReward} experience!`);
+  }
+
+  // Update level manager completion status
+  if (levelManager) {
+    levelManager.completionStatus.defeatedEnemies = (levelManager.completionStatus.defeatedEnemies || 0) + 1;
+    console.log(`[COMPLETION] Enemy defeated! Total defeated: ${levelManager.completionStatus.defeatedEnemies}`);
+  }
+
+  // Remove enemy from the game world via game state
+  removeEnemyFromGame(defeatedEnemy, window.gameState, window.enemy);
+
+  // Trigger any post-defeat effects
+  onEnemyDefeated(attacker, defeatedEnemy);
+}
+
+// Remove enemy from the game
+function removeEnemyFromGame(defeatedEnemy, gameState, legacyEnemy) {
+  console.log(`[COMBAT] Removing enemy from game world...`);
+
+  // Remove from game state if available
+  if (gameState) {
+    const entityId = gameState.getEntityId(defeatedEnemy);
+    if (entityId) {
+      gameState.removeEntity(entityId);
+      console.log(`[COMBAT] Enemy removed from game state (ID: ${entityId})`);
+    }
+  } else {
+    // Fallback for backwards compatibility
+    if (legacyEnemy === defeatedEnemy) {
+      console.log(`[COMBAT] Setting window.enemy to null (legacy mode)`);
+      window.enemy = null;
+    }
+  }
+
+  console.log(`[COMBAT] Enemy removal complete`);
+}
+
+// Post-defeat effects and events
+function onEnemyDefeated(attacker, defeatedEnemy) {
+  // Future: trigger quest updates, loot drops, achievements, etc.
+  console.log(`[COMBAT] Enemy defeat processing complete`);
+
+  // LEGACY RESPAWN SYSTEM - COMMENTED OUT
+  // Now level system handles respawning through triggers
+  /*
+  // For now, trigger respawn after a short delay
+  setTimeout(() => {
+    respawnEnemy();
+  }, 2000); // 2 second delay before respawn
+  */
+}
+
+// Respawn enemy (for testing purposes)
+function respawnEnemy(gameState, enemy, createEnemyWithData, animationSystem, AnimationStateMachine) {
+  console.log(`[COMBAT] Checking respawn conditions...`);
+
+  // Check if we need to respawn (no enemies in game state or window.enemy is null)
+  const shouldRespawn = gameState ?
+    gameState.getEntitiesByType('enemy').length === 0 :
+    enemy === null;
+
+  if (shouldRespawn) {
+    console.log(`[COMBAT] Respawning enemy...`);
+
+    // Create new enemy
+    const newEnemy = createEnemyWithData('basic', 1);
+
+    // Register enemy with animation system (same as in main.js)
+    if (animationSystem && animationSystem.isInitialized) {
+      const enemyAnimation = animationSystem.registerEntity(newEnemy, 'enemy');
+      console.log(`[COMBAT RESPAWN] Enemy registered with animation system:`, enemyAnimation ? 'SUCCESS' : 'FAILED');
+
+      // Initialize FSM after animation is registered
+      if (AnimationStateMachine) {
+        newEnemy.stateMachine = new AnimationStateMachine(newEnemy);
+        console.log(`[COMBAT RESPAWN] Enemy FSM initialized:`, newEnemy.stateMachine.getCurrentStateName());
+      }
+    } else {
+      console.warn(`[COMBAT RESPAWN] Animation system not ready for respawned enemy`);
+    }
+
+    // Register with enemy combat manager
+    if (window.enemyCombatManager) {
+      window.enemyCombatManager.registerEnemy(newEnemy);
+      console.log(`[COMBAT RESPAWN] Enemy registered with combat manager`);
+    }
+
+    // Add to game state if available
+    if (gameState) {
+      gameState.addEntity(newEnemy, 'enemy');
+      console.log(`[COMBAT] Enemy respawned and added to game state with ${newEnemy.health}/${newEnemy.maxHealth} HP (ID: ${newEnemy.id})`);
+    } else {
+      // Fallback for backwards compatibility
+      window.enemy = newEnemy;
+      console.log(`[COMBAT] Enemy respawned with ${window.enemy.health}/${window.enemy.maxHealth} HP (legacy mode)`);
+    }
+  } else {
+    console.log(`[COMBAT] Respawn not needed - enemies still present`);
+  }
+}
+
 // Export functions and classes
 window.canPlayerPerformSkill = canPlayerPerformSkill;
 window.CombatCalculator = CombatCalculator;
@@ -844,3 +956,9 @@ window.CombatAttributes = CombatAttributes;
 window.calculateHitBoxPosition = calculateHitBoxPosition;
 window.addDamageNumberToTarget = addDamageNumberToTarget;
 window.getCombatSkillType = getCombatSkillType;
+
+// Export moved enemy defeat functions
+window.handleEnemyDefeat = handleEnemyDefeat;
+window.removeEnemyFromGame = removeEnemyFromGame;
+window.onEnemyDefeated = onEnemyDefeated;
+window.respawnEnemy = respawnEnemy;

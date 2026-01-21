@@ -168,13 +168,13 @@
 **Risk Level:** LOW (helper functions)
 
 #### **Functions to Move & Modify:**
-- [ ] `getSortedEntitiesForRendering(gameState, players, enemy, ally)` - Accept game state and legacy entities
-- [ ] `getEnemyHealthStatus(entity)` - Enemy status display (no changes needed)
+- [х] `getSortedEntitiesForRendering(gameState, players, enemy, ally)` - Accept game state and legacy entities
+- [х] `getEnemyHealthStatus(entity)` - Enemy status display (no changes needed)
 
 #### **Integration Requirements:**
-- [ ] Modify function signatures to accept game state parameter
-- [ ] Preserve rendering system integration
-- [ ] Export functions globally with new signatures
+- [х] Modify function signatures to accept game state parameter
+- [х] Preserve rendering system integration
+- [х] Export functions globally with new signatures
 
 ---
 

@@ -1844,50 +1844,55 @@ function renderUI() {
 
 ---
 
-### Game.js Refactoring - Phase 6: Enemy Coordination Centralization - COMPLETED ✅ **[ARCHITECTURAL REFACTORING]**
-**Moved enemy coordination functions from game.js to base_enemy.js for better encapsulation and separation of concerns**
+### Game.js Refactoring - Phase 8: Enemy Defeat Functions Centralization - COMPLETED ✅ **[ARCHITECTURAL REFACTORING]**
+**Moved enemy defeat functions from game.js to combat_system.js for better separation of concerns and unified combat lifecycle management**
 
 #### Problem Solved:
-- **Before:** Enemy coordination logic scattered between `game.js` (global functions) and `base_enemy.js` (instance methods)
-- **Issue:** Poor encapsulation, tight coupling, inconsistent architecture where enemy coordination was handled globally instead of by enemy objects themselves
-- **Impact:** Hard to maintain enemy behavior, difficult to add new enemy types, unclear separation between game loop and entity logic
+- **Before:** Enemy defeat logic scattered between `game.js` (defeat functions) and `combat_system.js` (death sequence initiation)
+- **Issue:** Poor encapsulation, fragmented combat lifecycle, defeat logic separated from combat system where it belongs
+- **Impact:** Hard to maintain enemy defeat behavior, unclear separation between combat resolution and defeat processing, defeat logic not centralized with combat mechanics
 
 #### Solution Implemented:
-- **Enemy Coordination Centralization:** Moved three coordination functions from `game.js` to `base_enemy.js` as instance methods
-- **Parameter-Based Architecture:** Instance methods accept external dependencies (physics constants, game state)
-- **Clean Instance Method Design:** All enemy coordination now handled by enemy objects themselves
-- **Zero Functional Changes:** Identical behavior before/after refactoring
+- **Enemy Defeat Centralization:** Moved four defeat functions from `game.js` to `combat_system.js` as unified combat system functions
+- **Dependency Injection Architecture:** Functions accept external dependencies (levelManager, gameState, etc.) as parameters
+- **Unified Combat Lifecycle:** Complete enemy defeat processing now handled within combat system
+- **Zero Functional Changes:** Identical behavior before/after refactoring with preserved XP awarding and level completion
 
 #### Key Changes:
-1. **`base_enemy.js`**: Added three new instance methods (`updateEnemyAI`, `handleMovement`, `checkIfInCollision`)
-2. **`game.js`**: Updated call sites to use instance method syntax, removed moved functions
-3. **Function Signatures:** Converted from `globalFunction(enemy, params)` to `enemy.instanceMethod(params)`
-4. **Dependency Injection:** Methods accept physics constants and game state as parameters
+1. **`combat_system.js`**: Added four enemy defeat functions with new parameter-based signatures:
+   - `handleEnemyDefeat(attacker, defeatedEnemy, levelManager)` - Main defeat coordinator
+   - `removeEnemyFromGame(defeatedEnemy, gameState, legacyEnemy)` - Entity removal from game world
+   - `onEnemyDefeated(attacker, defeatedEnemy)` - Post-defeat effects handler
+   - `respawnEnemy(gameState, enemy, createEnemyWithData, animationSystem, AnimationStateMachine)` - Respawn functionality
+2. **`combat_system.js`**: Updated `startEnemyDeathSequence()` to call `handleEnemyDefeat()` instead of doing work itself
+3. **`game.js`**: Removed moved functions (-100+ lines)
+4. **Global Exports:** Added exports in `combat_system.js` for backward compatibility
 
 #### Technical Implementation:
-- **Instance Method Conversion:** Global functions became instance methods on `BaseEnemy` class
-- **Parameter Passing:** Physics constants (`canvasHeight`, `gravity`) and game state passed explicitly
-- **Call Site Updates:** `updateEnemyAI(enemy, dt)` → `enemy.updateEnemyAI(dt, players, gameState)`
-- **Function Preservation:** All original logic preserved, just relocated and made instance-based
+- **Parameter-Based Signatures:** All functions accept dependencies explicitly instead of accessing globals
+- **Combat System Integration:** Enemy defeat now part of unified combat lifecycle (attack → damage → death → defeat → cleanup)
+- **Experience Awarding:** XP logic moved to `handleEnemyDefeat()` with level manager integration
+- **Entity Removal:** Game state integration for proper entity cleanup
+- **Respawn Support:** Maintained legacy respawn functionality with dependency injection
 
 #### Benefits Achieved:
-- **Better Encapsulation:** Enemy coordination logic belongs to enemy objects
-- **Improved Maintainability:** Enemy behavior changes in one location (`base_enemy.js`)
-- **Consistent Architecture:** All enemy logic centralized in enemy classes
-- **Easier Extension:** New enemy types inherit coordination methods automatically
-- **Cleaner Game Loop:** `game.js` focuses on orchestration, not entity implementation
+- **Unified Combat System:** Complete enemy lifecycle (spawn → attack → defeat → respawn) managed within combat system
+- **Better Encapsulation:** Enemy defeat logic belongs with combat mechanics, not scattered in game loop
+- **Improved Maintainability:** All combat-related enemy processing centralized in `combat_system.js`
+- **Cleaner Architecture:** Clear separation between game orchestration (`game.js`) and combat mechanics (`combat_system.js`)
+- **Zero Breaking Changes:** Identical functionality with improved organization and maintainability
 
 #### Files Affected:
-- `base_enemy.js` - Added enemy coordination methods (+100 lines)
-- `game.js` - Updated call sites, removed coordination functions (-100 lines)
+- `combat_system.js` - Added enemy defeat functions (+100 lines), updated death sequence coordination
+- `game.js` - Removed enemy defeat functions (-100+ lines)
 - `PROJECT_FILE_GUIDE.md` - Documentation update
 
 #### Architectural Benefits Achieved:
-- **Object-Oriented Design:** Enemy objects handle their own coordination logic
-- **Separation of Concerns:** Game loop orchestrates, entities implement behavior
-- **Maintainable Codebase:** Enemy behavior modifications centralized
-- **Extensible Framework:** New enemy types inherit coordination capabilities
-- **Zero Breaking Changes:** Identical functionality with improved architecture
+- **System Cohesion:** Enemy defeat processing unified with combat resolution system
+- **Dependency Injection:** Clean parameter-based architecture eliminates global dependencies
+- **Maintainable Codebase:** Combat lifecycle changes made in centralized location
+- **Extensible Framework:** Easy to modify defeat behavior without affecting game loop
+- **Professional Architecture:** Clear separation of concerns between orchestration and implementation
 
 ---
 
