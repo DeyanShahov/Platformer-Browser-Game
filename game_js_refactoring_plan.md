@@ -107,14 +107,14 @@
 **Risk Level:** MEDIUM (physics integration)
 
 #### **Functions to Move & Modify:**
-- [ ] `handleMovement(player, dt, CANVAS_HEIGHT, GRAVITY, Z_MIN, Z_MAX)` - Accept all required constants as parameters
-- [ ] Player-specific collision logic with `applyCollisionCorrection()`, `canMoveTo()`, `applyScreenBoundaries()` calls
+- [х] `handleMovement(player, dt, CANVAS_HEIGHT, GRAVITY, Z_MIN, Z_MAX)` - Accept all required constants as parameters
+- [х] Player-specific collision logic with `applyCollisionCorrection()`, `canMoveTo()`, `applyScreenBoundaries()` calls
 
 #### **Integration Requirements:**
-- [ ] Modify function signature to accept physics constants as parameters
-- [ ] Preserve all global collision function exports
-- [ ] Maintain `window.applyScreenBoundaries()` calls
-- [ ] Export function globally with new signature
+- [х] Modify function signature to accept physics constants as parameters
+- [х] Preserve all global collision function exports
+- [х] Maintain `window.applyScreenBoundaries()` calls
+- [х] Export function globally with new signature
 
 ---
 

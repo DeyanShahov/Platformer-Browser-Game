@@ -428,6 +428,53 @@ This comprehensive guide documents every file in the Platformer Browser Game pro
 
 ## 🏗️ RECENT ARCHITECTURAL CHANGES (January 2026)
 
+### Game.js Refactoring - Phase 5: Game Setup Centralization - COMPLETED ✅ **[ARCHITECTURAL REFACTORING]**
+**Moved game initialization logic to main.js for better separation of concerns and dependency injection**
+
+#### Problem Solved:
+- **Before:** Game initialization scattered between `main.js` (basic setup) and `game.js` (complex initialization)
+- **Issue:** Poor separation of concerns, global dependencies, tight coupling between UI and game setup
+- **Impact:** Hard to test initialization logic, unclear responsibilities, global state pollution
+
+#### Solution Implemented:
+- **Game Setup Centralization:** Complete `initGameWithSelections()` function moved from `game.js` to `main.js`
+- **Parameter-Based Architecture:** New signature uses dependency injection instead of global access
+- **Clean Entry Point:** main.js now handles all game initialization from UI trigger to gameplay start
+- **Improved Testability:** Function can be tested with mock parameters
+
+#### Key Changes:
+1. **`main.js`**: Added complete game initialization with parameter-based `initGameWithSelections(activePlayers, playerSelections, confirmedSelections, characters)`
+2. **`game.js`**: Removed initialization logic, now focuses on core game loop mechanics
+3. **`ui.js`**: Updated call site to pass required parameters explicitly
+4. **Global Exports:** `window.initGameWithSelections` properly exported
+
+#### Technical Implementation:
+- **Parameter Injection:** `activePlayers`, `playerSelections`, `confirmedSelections`, `characters` passed explicitly
+- **Canvas Context Fix:** Both `ctx` (global) and `window.ctx` set for compatibility
+- **System Initialization Sequence:** Animation → Damage Numbers → Game State → Camera → Level Manager
+- **Player Creation:** Character-based player instantiation with animation and state machine setup
+- **Game Loop Startup:** Proper initialization sequence with camera following and level loading
+
+#### Benefits Achieved:
+- **Clean Architecture:** Entry point (main.js) handles all initialization, game loop (game.js) handles runtime
+- **Dependency Injection:** No global access in initialization function, better testability
+- **Separation of Concerns:** UI triggers → Main initializes → Game runs
+- **Maintainability:** Initialization logic centralized and documented
+- **Error Handling:** Parameter validation prevents undefined state issues
+
+#### Files Affected:
+- `main.js` - Added game setup logic (+150 lines, now ~300 lines total)
+- `game.js` - Removed initialization logic (-150 lines, now ~600 lines)
+- `ui.js` - Updated call site with parameter passing
+- `PROJECT_FILE_GUIDE.md` - Documentation update
+
+#### Architectural Benefits Achieved:
+- **Entry Point Consolidation:** Single file handles all game initialization
+- **Parameter-Based Design:** Dependency injection for better testing and maintainability
+- **Clean Separation:** UI, initialization, and runtime clearly separated
+- **Improved Testability:** Initialization can be tested independently
+- **Future-Proof:** Easy to modify initialization sequence or add new systems
+
 ### Combat System Unification - COMPLETED ✅ **[MAJOR IMPROVEMENT]**
 **Unified combat resolution for all entities - eliminated separate enemy damage logic**
 
@@ -909,20 +956,27 @@ Platformer Browser Game/
 
 ## 🎮 CORE GAME SYSTEMS
 
-### `main.js` - Game Initialization & Entry Point
-**Purpose:** Main entry point that initializes and starts the game engine
+### `main.js` - Game Initialization & Entry Point **[PHASE 5 EXPANSION]**
+**Purpose:** Complete game initialization coordinator and entry point - handles all setup from UI trigger to gameplay start
 **Responsibilities:**
 - Canvas setup and configuration
 - Game loop initialization
 - Global event listeners
 - Asset preloading coordination
+- **Complete game setup from character selection** **[PHASE 5]**
+- **System initialization (animation, camera, level manager)** **[PHASE 5]**
+- **Player creation and registration** **[PHASE 5]**
+- **Game state transitions and startup sequence** **[PHASE 5]**
 **Key Functions:**
-- `init()` - Game initialization
+- `init()` - Basic initialization
 - `startGameLoop()` - Begins main game loop
-**Dependencies:** `game.js`, `render.js`, `constants.js`
-**Integration Points:** Called once at game start
+- **`initGameWithSelections(activePlayers, playerSelections, confirmedSelections, characters)` - Complete game setup** **[PHASE 5]**
+**Dependencies:** `game.js`, `render.js`, `constants.js`, `ui.js`
+**Integration Points:** Called once at game start; game setup called from UI system **[PHASE 5]**
+**Global Exports:** `window.initGameWithSelections` **[PHASE 5]**
+**Note:** Phase 5 (Jan 2026) moved complete game initialization here from game.js, now handles all setup from character selection to gameplay
 
-### `game.js` - Main Game Loop & Core Logic **[PHASE 3 REFACTORING COMPLETE]**
+### `game.js` - Main Game Loop & Core Logic **[PHASE 3 & 5 REFACTORING COMPLETE]**
 **Purpose:** Central game logic coordinator, main update/render loop, and core game mechanics
 **Responsibilities:**
 - Player updates, physics, and entity management
@@ -940,7 +994,6 @@ Platformer Browser Game/
 - `canMoveTo(entity, proposedX, proposedY, proposedZ)` - Movement validation **[MOVED HERE]**
 - `getBehaviorConstraints(entity)` - AI decision boundaries **[MOVED HERE]**
 - `applyScreenBoundaries(entity)` - Boundary enforcement **[MOVED HERE]**
-- `initGameWithSelections()` - Game initialization **[MOVED HERE]**
 - `showSkillTreeForPlayer(playerIndex)` - Skill tree display **[MOVED HERE]**
 - `showCharacterStatsForPlayer(playerIndex)` - Stats display **[MOVED HERE]**
 - **Enemy attack processing with damageDealt flag management** **[NEW - UNIFIED COMBAT]**
@@ -958,9 +1011,11 @@ Platformer Browser Game/
 **Removed in Phase 3:**
 - **19 key tracking variables** (18 key press tracking + 1 debounce timer) **[MOVED TO menu.js]**
 - **handleSkillTreeKeys()** and **handleCharacterStatsKeys()** functions **[MOVED TO menu.js]**
+**Removed in Phase 5:**
+- **`initGameWithSelections()` function** **[MOVED TO main.js - PHASE 5]**
 **Dependencies:** `game_state.js`, `input.js`, `collision.js`, `combat_system.js`, `menu.js`
-**Integration Points:** Core of game loop, called every frame; main game initialization; calls `window.MenuSystem.handleSkillTreeKeys()` and `window.MenuSystem.handleCharacterStatsKeys()` **[PHASE 3]**
-**Note:** Phase 3 (Jan 2026) moved input coordination to menu.js with parameter-based interface; Recent unification (Jan 2026) integrated enemy attacks into unified combat system
+**Integration Points:** Core of game loop, called every frame; calls `window.MenuSystem.handleSkillTreeKeys()` and `window.MenuSystem.handleCharacterStatsKeys()` **[PHASE 3]**
+**Note:** Phase 3 (Jan 2026) moved input coordination to menu.js with parameter-based interface; Phase 5 (Jan 2026) moved game initialization to main.js; Recent unification (Jan 2026) integrated enemy attacks into unified combat system
 
 ### `game_state.js` - Global State Management
 **Purpose:** Centralized storage and management of all game state

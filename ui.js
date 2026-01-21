@@ -429,9 +429,14 @@ function createStartScreen() {
     // Set game state
     window.gameState = 'playing';
 
-    // Call game initialization from game.js
-    if (typeof initGameWithSelections === 'function') {
-      initGameWithSelections();
+    // Call game initialization from main.js with parameters
+    if (typeof window.initGameWithSelections === 'function') {
+      window.initGameWithSelections(
+        window.UISystem.activePlayers,
+        window.UISystem.playerSelections,
+        window.UISystem.confirmedSelections,
+        window.characters
+      );
     } else {
       console.error('[UI] initGameWithSelections function not found');
     }
