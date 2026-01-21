@@ -923,7 +923,7 @@ Platformer Browser Game/
 **Dependencies:** `game.js`, `render.js`, `constants.js`
 **Integration Points:** Called once at game start
 
-### `game.js` - Main Game Loop & Core Logic **[RECENTLY ENHANCED]**
+### `game.js` - Main Game Loop & Core Logic **[PHASE 3 REFACTORING COMPLETE]**
 **Purpose:** Central game logic coordinator, main update/render loop, and core game mechanics
 **Responsibilities:**
 - Player updates, physics, and entity management
@@ -933,6 +933,7 @@ Platformer Browser Game/
 - Game state transitions and entity lifecycle
 - Player character class and behavior **[MOVED HERE]**
 - **Enemy attack resolution with skill type mapping** **[NEW - UNIFIED COMBAT]**
+- **Input coordination delegation** **[MOVED TO menu.js - PHASE 3]**
 **Key Functions:**
 - `update(dt)` - Main update loop
 - `handleMovement(player, dt)` - Player physics
@@ -945,6 +946,8 @@ Platformer Browser Game/
 - `showCharacterStatsForPlayer(playerIndex)` - Stats display **[MOVED HERE]**
 - **Enemy attack processing with damageDealt flag management** **[NEW - UNIFIED COMBAT]**
 - **Skill type mapping for enemy attacks ('ATTACK_1' → 'basic_attack_light')** **[NEW - UNIFIED COMBAT]**
+- **`handleSkillTreeKeys()` - Input coordination** **[MOVED TO menu.js - PHASE 3]**
+- **`handleCharacterStatsKeys()` - Input coordination** **[MOVED TO menu.js - PHASE 3]**
 **Key Classes:**
 - `Player` - Complete player character class **[MOVED FROM entities.js]**
 **Key Features:**
@@ -952,9 +955,13 @@ Platformer Browser Game/
 - **Skill Type Mapping:** Maps enemy animation types to combat skill types for consistent damage **[NEW]**
 - **DamageDealt Protection:** Prevents multiple hits per attack animation **[NEW]**
 - **Debug Logging:** Enhanced enemy attack logging with collision and combat details **[NEW]**
+- **Input Coordination Delegation:** Menu input handling delegated to `menu.js` **[PHASE 3]**
+**Removed in Phase 3:**
+- **19 key tracking variables** (18 key press tracking + 1 debounce timer) **[MOVED TO menu.js]**
+- **handleSkillTreeKeys()** and **handleCharacterStatsKeys()** functions **[MOVED TO menu.js]**
 **Dependencies:** `game_state.js`, `input.js`, `collision.js`, `combat_system.js`, `menu.js`
-**Integration Points:** Core of game loop, called every frame; main game initialization
-**Note:** Recent unification (Jan 2026) integrated enemy attacks into unified combat system, eliminating separate damage logic
+**Integration Points:** Core of game loop, called every frame; main game initialization; calls `window.MenuSystem.handleSkillTreeKeys()` and `window.MenuSystem.handleCharacterStatsKeys()` **[PHASE 3]**
+**Note:** Phase 3 (Jan 2026) moved input coordination to menu.js with parameter-based interface; Recent unification (Jan 2026) integrated enemy attacks into unified combat system
 
 ### `game_state.js` - Global State Management
 **Purpose:** Centralized storage and management of all game state
@@ -1440,19 +1447,28 @@ Platformer Browser Game/
 **Global Exports:** `window.UISystem` - All functions and state variables
 **Note:** Character selection system moved from `game.js` (Phase 1), uses parameter-passing for clean architecture
 
-### `menu.js` - Menu System **[RECENTLY REFACTORED]**
-**Purpose:** Game menus and navigation with state management
+### `menu.js` - Menu System & Input Coordination **[PHASE 3 REFACTORING COMPLETE]**
+**Purpose:** Game menus and navigation with state management, plus input coordination for skill trees and character stats
 **Responsibilities:**
 - Main menu display and navigation
 - Settings management and controls
 - Menu state transitions
+- **Skill tree input coordination** **[MOVED FROM game.js - PHASE 3]**
+- **Character stats input coordination** **[MOVED FROM game.js - PHASE 3]**
+- **Key press tracking for menu interactions** **[MOVED FROM game.js - PHASE 3]**
 **Key Functions:**
 - `showMainMenu()` - Menu display
 - `handleMenuInput()` - Menu navigation
 - `showControlsMenu()` - Controls configuration
-**Dependencies:** `ui.js`, `game_state.js`
-**Integration Points:** Game state transitions
-**Note:** Skill tree and character stats functions moved to `game.js`
+- **`handleSkillTreeKeys(gameState, keys, lastSkillTreeToggleTime)` - Skill tree input coordination** **[MOVED FROM game.js - PHASE 3]**
+- **`handleCharacterStatsKeys(gameState, keys, lastSkillTreeToggleTime)` - Character stats input coordination** **[MOVED FROM game.js - PHASE 3]**
+**Key Variables:**
+- **`key5Pressed`, `key5WasPressed`, etc. (18 variables)` - Key press tracking for skill trees and character stats** **[MOVED FROM game.js - PHASE 3]**
+- **`lastSkillTreeToggleTime` - Debounce timer for menu interactions** **[MOVED FROM game.js - PHASE 3]**
+**Global Exports:** `window.MenuSystem.handleSkillTreeKeys`, `window.MenuSystem.handleCharacterStatsKeys`, `window.MenuSystem.lastSkillTreeToggleTime` **[PHASE 3]**
+**Dependencies:** `ui.js`, `game_state.js`, `constants.js`
+**Integration Points:** Game state transitions, called by game.js update loop
+**Note:** Input coordination functions moved from `game.js` (Phase 3) with parameter-based interface for clean architecture
 
 ### `css/skill-tree.css` - Skill Tree Styling
 **Purpose:** CSS styling for skill tree interface

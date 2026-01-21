@@ -85,18 +85,18 @@
 **Risk Level:** MEDIUM (menu state dependencies)
 
 #### **Functions to Move & Modify:**
-- [ ] `handleSkillTreeKeys(gameState, currentSkillTreePlayer, currentSkillPage, keys, lastSkillTreeToggleTime)` - Accept all required state
-- [ ] `handleCharacterStatsKeys(gameState, currentCharacterStatsPlayer, keys, lastSkillTreeToggleTime)` - Accept all required state
+- [x] `handleSkillTreeKeys(gameState, currentSkillTreePlayer, currentSkillPage, keys, lastSkillTreeToggleTime)` - Accept all required state
+- [x] `handleCharacterStatsKeys(gameState, currentCharacterStatsPlayer, keys, lastSkillTreeToggleTime)` - Accept all required state
 
 #### **Variables to Move:**
-- [ ] All key press tracking variables (`key5Pressed`, `key5WasPressed`, etc.)
-- [ ] `lastSkillTreeToggleTime` - Debounce timing
+- [x] All key press tracking variables (`key5Pressed`, `key5WasPressed`, etc.)
+- [x] `lastSkillTreeToggleTime` - Debounce timing
 
 #### **Integration Requirements:**
-- [ ] Modify function signatures to accept game state and menu state parameters
-- [ ] Export functions globally with new signatures
-- [ ] Update call sites in game.js with parameter passing
-- [ ] Preserve menu navigation logic (`toggleMenu()`, `showSkillTreeForPlayer()`, etc.)
+- [x] Modify function signatures to accept game state and menu state parameters
+- [x] Export functions globally with new signatures
+- [x] Update call sites in game.js with parameter passing
+- [x] Preserve menu navigation logic (`toggleMenu()`, `showSkillTreeForPlayer()`, etc.)
 
 ---
 

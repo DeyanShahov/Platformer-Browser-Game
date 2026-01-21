@@ -4,6 +4,37 @@ let currentMenu = 'main'; // 'main', 'controls', 'skills', 'characterStats'
 let currentSkillTreePlayer = null; // Index of player whose skills are being viewed
 let currentCharacterStatsPlayer = null; // Index of player whose stats are being viewed
 
+// Key press tracking variables for skill trees (moved from game.js Phase 3)
+let key5Pressed = false;
+let key5WasPressed = false;
+let key6Pressed = false;
+let key6WasPressed = false;
+let key7Pressed = false;
+let key7WasPressed = false;
+let key8Pressed = false;
+let key8WasPressed = false;
+let keyTPressed = false;
+let keyTWasPressed = false;
+let keyYPressed = false;
+let keyYWasPressed = false;
+let keyUPressed = false;
+let keyUWasPressed = false;
+let keyIPressed = false;
+let keyIWasPressed = false;
+
+// Key press tracking variables for character stats (moved from game.js Phase 3)
+let key9Pressed = false;
+let key9WasPressed = false;
+let key0Pressed = false;
+let key0WasPressed = false;
+let keyMinusPressed = false;
+let keyMinusWasPressed = false;
+let keyEqualsPressed = false;
+let keyEqualsWasPressed = false;
+
+// Global variables for skill tree timing (moved from game.js Phase 3)
+let lastSkillTreeToggleTime = 0; // Timestamp to prevent rapid toggling
+
 const buttonNames = {
   0: 'X',      // Cross бутон (долен)
   1: '◯',      // Circle бутон (десен)
@@ -601,16 +632,16 @@ function startRebinding(player, action) {
 
   const handler = (e) => {
     e.preventDefault();
-    
+
     // Намери текущия input mode
     const inputMode = window.controls[player].inputMode || 'keyboard';
-    
+
     // Запиши в правилната суб-структура
     if (!window.controls[player][inputMode]) {
       window.controls[player][inputMode] = {};
     }
     window.controls[player][inputMode][action] = e.key;
-    
+
     rebindingAction = null;
     saveControls();
     updateControlsDisplay();
@@ -1352,8 +1383,8 @@ function tryUnlockSelectedSkill() {
 
   // Check if this is an ACTIVE skill that's already unlocked and has a micro tree
   if (skillInfo.usageType === SKILL_USAGE_TYPES.ACTIVE &&
-      currentLevel >= 1 &&
-      skillInfo.microTree) {
+    currentLevel >= 1 &&
+    skillInfo.microTree) {
     // Open micro skill tree instead of upgrading
     showMicroTreeForSkill(skillType);
     return;
@@ -1490,5 +1521,227 @@ function getSkillTypeDisplayText(usageType) {
   }
 }
 
+// Input coordination functions (moved from game.js Phase 3)
+function handleSkillTreeKeys(gameState, keys, lastSkillTreeToggleTime) {
+  const now = performance.now();
+  if (now - lastSkillTreeToggleTime < 300) return; // 300ms debounce
+
+  // Debug logging
+  //console.log('[DEBUG] handleSkillTreeKeys called - menuActive:', menuActive, 'gameState:', window.gameStateString);
+  //console.log('[DEBUG] Keys - 5:', keys['5'], '6:', keys['6'], '7:', keys['7'], '8:', keys['8']);
+
+  // Toggle main menu (Escape or 'm')
+  if (keys['Escape'] || keys['m']) {
+    toggleMenu();
+    lastSkillTreeToggleTime = now;
+    keys['Escape'] = false;
+    keys['m'] = false;
+  }
+
+  // Player 1 skill tree (key 5) - 3-tier toggle system
+  key5Pressed = keys['5'];
+  if (key5Pressed && !key5WasPressed && gameState.players && gameState.players.length >= 1) { // Key just pressed
+    //console.log('Key r pressed - currentMenu:', currentMenu, 'currentSkillTreePlayer:', currentSkillTreePlayer);
+    if (currentMenu === 'microTree' && currentSkillTreePlayer === 0) {
+      // Tier 3: Micro tree is open - close micro tree (main tree stays open)
+      //console.log('Closing micro tree for player 1 (main tree stays open)');
+      hideMicroTree();
+    } else if (currentMenu === 'skills' && currentSkillTreePlayer === 0) {
+      // Tier 2: Main skill tree is open (no micro tree) - close everything
+      //console.log('Closing skill tree for player 1');
+      hideSkillTree();
+    } else if (!menuActive) {
+      // Tier 1: No menu is active - open main skill tree
+      //console.log('Opening skill tree for player 1');
+      showSkillTreeForPlayer(0);
+    }
+    // If another player's menu is open, do nothing
+    lastSkillTreeToggleTime = now;
+  }
+  key5WasPressed = key5Pressed;
+
+  // Player 2 skill tree (key 6) - 3-tier toggle system
+  key6Pressed = keys['6'];
+  if (key6Pressed && !key6WasPressed && gameState.players && gameState.players.length >= 2) {
+    if (currentMenu === 'microTree' && currentSkillTreePlayer === 1) {
+      // Tier 3: Micro tree is open - close micro tree (main tree stays open)
+      hideMicroTree();
+    } else if (currentMenu === 'skills' && currentSkillTreePlayer === 1) {
+      // Tier 2: Main skill tree is open (no micro tree) - close everything
+      hideSkillTree();
+    } else if (!menuActive) {
+      // Tier 1: No menu is active - open main skill tree
+      showSkillTreeForPlayer(1);
+    }
+    // If another player's menu is open, do nothing
+    lastSkillTreeToggleTime = now;
+  }
+  key6WasPressed = key6Pressed;
+
+  // Player 3 skill tree (key 7) - 3-tier toggle system
+  key7Pressed = keys['7'];
+  if (key7Pressed && !key7WasPressed && gameState.players && gameState.players.length >= 3) {
+    if (currentMenu === 'microTree' && currentSkillTreePlayer === 2) {
+      // Tier 3: Micro tree is open - close micro tree (main tree stays open)
+      hideMicroTree();
+    } else if (currentMenu === 'skills' && currentSkillTreePlayer === 2) {
+      // Tier 2: Main skill tree is open (no micro tree) - close everything
+      hideSkillTree();
+    } else if (!menuActive) {
+      // Tier 1: No menu is active - open main skill tree
+      showSkillTreeForPlayer(2);
+    }
+    // If another player's menu is open, do nothing
+    lastSkillTreeToggleTime = now;
+  }
+  key7WasPressed = key7Pressed;
+
+  // Player 4 skill tree (key 8) - 3-tier toggle system
+  key8Pressed = keys['8'];
+  if (key8Pressed && !key8WasPressed && gameState.players && gameState.players.length >= 4) {
+    if (currentMenu === 'microTree' && currentSkillTreePlayer === 3) {
+      // Tier 3: Micro tree is open - close micro tree (main tree stays open)
+      hideMicroTree();
+    } else if (currentMenu === 'skills' && currentSkillTreePlayer === 3) {
+      // Tier 2: Main skill tree is open (no micro tree) - close everything
+      hideSkillTree();
+    } else if (!menuActive) {
+      // Tier 1: No menu is active - open main skill tree
+      showSkillTreeForPlayer(3);
+    }
+    // If another player's menu is open, do nothing
+    lastSkillTreeToggleTime = now;
+  }
+  key8WasPressed = key8Pressed;
+
+  // Tab navigation (only when skill tree is open) - unified logic with proper key tracking
+  if (currentMenu === 'skills') {
+    //console.log('Skill tree is open, checking tab navigation for player:', currentSkillTreePlayer);
+
+    // Player 1 tab navigation (key t)
+    keyTPressed = keys['t'] || keys['T'];
+    if (keyTPressed && !keyTWasPressed) {
+      //console.log('T key pressed, currentSkillTreePlayer:', currentSkillTreePlayer);
+      if (currentSkillTreePlayer === 0) {
+        //console.log('Switching tab for player 1');
+        const nextPage = currentSkillPage === SKILL_PAGES.MAIN ? SKILL_PAGES.SECONDARY : SKILL_PAGES.MAIN;
+        //console.log('Switching from', currentSkillPage, 'to', nextPage);
+        switchSkillTreePage(nextPage);
+        lastSkillTreeToggleTime = now;
+      }
+    }
+    keyTWasPressed = keyTPressed;
+
+    // Player 2 tab navigation (key y)
+    keyYPressed = keys['y'] || keys['Y'];
+    if (keyYPressed && !keyYWasPressed) {
+      if (currentSkillTreePlayer === 1) {
+        const nextPage = currentSkillPage === SKILL_PAGES.MAIN ? SKILL_PAGES.SECONDARY : SKILL_PAGES.MAIN;
+        switchSkillTreePage(nextPage);
+        lastSkillTreeToggleTime = now;
+      }
+    }
+    keyYWasPressed = keyYPressed;
+
+    // Player 3 tab navigation (key u)
+    keyUPressed = keys['u'] || keys['U'];
+    if (keyUPressed && !keyUWasPressed) {
+      if (currentSkillTreePlayer === 2) {
+        const nextPage = currentSkillPage === SKILL_PAGES.MAIN ? SKILL_PAGES.SECONDARY : SKILL_PAGES.MAIN;
+        switchSkillTreePage(nextPage);
+        lastSkillTreeToggleTime = now;
+      }
+    }
+    keyUWasPressed = keyUPressed;
+
+    // Player 4 tab navigation (key i)
+    keyIPressed = keys['i'] || keys['I'];
+    if (keyIPressed && !keyIWasPressed) {
+      if (currentSkillTreePlayer === 3) {
+        const nextPage = currentSkillPage === SKILL_PAGES.MAIN ? SKILL_PAGES.SECONDARY : SKILL_PAGES.MAIN;
+        switchSkillTreePage(nextPage);
+        lastSkillTreeToggleTime = now;
+      }
+    }
+    keyIWasPressed = keyIPressed;
+  }
+}
+
+// Character stats input coordination (moved from game.js Phase 3)
+function handleCharacterStatsKeys(gameState, keys, lastSkillTreeToggleTime) {
+  const now = performance.now();
+  if (now - lastSkillTreeToggleTime < 300) return; // 300ms debounce (reuse same timer)
+
+  // Debug logging
+  //console.log('[DEBUG] handleCharacterStatsKeys called - menuActive:', menuActive, 'gameState:', window.gameStateString);
+  //console.log('[DEBUG] Character stats keys - 9:', keys['9'], '0:', keys['0'], '-:', keys['-'], '=', keys['=']);
+
+  // Player 1 character stats (key 9) - toggle player's own stats
+  key9Pressed = keys['9'];
+  if (key9Pressed && !key9WasPressed && gameState.players && gameState.players.length >= 1) { // Key just pressed
+    if (currentMenu === 'characterStats' && currentCharacterStatsPlayer === 0) {
+      // Close if player's own stats are open
+      hideCharacterStats();
+    } else if (!menuActive) {
+      // Open only if no menu is active
+      showCharacterStatsForPlayer(0);
+    }
+    // If another player's stats are open, do nothing
+    lastSkillTreeToggleTime = now;
+  }
+  key9WasPressed = key9Pressed;
+
+  // Player 2 character stats (key 0) - toggle player's own stats
+  key0Pressed = keys['0'];
+  if (key0Pressed && !key0WasPressed && gameState.players && gameState.players.length >= 2) {
+    if (currentMenu === 'characterStats' && currentCharacterStatsPlayer === 1) {
+      // Close if player's own stats are open
+      hideCharacterStats();
+    } else if (!menuActive) {
+      // Open only if no menu is active
+      showCharacterStatsForPlayer(1);
+    }
+    // If another player's stats are open, do nothing
+    lastSkillTreeToggleTime = now;
+  }
+  key0WasPressed = key0Pressed;
+
+  // Player 3 character stats (key -) - toggle player's own stats
+  keyMinusPressed = keys['-'];
+  if (keyMinusPressed && !keyMinusWasPressed && gameState.players && gameState.players.length >= 3) {
+    if (currentMenu === 'characterStats' && currentCharacterStatsPlayer === 2) {
+      // Close if player's own stats are open
+      hideCharacterStats();
+    } else if (!menuActive) {
+      // Open only if no menu is active
+      showCharacterStatsForPlayer(2);
+    }
+    // If another player's stats are open, do nothing
+    lastSkillTreeToggleTime = now;
+  }
+  keyMinusWasPressed = keyMinusPressed;
+
+  // Player 4 character stats (key =) - toggle player's own stats
+  keyEqualsPressed = keys['='];
+  if (keyEqualsPressed && !keyEqualsWasPressed && gameState.players && gameState.players.length >= 4) {
+    if (currentMenu === 'characterStats' && currentCharacterStatsPlayer === 3) {
+      // Close if player's own stats are open
+      hideCharacterStats();
+    } else if (!menuActive) {
+      // Open only if no menu is active
+      showCharacterStatsForPlayer(3);
+    }
+    // If another player's stats are open, do nothing
+    lastSkillTreeToggleTime = now;
+  }
+  keyEqualsWasPressed = keyEqualsPressed;
+}
+
 // Make menu functions global - skill tree and character stats functions moved to game.js
 window.toggleMenu = toggleMenu;
+
+// Input coordination functions (moved from game.js Phase 3)
+window.MenuSystem = window.MenuSystem || {};
+window.MenuSystem.handleSkillTreeKeys = handleSkillTreeKeys;
+window.MenuSystem.handleCharacterStatsKeys = handleCharacterStatsKeys;
+window.MenuSystem.lastSkillTreeToggleTime = lastSkillTreeToggleTime;
