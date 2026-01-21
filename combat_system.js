@@ -346,11 +346,20 @@ class CombatResolver {
     // Check for enemy defeat - работи за всички противници, не само за window.enemy
     const defenderDied = defender.health <= 0;
     if (defenderDied && defender.entityType === 'enemy' && !defender.isDying) {
+      // Enemy was defeated - update level completion status IMMEDIATELY
+      if (window.levelManager) {
+        window.levelManager.completionStatus.defeatedEnemies = (window.levelManager.completionStatus.defeatedEnemies || 0) + 1;
+        console.log(`[COMPLETION] Enemy defeated! Total defeated: ${window.levelManager.completionStatus.defeatedEnemies}`);
+
+        // Check if level completion conditions are now met
+        window.levelManager.checkCompletionConditions();
+      }
+
       // Enemy was defeated - call enemy.die() FIRST for FSM transition and animation
       defender.die(); // ← НОВО: Извикай enemy death логика за анимация и FSM
 
-      // Then start combat death sequence
-      this.startEnemyDeathSequence(attacker, defender);
+      // EnemyDeath.updateDeath() will handle removal when animation completes
+      // DO NOT call startEnemyDeathSequence here - it removes enemy immediately
     }
 
     // Create combat event
@@ -845,11 +854,8 @@ function handleEnemyDefeat(attacker, defeatedEnemy, levelManager) {
     console.log(`[COMBAT] ${attacker.characterInfo.getDisplayName()} gained ${experienceReward} experience!`);
   }
 
-  // Update level manager completion status
-  if (levelManager) {
-    levelManager.completionStatus.defeatedEnemies = (levelManager.completionStatus.defeatedEnemies || 0) + 1;
-    console.log(`[COMPLETION] Enemy defeated! Total defeated: ${levelManager.completionStatus.defeatedEnemies}`);
-  }
+  // Level completion status is now updated in resolveAttackInternal when enemy dies
+  // DO NOT update it here to avoid double counting
 
   // Remove enemy from the game world via game state
   removeEnemyFromGame(defeatedEnemy, window.gameState, window.enemy);

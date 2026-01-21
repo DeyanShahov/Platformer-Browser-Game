@@ -247,7 +247,7 @@ function update(dt) {
           enemy.updateEnemyAI(dt, window.gameState.players, window.gameState);
         } else {
           // Умиращи противници - само смъртна анимация
-          enemy.updateDeath(dt);
+          window.EnemyDeath.updateDeath(enemy, dt);
         }
       });
     } else {

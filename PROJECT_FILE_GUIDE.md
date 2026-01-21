@@ -1562,33 +1562,138 @@ Platformer Browser Game/
 **Dependencies:** None (configuration)
 **Integration Points:** Used by all AI systems and script manager
 
-### `base_enemy.js` - Enemy Base Class **[PHASE 6 EXPANSION - ENEMY COORDINATION]**
-**Purpose:** Foundation class for all enemy types with unified distance calculation, BT context enrichment, and enemy coordination functions
+### **Enemies/** - Modular Enemy System **[COMPLETED ENEMY SYSTEM REFACTORING]**
+**Purpose:** Complete modular enemy system with separated responsibilities for better maintainability and organization
+**Structure:**
+```
+Enemies/
+├── index.js           # Main exports and BaseEnemy class orchestration
+├── EnemyAI.js         # AI behavior coordination and FSM management
+├── EnemyMovement.js   # Movement physics and collision handling
+├── EnemyCombat.js     # Combat integration and damage processing
+├── EnemyDeath.js      # Death sequences and defeat handling
+├── EnemyFactory.js    # Enemy creation utilities and factories
+└── EnemyTypes/
+    └── BlueSlime.js   # BlueSlime enemy type implementation
+```
+
+#### **Enemies/index.js** - Enemy System Orchestrator
+**Purpose:** Main coordination file for the modular enemy system, contains BaseEnemy class and module imports
 **Responsibilities:**
-- Common enemy behaviors and AI coordination
-- **BT context enrichment with physical dimensions** **[AI FIXES]**
-- **Animation system integration for real-time hitbox access** **[AI FIXES]**
-- Combat participation and animation coordination
-- **Enemy AI coordination and movement physics** **[PHASE 6]**
-- **Collision detection and boundary handling** **[PHASE 6]**
+- BaseEnemy class definition with module delegation
+- Enemy system initialization and coordination
+- Global exports for backward compatibility
+- **Behavior delegation methods** for AI, movement, combat, and death
 **Key Functions:**
-- `updateAI(players, dt)` - AI update cycle
-- `updateFSMBehavior()` - Behavior state management
-- `getThinkingDuration()` - AI timing **[USES CONFIG]**
-- `consultBTForBehavior()` - BT integration **[USES UTILS]**
-- `updateBTContext(players)` - **BT context enrichment with physical dimensions** **[AI FIXES]**
-- **`updateEnemyAI(dt, players, gameState)` - Enemy AI coordination** **[PHASE 6]**
-- **`handleMovement(dt, canvasHeight, gravity)` - Enemy physics and movement** **[PHASE 6]**
-- **`checkIfInCollision(gameState, players, enemy)` - Collision detection** **[PHASE 6]**
-**Key Features:**
-- **Unified Distance Context:** Provides complete entity dimensions (`w`, `h`, `collisionW`, `collisionH`, `zThickness`) to BT **[AI FIXES]**
-- **Animation System Link:** Direct access to `window.animationSystem` for real-time hitbox data **[AI FIXES]**
-- **Cross-system Consistency:** Same distance measurements used by AI "brain" and "body" systems **[AI FIXES]**
-- **Enemy Coordination Methods:** Moved from `game.js` for centralized enemy logic **[PHASE 6]**
-- **Instance Method Architecture:** All coordination functions now instance methods on enemy objects **[PHASE 6]**
-**Dependencies:** `Behavior Tree/enemyAI_BT.js`, `combat_system.js`, `collision.js`, `game.js`
-**Integration Points:** Extended by specific enemy types; coordination methods called by game loop
-**Note:** Phase 6 (Jan 2026) moved enemy coordination functions from game.js for better encapsulation; AI fixes (Jan 2026) added physical dimension context and animation system access
+- `BaseEnemy` class with simplified constructor
+- `updateAI()`, `handleMovement()`, `checkIfInCollision()` - Delegating methods
+- `die()` - Death delegation method
+- Module initialization and system setup
+**Dependencies:** All enemy modules (EnemyAI, EnemyMovement, EnemyCombat, EnemyDeath)
+**Integration Points:** Extended by specific enemy types; instantiated by game systems
+**Global Exports:** `window.BaseEnemy`
+
+#### **Enemies/EnemyAI.js** - AI Behavior Coordination
+**Purpose:** Handles all enemy AI logic, FSM state management, and BT integration
+**Responsibilities:**
+- FSM behavior state transitions
+- BT consultation and decision making
+- Thinking phase management
+- Command execution coordination
+**Key Functions:**
+- `updateFSMBehavior()` - Main FSM update coordinator
+- `consultBTForBehavior()` - BT decision integration
+- `startThinkingPhase()` - AI thinking state management
+- `executePendingCommand()` - Command execution handling
+- `getThinkingDuration()` - AI timing calculations
+**Dependencies:** `Behavior Tree/enemyAI_BT.js`, `constants.js`
+**Integration Points:** Called by BaseEnemy.updateAI()
+
+#### **Enemies/EnemyMovement.js** - Movement Physics & Collision
+**Purpose:** Manages all enemy movement physics, collision detection, and pathfinding
+**Responsibilities:**
+- Movement physics and velocity handling
+- Collision detection and resolution
+- Patrol and chase movement patterns
+- Boundary enforcement and constraints
+**Key Functions:**
+- `handleMovement()` - Main movement physics coordinator
+- `updateWalkingBehavior()` - Patrol movement logic
+- `updateRunningBehavior()` - Chase movement logic
+- `updateVerticalMovementBehavior()` - Z-axis movement
+- `checkIfInCollision()` - Collision state checking
+**Dependencies:** `collision.js`, `constants.js`
+**Integration Points:** Called by BaseEnemy.handleMovement()
+
+#### **Enemies/EnemyCombat.js** - Combat Integration
+**Purpose:** Handles enemy combat interactions, damage processing, and attack behaviors
+**Responsibilities:**
+- Attack behavior state management
+- Damage taking and processing
+- Combat flag management (damageDealt, hit)
+- Player proximity detection
+**Key Functions:**
+- `updateAttackBehavior()` - Attack animation coordination
+- `takeDamage()` - Damage application and death triggering
+- `getClosestPlayer()` - Player proximity calculations
+**Dependencies:** `combat_system.js`, `character_info.js`
+**Integration Points:** Called by BaseEnemy combat interactions
+
+#### **Enemies/EnemyDeath.js** - Death Sequences
+**Purpose:** Manages enemy death animations, defeat processing, and cleanup
+**Responsibilities:**
+- Death animation triggering and timing
+- Defeat state management
+- Experience/gold reward calculations
+- Death sequence coordination
+**Key Functions:**
+- `die()` - Death sequence initiation
+- `updateDeath()` - Death animation progression
+- `getExperienceReward()` - XP calculation
+- `getGoldReward()` - Gold calculation
+**Dependencies:** `combat_system.js`, `game_state.js`
+**Integration Points:** Called by BaseEnemy.die() and game loop
+
+#### **Enemies/EnemyFactory.js** - Enemy Creation Utilities
+**Purpose:** Factory functions for enemy creation and initialization
+**Responsibilities:**
+- Enemy instantiation with proper configuration
+- Type-specific setup and initialization
+- Legacy compatibility functions
+**Key Functions:**
+- `createEnemyWithData()` - Generic enemy creation
+- `createBlueSlime()` - BlueSlime factory
+**Dependencies:** Enemy type classes, animation system
+**Integration Points:** Called by level spawning systems
+
+#### **Enemies/EnemyTypes/BlueSlime.js** - BlueSlime Implementation
+**Purpose:** Specific implementation for BlueSlime enemy type
+**Responsibilities:**
+- BlueSlime-specific properties and behaviors
+- Attack profile customization
+- Type-specific stat overrides
+**Key Functions:**
+- `BlueSlime` constructor with type-specific config
+- `createAttackProfile()` - BlueSlime attack patterns
+- `takeDamage()` - Type-specific damage handling
+- Reward calculation overrides
+**Dependencies:** `Enemies/index.js` (BaseEnemy)
+**Integration Points:** Extended from BaseEnemy, spawned by factories
+
+### `base_enemy.js` - Legacy Enemy System Orchestrator **[REFACTORED TO MODULAR SYSTEM]**
+**Purpose:** Simplified orchestrator file that imports and coordinates the modular enemy system for backward compatibility
+**Responsibilities:**
+- Import and coordinate modular enemy system
+- Maintain backward compatibility APIs
+- Legacy system bridging
+- **Now imports from Enemies/ modules** **[MODULAR REFACTORING]**
+**Key Functions:**
+- Module imports and system initialization
+- Legacy API maintenance
+- Compatibility bridging functions
+**Dependencies:** `Enemies/index.js` and all enemy modules
+**Integration Points:** Main enemy system entry point, maintains existing APIs
+**Note:** Reduced from ~1200 lines to orchestrator role; actual enemy logic moved to modular Enemies/ directory **[COMPLETED REFACTORING]**
 
 ### `enemy_data.js` - Enemy Definitions & Stats
 **Purpose:** Static data definitions for enemy types
