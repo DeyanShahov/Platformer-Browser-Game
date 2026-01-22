@@ -154,6 +154,100 @@ Collision System/
 - **Debug-Friendly:** Comprehensive logging and modular structure aid troubleshooting
 - **Professional Standards:** Industry-standard separation of collision concerns
 
+### Combat System Refactoring - Modular Architecture Overhaul - COMPLETED ✅ **[ARCHITECTURAL REFACTORING]**
+**Eliminated monolithic combat_system.js file and created modular Combat System directory with logical separation of concerns**
+
+#### Problem Solved:
+- **Before:** Single monolithic `combat_system.js` file (~1000 lines) contained all combat logic mixed together
+- **Issue:** Poor maintainability, tight coupling, multiple responsibilities in one file, violates single responsibility principle, exceeds recommended file size limits (200-300 LOC)
+- **Impact:** Difficult to modify specific combat aspects, hard to debug combat issues, code duplication potential, poor developer experience
+
+#### Solution Implemented:
+- **Eliminated Monolithic File:** Removed single `combat_system.js` (~1000 lines) and replaced with modular `Combat System/` directory
+- **Logical Separation:** Split combat functionality into 7 focused modules with clear responsibilities
+- **Traditional JavaScript Approach:** Used `window.*` global assignments instead of ES6 modules for project compatibility
+- **Centralized Architecture:** All combat logic now in dedicated system directory following project patterns
+- **Zero Functional Changes:** Identical combat behavior before/after refactoring
+
+#### New Combat System Architecture:
+
+```
+Combat System/
+├── index.js              # System orchestrator and global exports
+├── combat_attributes.js  # CombatAttributes class - character stat management
+├── combat_calculator.js  # CombatCalculator class - damage calculations, crits, modifiers
+├── combat_resolver.js    # CombatResolver class - attack resolution, resources, logging
+├── enemy_combat.js       # EnemyCombatManager class - enemy attack coordination
+├── damage_display.js     # DamageNumberManager class - visual damage numbers
+└── combat_utils.js       # Shared helper functions - hit box positioning, mapping, defeat handling
+```
+
+#### Key Architectural Changes:
+
+1. **Eliminated Monolithic combat_system.js:**
+   - **Removed:** Single file containing mixed combat logic (attributes, calculator, resolver, enemy coordination, visuals, utilities)
+   - **Impact:** ~1000 lines redistributed across 7 focused modules
+   - **Benefits:** Improved maintainability, easier debugging, logical separation
+
+2. **Created Combat System Directory:**
+   - **Modular Structure:** 7 focused files instead of 1 monolithic file
+   - **Clear Responsibilities:** Each file handles specific combat aspect
+   - **Scalable Design:** Easy to add new combat types or modify existing ones
+
+3. **Logical Separation of Concerns:**
+   - **`combat_attributes.js`:** Character stat management and defaults
+   - **`combat_calculator.js`:** Damage calculations, critical hits, equipment/buff modifiers
+   - **`combat_resolver.js`:** Attack resolution, resource consumption, combat event logging
+   - **`enemy_combat.js`:** Enemy attack coordination and cooldown management
+   - **`damage_display.js`:** Visual damage number display system
+   - **`combat_utils.js`:** Shared helper functions (hit box positioning, skill mapping, enemy defeat)
+   - **`index.js`:** System orchestrator, global instance creation, backward compatibility
+
+4. **Traditional JavaScript Implementation:**
+   - **Global Exports:** All classes/functions exported via `window.*` assignments
+   - **No ES6 Modules:** Compatible with project's existing JavaScript loading approach
+   - **Backward Compatibility:** All existing `window.combat*` global variables still work
+   - **HTML Integration:** Scripts loaded in proper dependency order via HTML
+
+#### Technical Implementation:
+- **Parameter-Based Design:** Functions accept dependencies explicitly, no global assumptions
+- **Unified Combat Pipeline:** Single entry point for all damage calculations eliminates code duplication
+- **Resource Abstraction:** Clean separation between damage calculation and resource management
+- **Event Logging:** Comprehensive combat event tracking across all modules
+- **Animation Integration:** Hit box calculations using animation system data
+- **Skill Tree Integration:** All attacks use skill tree parameters for consistent balance
+
+#### Files Created in Combat System/:
+- `Combat System/index.js` - System orchestrator and global exports (+50 lines)
+- `Combat System/combat_attributes.js` - Character stat management (+60 lines)
+- `Combat System/combat_calculator.js` - Damage calculations and modifiers (+200 lines)
+- `Combat System/combat_resolver.js` - Attack resolution and logging (+250 lines)
+- `Combat System/enemy_combat.js` - Enemy attack coordination (+80 lines)
+- `Combat System/damage_display.js` - Visual damage numbers (+70 lines)
+- `Combat System/combat_utils.js` - Shared helper functions (+150 lines)
+
+#### Files Modified:
+- **`combat_system.js`:** Converted to thin orchestrator file (+5 lines, -1000 lines)
+- **`js_platformer_z_depth_demo.html`:** Updated script loading order for new Combat System directory
+- **`PROJECT_FILE_GUIDE.md`:** Added Combat System documentation
+
+#### Benefits Achieved:
+- **Improved Maintainability:** Combat logic organized in logical, focused modules
+- **Easier Debugging:** Specific combat issues can be isolated to relevant modules
+- **Better Code Organization:** Single responsibility principle enforced across all combat modules
+- **Enhanced Developer Experience:** Clear file structure and focused responsibilities
+- **Future Extensibility:** Easy to add new combat mechanics or modify existing behavior
+- **Performance Maintained:** Identical combat behavior with improved code organization
+- **Zero Breaking Changes:** All existing APIs and functionality preserved
+
+#### Architectural Benefits Achieved:
+- **System Modularity:** Combat functionality split into focused, maintainable modules
+- **Clean Separation:** Different combat aspects properly isolated (attributes, calculation, resolution, coordination, visuals)
+- **Unified Interface:** Consistent approach across all combat-related functionality
+- **Scalable Design:** Easy to extend combat system with new features or entity types
+- **Professional Standards:** Industry-standard separation of combat concerns
+- **Debug-Friendly:** Modular structure enables rapid issue identification and resolution
+
 ### Experience System Fix - Combat Resolver Integration - COMPLETED ✅ **[CRITICAL BUG FIX]**
 **Fixed broken experience awarding system by moving XP logic directly into combat resolver when enemies die**
 
