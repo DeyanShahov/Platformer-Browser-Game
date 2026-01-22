@@ -8,52 +8,14 @@
 // ===========================================
 
 /**
- * Handles player-specific movement physics without resetting velocity
- * Unlike enemy movement, this preserves velocity for FSM animation transitions
- * @param {Player} player - The player entity
- * @param {number} dt - Delta time
- * @param {number} canvasHeight - Canvas height
- * @param {number} gravity - Gravity constant
- * @param {number} zMin - Minimum Z boundary
- * @param {number} zMax - Maximum Z boundary
+ * Player movement using unified collision system
+ * Uses handlePlayerMovement from Collision System for consistent behavior
  */
-function handlePlayerMovement(player, dt, canvasHeight, gravity, zMin, zMax) {
-    // Prevent movement during attack animations (like enemies)
-    if (player.stateMachine && player.stateMachine.isInAttackState()) {
-        // During attack, character should not move - but don't reset velocity for FSM
-        // Keep velocity for animation state transitions but don't apply movement
-        return;
-    }
 
-    // Apply velocity to position (basic physics)
-    player.x += player.vx * dt;
-    player.y += player.vy * dt;
-    player.z += player.vz * dt;
-
-    // Basic gravity for players
-    player.vy += gravity * dt;
-
-    // Ground collision
-    const groundY = canvasHeight - 600; // Same ground level as enemies
-    if (player.y >= groundY) {
-        player.y = groundY;
-        player.vy = 0;
-        player.onGround = true;
-    } else {
-        player.onGround = false;
-    }
-
-    // Apply screen boundaries
-    const boundaryResult = window.applyScreenBoundaries(player);
-    if (boundaryResult.wasLimited) {
-        // Stop movement if we hit a boundary
-        player.vx = 0;
-        player.vz = 0;
-    }
-
-    // IMPORTANT: Do NOT reset velocity here - preserve for FSM animation transitions
-    // The FSM needs to see velocity to determine WALK/RUN animations
-}
+/**
+ * Player movement handled by collision system (Dependency Injection)
+ * Uses window.handleMovement() from collision.js for collision-aware movement
+ */
 
 /**
  * Updates a single player entity with combat logic, input processing, and physics
@@ -84,8 +46,10 @@ function updatePlayer(player, playerIndex, dt) {
         handleControllerInput(player, playerIndex);
     }
 
-    // Физика и колизии - use player-specific movement that preserves velocity
-    handlePlayerMovement(player, dt, CANVAS_HEIGHT, GRAVITY, Z_MIN, Z_MAX);
+    // Физика и колизии - use unified collision system
+    //console.log(`[PLAYER_MOVEMENT] Before: pos(${player.x.toFixed(1)}, ${player.z.toFixed(1)}), vel(${player.vx.toFixed(1)}, ${player.vz.toFixed(1)})`);
+    window.handlePlayerMovement(player, dt, CANVAS_HEIGHT, GRAVITY, Z_MIN, Z_MAX);
+    //console.log(`[PLAYER_MOVEMENT] After: pos(${player.x.toFixed(1)}, ${player.z.toFixed(1)}), vel(${player.vx.toFixed(1)}, ${player.vz.toFixed(1)})`);
 
     // Проверка за удар с врагове - FSM-based damage dealing
     if (player.stateMachine && player.stateMachine.isInAttackState() && !player.damageDealt) {

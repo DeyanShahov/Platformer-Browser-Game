@@ -20,6 +20,8 @@ class AnimationRenderer {
     const drawX = entity.x;
     const drawY = entity.y - entity.h - zOffset;
 
+    //console.log(`[ANIMATION_RENDERER] calculateBoxPosition: ${entity.animationEntityType || entity.entityType}, boxType=${boxType}, drawX=${drawX.toFixed(1)}, drawY=${drawY.toFixed(1)}, zOffset=${zOffset.toFixed(1)}`);
+
     let boxX, boxY, boxW, boxH;
 
     if (boxType === 'attack') {

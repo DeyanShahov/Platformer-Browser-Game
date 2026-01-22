@@ -346,6 +346,13 @@ class CombatResolver {
     // Check for enemy defeat - работи за всички противници, не само за window.enemy
     const defenderDied = defender.health <= 0;
     if (defenderDied && defender.entityType === 'enemy' && !defender.isDying) {
+      // Enemy was defeated - award experience to attacker IMMEDIATELY
+      if (attacker && attacker.characterInfo) {
+        const experienceReward = 200; // 200 XP for enemy defeat
+        attacker.characterInfo.addExperience(experienceReward, attacker);
+        console.log(`[COMBAT] ${attacker.characterInfo.getDisplayName()} gained ${experienceReward} experience!`);
+      }
+
       // Enemy was defeated - update level completion status IMMEDIATELY
       if (window.levelManager) {
         window.levelManager.completionStatus.defeatedEnemies = (window.levelManager.completionStatus.defeatedEnemies || 0) + 1;
@@ -377,11 +384,11 @@ class CombatResolver {
     this.logCombatEvent(combatEvent);
 
     // Console logging for debugging
-    console.log(`[COMBAT] ${attacker.characterInfo?.getDisplayName() || 'Unknown'} attacked ${defender.characterInfo?.getDisplayName() || 'Unknown'} with ${skillType}`);
-    console.log(`[COMBAT] Attack Power: ${damageResult.attackPower}, Defense: ${damageResult.defense}, Damage: ${actualDamage}${damageResult.isCritical ? ' (CRITICAL!)' : ''}`);
-    if (defenderDied) {
-      console.log(`[COMBAT] ${defender.characterInfo?.getDisplayName() || 'Enemy'} was defeated!`);
-    }
+    //console.log(`[COMBAT] ${attacker.characterInfo?.getDisplayName() || 'Unknown'} attacked ${defender.characterInfo?.getDisplayName() || 'Unknown'} with ${skillType}`);
+    //console.log(`[COMBAT] Attack Power: ${damageResult.attackPower}, Defense: ${damageResult.defense}, Damage: ${actualDamage}${damageResult.isCritical ? ' (CRITICAL!)' : ''}`);
+    // if (defenderDied) {
+    //   console.log(`[COMBAT] ${defender.characterInfo?.getDisplayName() || 'Enemy'} was defeated!`);
+    // }
 
     return combatEvent;
   }
@@ -807,8 +814,8 @@ function addDamageNumberToTarget(attacker, target, damage, isCritical = false, d
   const damageY = hitBoxPos.y - 15;                   // 15px above top of hit box
 
   // Debug logging
-  console.log(`[DAMAGE_NUMBER] Target: ${target.entityType}, HitBox: x=${hitBoxPos.x.toFixed(1)}, y=${hitBoxPos.y.toFixed(1)}, w=${hitBoxPos.width}, h=${hitBoxPos.height}`);
-  console.log(`[DAMAGE_NUMBER] Damage position: x=${damageX.toFixed(1)}, y=${damageY.toFixed(1)}, damage=${damage}, critical=${isCritical}`);
+  //console.log(`[DAMAGE_NUMBER] Target: ${target.entityType}, HitBox: x=${hitBoxPos.x.toFixed(1)}, y=${hitBoxPos.y.toFixed(1)}, w=${hitBoxPos.width}, h=${hitBoxPos.height}`);
+  //console.log(`[DAMAGE_NUMBER] Damage position: x=${damageX.toFixed(1)}, y=${damageY.toFixed(1)}, damage=${damage}, critical=${isCritical}`);
 
   // Use the damage number manager parameter
   if (damageNumberManager) {

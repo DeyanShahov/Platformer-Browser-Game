@@ -338,33 +338,30 @@ class BaseEnemy {
 
     /**
      * Helper: Detect which entity caused the collision at proposed position
+     * NOW USES ONLY COLLISION SYSTEM - NO OWN COLLISION LOGIC!
      */
     detectCollidedEntity(proposedX, proposedY, proposedZ) {
-        // Robust fallback to find entities even if gameState is not ready
-        let allEntities = [];
-        if (window.gameState && window.gameState.getAllEntities) {
-            allEntities = window.gameState.getAllEntities();
-        } else {
-            // Fallback to globals if available (common in this project structure)
-            const globalPlayers = window.players || [];
-            const globalEnemy = window.enemy;
-            const globalAlly = window.ally;
-            allEntities = [...globalPlayers, globalEnemy, globalAlly].filter(e => e !== null && e !== undefined);
-        }
+        // Get all entities using Collision System approach
+        const allEntities = window.gameState ? window.gameState.getAllEntities() :
+            [...window.players || [], window.enemy, window.ally].filter(e => e !== null && e !== undefined);
 
-        // console.log(`[COLLISION_DEBUG] detectCollidedEntity checking against ${allEntities.length} entities`);
+        // console.log(`[COLLISION_DEBUG] detectCollidedEntity checking against ${allEntities.length} entities using Collision System`);
 
         for (const entity of allEntities) {
             if (entity === this) continue;
 
+            // USE COLLISION SYSTEM ONLY - no custom logic!
             const hasCollision = window.checkEntityCollision ?
                 window.checkEntityCollision(this, entity, 'movement', {
                     entity1Pos: { x: proposedX, y: proposedY, z: proposedZ },
-                    buffer: 0
+                    buffer: 0 // No buffer for precise collision check
                 }) : false;
 
             if (hasCollision) {
-                console.log(`[COLLISION_DEBUG] Collision found with ${entity.entityType} (${entity.constructor.name})`);
+                // USE COLLISION SYSTEM DISTANCE CALCULATION - no custom Math.abs!
+                const distance = window.calculateEntityDistance ? window.calculateEntityDistance(this, entity) : 0;
+                console.log(`[COLLISION_DEBUG] Collision found with ${entity.entityType} (${entity.constructor.name}) at distance: ${distance.toFixed(1)} (enemy: ${this.x.toFixed(1)}, ${entity.entityType}: ${entity.x.toFixed(1)})`);
+                console.log(`[COLLISION_DEBUG] Enemy: ${this.constructor.name} pos(${this.x.toFixed(1)}, ${this.z.toFixed(1)}) | ${entity.entityType}: pos(${entity.x.toFixed(1)}, ${entity.z.toFixed(1)})`);
                 return entity;
             }
         }
