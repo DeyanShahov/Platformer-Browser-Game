@@ -404,7 +404,7 @@ const SKILL_TREE = {
     maxLevel: 1,
     levelCosts: [1],  // 1 skill point to unlock
     levelEffects: [
-      [ { stat: 'characterInfo.baseDefense', value: 10, description: '+10 защита' } ]    // Level 1
+      [{ stat: 'characterInfo.baseDefense', value: 10, description: '+10 защита' }]    // Level 1
     ]
   },
 
@@ -493,11 +493,11 @@ const SKILL_TREE = {
     maxLevel: 5,
     levelCosts: [1, 1, 1, 1, 1],  // 1 point per level
     levelEffects: [
-      [ { stat: 'characterInfo.magicResistance.water', value: 2, description: '+2% водна резистанс' } ],
-      [ { stat: 'characterInfo.magicResistance.water', value: 2, description: '+2% водна резистанс' } ],
-      [ { stat: 'characterInfo.magicResistance.water', value: 2, description: '+2% водна резистанс' } ],
-      [ { stat: 'characterInfo.magicResistance.water', value: 2, description: '+2% водна резистанс' } ],
-      [ { stat: 'characterInfo.magicResistance.water', value: 2, description: '+2% водна резистанс' } ]
+      [{ stat: 'characterInfo.magicResistance.water', value: 2, description: '+2% водна резистанс' }],
+      [{ stat: 'characterInfo.magicResistance.water', value: 2, description: '+2% водна резистанс' }],
+      [{ stat: 'characterInfo.magicResistance.water', value: 2, description: '+2% водна резистанс' }],
+      [{ stat: 'characterInfo.magicResistance.water', value: 2, description: '+2% водна резистанс' }],
+      [{ stat: 'characterInfo.magicResistance.water', value: 2, description: '+2% водна резистанс' }]
     ]
   },
 
@@ -521,11 +521,11 @@ const SKILL_TREE = {
     maxLevel: 5,
     levelCosts: [1, 1, 1, 1, 1],  // 1 point per level
     levelEffects: [
-      [ { stat: 'characterInfo.magicResistance.fire', value: 2, description: '+2% огнена резистанс' } ],
-      [ { stat: 'characterInfo.magicResistance.fire', value: 2, description: '+2% огнена резистанс' } ],
-      [ { stat: 'characterInfo.magicResistance.fire', value: 2, description: '+2% огнена резистанс' } ],
-      [ { stat: 'characterInfo.magicResistance.fire', value: 2, description: '+2% огнена резистанс' } ],
-      [ { stat: 'characterInfo.magicResistance.fire', value: 2, description: '+2% огнена резистанс' } ]
+      [{ stat: 'characterInfo.magicResistance.fire', value: 2, description: '+2% огнена резистанс' }],
+      [{ stat: 'characterInfo.magicResistance.fire', value: 2, description: '+2% огнена резистанс' }],
+      [{ stat: 'characterInfo.magicResistance.fire', value: 2, description: '+2% огнена резистанс' }],
+      [{ stat: 'characterInfo.magicResistance.fire', value: 2, description: '+2% огнена резистанс' }],
+      [{ stat: 'characterInfo.magicResistance.fire', value: 2, description: '+2% огнена резистанс' }]
     ]
   },
 
@@ -549,11 +549,11 @@ const SKILL_TREE = {
     maxLevel: 5,
     levelCosts: [1, 1, 1, 1, 1],  // 1 point per level
     levelEffects: [
-      [ { stat: 'characterInfo.magicResistance.air', value: 2, description: '+2% въздушна резистанс' } ],
-      [ { stat: 'characterInfo.magicResistance.air', value: 2, description: '+2% въздушна резистанс' } ],
-      [ { stat: 'characterInfo.magicResistance.air', value: 2, description: '+2% въздушна резистанс' } ],
-      [ { stat: 'characterInfo.magicResistance.air', value: 2, description: '+2% въздушна резистанс' } ],
-      [ { stat: 'characterInfo.magicResistance.air', value: 2, description: '+2% въздушна резистанс' } ]
+      [{ stat: 'characterInfo.magicResistance.air', value: 2, description: '+2% въздушна резистанс' }],
+      [{ stat: 'characterInfo.magicResistance.air', value: 2, description: '+2% въздушна резистанс' }],
+      [{ stat: 'characterInfo.magicResistance.air', value: 2, description: '+2% въздушна резистанс' }],
+      [{ stat: 'characterInfo.magicResistance.air', value: 2, description: '+2% въздушна резистанс' }],
+      [{ stat: 'characterInfo.magicResistance.air', value: 2, description: '+2% въздушна резистанс' }]
     ]
   },
 
@@ -577,11 +577,11 @@ const SKILL_TREE = {
     maxLevel: 5,
     levelCosts: [1, 1, 1, 1, 1],  // 1 point per level
     levelEffects: [
-      [ { stat: 'characterInfo.magicResistance.earth', value: 2, description: '+2% земна резистанс' } ],
-      [ { stat: 'characterInfo.magicResistance.earth', value: 2, description: '+2% земна резистанс' } ],
-      [ { stat: 'characterInfo.magicResistance.earth', value: 2, description: '+2% земна резистанс' } ],
-      [ { stat: 'characterInfo.magicResistance.earth', value: 2, description: '+2% земна резистанс' } ],
-      [ { stat: 'characterInfo.magicResistance.earth', value: 2, description: '+2% земна резистанс' } ]
+      [{ stat: 'characterInfo.magicResistance.earth', value: 2, description: '+2% земна резистанс' }],
+      [{ stat: 'characterInfo.magicResistance.earth', value: 2, description: '+2% земна резистанс' }],
+      [{ stat: 'characterInfo.magicResistance.earth', value: 2, description: '+2% земна резистанс' }],
+      [{ stat: 'characterInfo.magicResistance.earth', value: 2, description: '+2% земна резистанс' }],
+      [{ stat: 'characterInfo.magicResistance.earth', value: 2, description: '+2% земна резистанс' }]
     ]
   },
 
@@ -1128,9 +1128,9 @@ const SKILL_TREE = {
     maxLevel: 3,  // Максимум 3 нива
     levelCosts: [1, 1, 2],  // Level 1: 1pt, Level 2: 1pt, Level 3: 2pt
     levelEffects: [
-      [ { stat: 'baseAttack', value: 2, description: '+2 атака' } ],    // Level 1
-      [ { stat: 'baseAttack', value: 3, description: '+3 атака' } ],    // Level 2 (допълнително)
-      [ { stat: 'baseAttack', value: 10, description: '+10 атака' } ]   // Level 3 (допълнително)
+      [{ stat: 'baseAttack', value: 2, description: '+2 атака' }],    // Level 1
+      [{ stat: 'baseAttack', value: 3, description: '+3 атака' }],    // Level 2 (допълнително)
+      [{ stat: 'baseAttack', value: 10, description: '+10 атака' }]   // Level 3 (допълнително)
     ]
   },
   [SKILL_TYPES.STRONG_ATTACK]: {
@@ -1156,11 +1156,11 @@ const SKILL_TREE = {
     maxLevel: 5,
     levelCosts: [1, 1, 1, 1, 1],  // 1 point per level
     levelEffects: [
-      [ { stat: 'baseAttack', value: 2, description: '+2 атака' } ],    // Level 1
-      [ { stat: 'baseAttack', value: 2, description: '+2 атака' } ],    // Level 2
-      [ { stat: 'baseAttack', value: 2, description: '+2 атака' } ],    // Level 3
-      [ { stat: 'baseAttack', value: 2, description: '+2 атака' } ],    // Level 4
-      [ { stat: 'baseAttack', value: 2, description: '+2 атака' } ]     // Level 5
+      [{ stat: 'baseAttack', value: 2, description: '+2 атака' }],    // Level 1
+      [{ stat: 'baseAttack', value: 2, description: '+2 атака' }],    // Level 2
+      [{ stat: 'baseAttack', value: 2, description: '+2 атака' }],    // Level 3
+      [{ stat: 'baseAttack', value: 2, description: '+2 атака' }],    // Level 4
+      [{ stat: 'baseAttack', value: 2, description: '+2 атака' }]     // Level 5
     ]
   },
   [SKILL_TYPES.ULTIMATE_ATTACK]: {
@@ -1197,7 +1197,7 @@ const SKILL_TREE = {
     maxLevel: 1,
     levelCosts: [1],  // 1 skill point to unlock
     levelEffects: [
-      [ { stat: 'baseAttack', value: 50, description: '+50 атака' } ]    // Level 1
+      [{ stat: 'baseAttack', value: 50, description: '+50 атака' }]    // Level 1
     ]
   },
 
@@ -1281,6 +1281,7 @@ const SKILL_TREE = {
 // Export all constants and data for use in other files
 window.SKILL_TYPES = SKILL_TYPES;
 window.SKILL_PAGES = SKILL_PAGES;
+window.SKILL_USAGE_TYPES = SKILL_USAGE_TYPES;
 window.RESOURCE_TYPES = RESOURCE_TYPES;
 window.DAMAGE_TYPES = DAMAGE_TYPES;
 window.RANGE_TYPES = RANGE_TYPES;

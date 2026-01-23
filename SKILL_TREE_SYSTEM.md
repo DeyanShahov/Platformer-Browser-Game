@@ -49,7 +49,7 @@
 - `getIconPosition(row, col)` - Изчислява позиция в sprite sheet
 - `loadSkillIcon(row, col)` - Зарежда icon като canvas елемент
 
-### 3. UI Visualization (`menu.js`)
+### 3. UI Visualization (`Menu System/skills/`)
 **Layout:**
 - **Split Container**: Лява панел (grid) + Дясна панел (детайли)
 - **Grid**: 6×5 (30 позиции) за уменията
@@ -211,9 +211,15 @@
 data/
 └── skill-data.js      - Static skill definitions and constants
 
+Menu System/
+└── skills/
+    ├── skill_helpers.js     - Skill calculation utilities
+    ├── skill_tree_core.js   - Skill tree logic and navigation
+    ├── skill_tree_ui.js     - UI rendering functions
+    └── [other Menu System files...]
+
 skills.js              - Skill tree logic (SkillTreeManager)
 load_skill_icon.js     - Icon loading utilities
-menu.js                - UI implementation
 game.js                - Game integration
 
 css/

@@ -109,9 +109,9 @@ Add the complete skill definition to the `SKILL_TREE` object:
 ```
 
 ### Step 3: Update Grid Layout
-**File**: `menu.js`
+**File**: `Menu System/skills/skill_tree_core.js`
 
-Add the skill to the `SKILL_GRID_LAYOUT` array at the correct position:
+Add the skill to the `SKILL_GRID_LAYOUTS` array at the correct position:
 
 ```javascript
 const SKILL_GRID_LAYOUT = [
@@ -124,7 +124,7 @@ const SKILL_GRID_LAYOUT = [
 **Note**: Convert visual position (e.g., "1-4") to array indices (row 0, column 3).
 
 ### Step 4: Update Connection Lines (if needed)
-**File**: `menu.js`
+**File**: `Menu System/skills/skill_tree_core.js`
 
 If the skill should connect to other skills, update the `skillChains` array in `drawConnectionLines()`:
 

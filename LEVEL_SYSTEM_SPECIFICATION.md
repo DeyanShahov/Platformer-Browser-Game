@@ -1005,7 +1005,7 @@ class LevelManager {
 - **Minimal Complexity:** Text-based progress, no complex save systems initially
 
 **Key Integration Points:**
-- **menu.js:** Level selection menu using existing navigation patterns
+- **Menu System/:** Level selection menu using existing navigation patterns
 - **ui.js:** Progress indicators and status displays
 - **Input System:** Controller/gamepad primary, keyboard secondary
 - **Game Flow:** Level selection → gameplay → death/restart cycle

@@ -8,6 +8,120 @@ This comprehensive guide documents every file in the Platformer Browser Game pro
 
 ---
 
+## 🧠 PROJECT MEMORY SYSTEM
+
+### `platformer-game-memory.jsonl` - Project Knowledge Base **[INTELLIGENT KNOWLEDGE MANAGEMENT]**
+**Purpose:** Comprehensive project memory system maintaining architectural knowledge, decisions, and development history using JSON Lines format for AI-assisted development and knowledge persistence.
+
+**Architecture:** JSON Lines format with multiple record types for structured knowledge management and semantic relationships.
+
+#### **Record Types:**
+- **`entity`** - System/component definitions with detailed observations and metadata
+- **`relation`** - Semantic relationships between entities (contains, uses, implements, etc.)
+- **`architecture_decision`** - Documented architectural choices with timestamps and rationale
+- **`bugfix`** - Bug fixes and technical debt resolution
+
+#### **Entity Records - System Knowledge:**
+Each major system has dedicated entity record with comprehensive metadata:
+
+```json
+{
+  "type": "entity",
+  "name": "platformer-game:combat-system",
+  "entityType": "game_system",
+  "observations": [
+    "Purpose: Unified combat resolution engine...",
+    "Files: Combat System/ directory (7 modules)...",
+    "Architecture: Modular Combat System...",
+    "Classes: CombatAttributes, CombatCalculator...",
+    "Integration: character_info.js, skill system..."
+  ]
+}
+```
+
+**System Coverage:** Complete documentation for all 12+ major systems (Combat, Animation, AI, Collision, Rendering, Skills, etc.)
+
+#### **Relation Records - System Dependencies:**
+Semantic relationships mapping system interactions:
+
+```json
+{
+  "type": "relation",
+  "from": "platformer-game:combat-system",
+  "to": "platformer-game:collision-system",
+  "relationType": "depends_on"
+}
+```
+
+**Benefits:**
+- **Dependency Mapping:** Clear understanding of system interdependencies
+- **Integration Points:** Easy identification of coupling points
+- **Refactoring Safety:** Knowledge of which systems will be affected by changes
+
+#### **Architecture Decision Records - Technical Rationale:**
+Timestamped architectural decisions with complete context:
+
+```json
+{
+  "timestamp": "2026-01-14T01:18:00+02:00",
+  "type": "architecture_decision",
+  "title": "Enemy AI: Probabilistic Movement & Universal Factory Fix",
+  "tags": ["ai", "behavior-tree", "movement", "fix"],
+  "description": "Resolved persistent vertical movement loop... Fixed discrepancy between createUniversalEnemyBehaviorTree and createScriptEnabledBT...",
+  "files": ["Behavior Tree/enemyAI_BT.js", "base_enemy.js"]
+}
+```
+
+**Decision Categories:**
+- **System Architecture:** Major structural changes and design decisions
+- **Bug Fixes:** Critical bug resolutions with root cause analysis
+- **Performance Improvements:** Optimization decisions and rationale
+- **Refactoring:** Code organization and maintainability improvements
+
+#### **Bugfix Records - Technical Debt Resolution:**
+Documented bug fixes with complete problem-solution context:
+
+```json
+{
+  "type": "bugfix",
+  "title": "Enemy AI: Stuttering Loop Fix",
+  "description": "Resolved infinite Chase→Idle→Chase loop... Added canInterrupt flag...",
+  "files": ["base_enemy.js"]
+}
+```
+
+#### **Technical Implementation:**
+- **JSON Lines Format:** One JSON object per line for streaming and incremental updates
+- **Semantic Naming:** `platformer-game:*` namespace for consistent entity identification
+- **Timestamp Tracking:** All decisions and fixes timestamped with timezone information
+- **File References:** Every record includes affected files for traceability
+- **Tag System:** Categorization for easy querying and filtering
+
+#### **Benefits Achieved:**
+- **AI-Assisted Development:** Complete project context for intelligent code suggestions and architectural guidance
+- **Knowledge Persistence:** Institutional memory beyond individual developer knowledge
+- **Decision Transparency:** Clear rationale behind all major technical decisions
+- **Debugging Efficiency:** Historical context for understanding complex system behaviors
+- **Refactoring Safety:** Comprehensive impact analysis before making changes
+- **Onboarding Acceleration:** New developers can quickly understand system architecture and history
+- **Quality Assurance:** Historical patterns help prevent recurring issues
+
+#### **Integration Points:**
+- **Development Workflow:** Referenced during code reviews and architectural discussions
+- **AI Assistance:** Provides context for intelligent code completion and suggestions
+- **Documentation:** Serves as living technical documentation that evolves with the project
+- **Debugging:** Historical decisions help understand why systems work certain ways
+
+#### **Maintenance:**
+- **Automated Updates:** New decisions and fixes automatically logged during development
+- **Version Control:** Tracked in git for complete history preservation
+- **Query Capabilities:** JSON structure enables complex queries and analysis
+- **Evolution Tracking:** Records show how systems evolved and architectural decisions changed over time
+
+**Note:** This memory system serves as the project's institutional knowledge base, enabling intelligent development, preventing knowledge loss, and providing comprehensive context for all architectural decisions and technical implementations.
+
+---
+
 ## 🏗️ RECENT ARCHITECTURAL CHANGES (January 2026)
 
 ### Collision System Refactoring - Debug Logging Cleanup - COMPLETED ✅ **[MAINTENANCE IMPROVEMENT]**
@@ -1466,6 +1580,235 @@ Platformer Browser Game/
 
 ## 👥 CHARACTER & PLAYER SYSTEMS
 
+### **Character System/** - Unified Character Management **[NEW MODULAR SYSTEM - JANUARY 2026]**
+**Purpose:** Complete modular character system integrating stats, progression, combat, and UI into a unified architecture
+**Structure:**
+```
+Character System/
+├── index.js              # System orchestrator and unified API
+├── core/
+│   ├── character_core.js # Character lifecycle management and registry
+│   └── character_info.js # Character statistics and basic progression
+├── progression/
+│   ├── experience_system.js  # XP management and leveling
+│   └── stat_distribution.js  # Manual stat point allocation
+├── combat/
+│   └── character_combat.js   # Combat bonuses and stat integration
+└── ui/
+    └── character_stats_ui.js # Character stats interface
+```
+
+#### **`Character System/index.js` - System Orchestrator**
+**Purpose:** Main entry point and API coordinator for the entire character system
+**Responsibilities:**
+- System initialization coordination
+- Unified API export via `window.CharacterSystem`
+- Character lifecycle management delegation
+- Integration with other game systems (combat, progression, UI)
+- Backward compatibility maintenance
+**Key Functions:**
+- `initCharacterSystem()` - Complete system initialization
+- `createCharacter(characterData)` - Character creation
+- `getCharacter(playerIndex)` - Character retrieval
+- `updateCharacter(playerIndex, updates)` - Character updates
+- `addExperience(playerIndex, amount)` - XP management
+- `getLevelInfo(playerIndex)` - Level information
+- `modifyStrength/Speed/Intelligence(playerIndex, amount)` - Stat modification
+- `getAvailableStatPoints(playerIndex)` - Free points checking
+- `showCharacterStats(playerIndex)` - UI display
+- `getCharacterCombatStats(playerIndex)` - Combat integration
+- `applyCharacterCombatBonuses(playerIndex, combatData)` - Combat bonuses
+**Key Features:**
+- **Unified Character API:** All character operations through single interface
+- **Modular Architecture:** Clean separation between core, progression, combat, and UI
+- **System Integration:** Seamless integration with combat, animation, and UI systems
+- **State Management:** Centralized character state across all modules
+- **Backward Compatibility:** Maintains existing global function signatures
+**Dependencies:** All Character System modules
+**Integration Points:** Core character system, used by game.js, combat_system.js, ui.js
+**Global Exports:** `window.CharacterSystem` - Complete character API
+
+#### **`Character System/core/character_core.js` - Character Lifecycle Management**
+**Purpose:** Core character entity management, creation, and registry system
+**Responsibilities:**
+- Character registry and lifecycle management
+- Character creation with proper initialization
+- Character state persistence and retrieval
+- Character removal and cleanup
+- System initialization and coordination
+**Key Functions:**
+- `initCharacterSystem()` - System setup
+- `createCharacter(characterData)` - Character instantiation
+- `getCharacter(playerIndex)` - Character retrieval
+- `updateCharacter(playerIndex, updates)` - Character updates
+- `removeCharacter(playerIndex)` - Character cleanup
+- `getAllCharacters()` - Bulk retrieval
+- `getCharacterCount()` - Registry statistics
+- `hasCharacter(playerIndex)` - Existence checking
+- `resetAllCharacters()` - System reset
+**Key Features:**
+- **Registry Pattern:** Map-based character storage with player index keys
+- **Lifecycle Management:** Complete character lifecycle from creation to removal
+- **State Persistence:** Character data maintained across game sessions
+- **Error Handling:** Robust error handling for invalid operations
+- **Performance Optimized:** Efficient lookups and minimal memory footprint
+**Dependencies:** `Character System/core/character_info.js`
+**Integration Points:** Foundation of character system, used by all other character modules
+**Global Exports:** `window.CharacterCore` - Core character operations
+
+#### **`Character System/core/character_info.js` - Character Statistics & Progression**
+**Purpose:** Character statistics management, experience progression, and basic leveling mechanics
+**Responsibilities:**
+- Character stats (strength, speed, intelligence) and automatic progression
+- Experience point management and level calculations
+- Automatic stat increases and free point allocation
+- Level-up mechanics and resource restoration
+- Display name management and character identification
+**Key Functions:**
+- `addExperience(amount, player)` - XP addition and level checking
+- `levelUp(player)` - Level advancement with stat bonuses
+- `calculateExperienceToNext()` - XP requirement calculations
+- `modifyStrength/Speed/Intelligence(amount)` - Stat modifications
+- `getDisplayName()` - Localized character names
+- `getTotalStatPoints()` - Stat total calculations
+- `increaseStrength/Speed/Intelligence()` - Manual stat increases
+- `decreaseStrength/Speed/Intelligence()` - Manual stat decreases
+**Key Features:**
+- **RPG Progression:** Classic level-up mechanics with stat point allocation
+- **Automatic Progression:** Stats increase automatically on level up
+- **Free Point System:** Manual distribution of earned stat points
+- **Resource Management:** Health/mana/energy restoration on level up
+- **Skill Integration:** Skill point awarding on level advancement
+- **Localized Names:** Bulgarian character names for immersion
+**Dependencies:** `constants.js`, `combat_system.js`
+**Integration Points:** Core character progression, used by progression and combat systems
+**Global Exports:** `window.CharacterInfo` - Character class constructor
+
+#### **`Character System/progression/experience_system.js` - Experience Management**
+**Purpose:** Dedicated experience point system with leveling calculations and progression tracking
+**Responsibilities:**
+- Experience point calculations and level progression
+- Level cap enforcement and experience requirements
+- Automatic stat increases on level up
+- Resource restoration and skill point awarding
+- Level information queries and progression tracking
+**Key Functions:**
+- `initExperienceSystem()` - System initialization
+- `calculateExperienceForLevel(level)` - XP requirement calculations
+- `getLevelInfo(playerIndex)` - Comprehensive level data
+- `addExperience(playerIndex, amount, source)` - XP awarding
+- `levelUpCharacter(playerIndex)` - Level advancement
+- `setCharacterLevel(playerIndex, newLevel)` - Admin level setting
+- `calculateExperienceReward(baseAmount, source)` - XP reward calculations
+- `getLevelingProgress(playerIndex)` - Progress tracking
+- `canLevelUp(playerIndex)` - Level-up eligibility checking
+**Key Features:**
+- **Linear Progression:** Simple but effective leveling curve
+- **Source Tracking:** XP sources (enemy kills, quests, boss kills) with multipliers
+- **Level Cap:** Configurable maximum level (default 50)
+- **Resource Restoration:** Full health/mana/energy recovery on level up
+- **Skill Integration:** Automatic skill point awarding
+- **Progress Tracking:** Detailed leveling progress information
+**Dependencies:** `window.CharacterCore`
+**Integration Points:** Experience awarding, used by combat system and level progression
+**Global Exports:** `window.ExperienceSystem` - Experience management API
+
+#### **`Character System/progression/stat_distribution.js` - Manual Stat Allocation**
+**Purpose:** Manual distribution system for character stat points earned through leveling
+**Responsibilities:**
+- Free stat point management and allocation
+- Manual stat increases and decreases
+- Stat minimum enforcement and validation
+- Stat distribution information and queries
+- Stat reset functionality for redistribution
+**Key Functions:**
+- `initStatDistributionSystem()` - System setup
+- `getAvailableStatPoints(playerIndex)` - Free points checking
+- `modifyStrength/Speed/Intelligence(playerIndex, amount)` - Stat modifications
+- `getStatInfo(playerIndex)` - Comprehensive stat information
+- `resetStatDistribution(playerIndex)` - Point redistribution
+- `addFreePoints(playerIndex, amount)` - Admin point addition
+- `getStatDistributionConfig()` - System configuration
+- `validateStatDistribution(playerIndex)` - Stat validation
+**Key Features:**
+- **Free Point System:** Earned points for manual allocation
+- **Flexible Distribution:** Increase/decrease stats within level constraints
+- **Minimum Enforcement:** Cannot reduce stats below auto-leveled minimums
+- **Validation:** Comprehensive stat distribution validation
+- **Reset Capability:** Full redistribution of manually allocated points
+- **Admin Tools:** Direct point addition for testing/balancing
+**Dependencies:** `window.CharacterCore`
+**Integration Points:** Character progression UI, used by character stats interface
+**Global Exports:** `window.StatDistributionSystem` - Stat distribution API
+
+#### **`Character System/combat/character_combat.js` - Combat Integration**
+**Purpose:** Character stat integration with combat system, calculating combat bonuses and modifiers
+**Responsibilities:**
+- Combat bonus calculations from character stats
+- Stat-to-combat-attribute mapping
+- Mana pool and regeneration calculations
+- Combat effectiveness rating computation
+- Combat configuration and validation
+**Key Functions:**
+- `initCharacterCombatSystem()` - System initialization
+- `getCharacterCombatStats(playerIndex)` - Combat stat calculation
+- `calculateCombatBonuses(character)` - Bonus computation
+- `applyCharacterCombatBonuses(playerIndex, combatData)` - Bonus application
+- `getCharacterManaPool(playerIndex)` - Mana calculations
+- `getCharacterManaRegen(playerIndex)` - Mana regeneration
+- `getCharacterCombatRating(playerIndex)` - Effectiveness rating
+- `validateCombatBonuses(playerIndex)` - Bonus validation
+**Key Features:**
+- **Stat Integration:** Strength affects attack/defense, speed affects dodge/hit, intelligence affects mana
+- **Combat Bonuses:** Configurable multipliers for stat-to-combat conversion
+- **Mana System:** Intelligence-based mana pool and regeneration
+- **Level Scaling:** Combat effectiveness increases with character level
+- **Validation:** Comprehensive bonus validation and error checking
+- **Rating System:** Overall combat effectiveness calculation
+**Dependencies:** `window.CharacterCore`, `constants.js`
+**Integration Points:** Combat system integration, used by unified combat resolution
+**Global Exports:** `window.CharacterCombatSystem` - Combat integration API
+
+#### **`Character System/ui/character_stats_ui.js` - Character Stats Interface**
+**Purpose:** Complete UI system for displaying and managing character statistics
+**Responsibilities:**
+- Character stats panel rendering and management
+- Real-time stat display updates
+- Stat modification interface (increase/decrease buttons)
+- Character information display (portrait, name, level)
+- Combat stats visualization (attack, defense, resistances)
+- Skills display integration
+**Key Functions:**
+- `getMenuHTML()` - Stats panel HTML generation
+- `showForPlayer(playerIndex)` - Stats display for specific player
+- `hide()` - Stats panel hiding
+- `updateCharacterDisplay(player)` - Live stat updates
+- `increaseStrength/Speed/Intelligence()` - Stat increase handlers
+- `decreaseStrength/Speed/Intelligence()` - Stat decrease handlers
+- `updateSkillsDisplay(player)` - Skills status display
+- `refreshDisplay()` - Display refresh
+**Key Features:**
+- **Complete UI:** Full character stats interface with all stats and combat info
+- **Real-time Updates:** Live stat changes reflected immediately
+- **Interactive Controls:** Click-to-modify stat distribution
+- **Visual Feedback:** Progress bars, colored indicators, skill status icons
+- **Player-Specific:** Individual stats display per player
+- **Combat Integration:** Attack/defense/crit/dodge/block/hit stats display
+- **Magic Resistances:** Water/fire/air/earth resistance display
+- **Skills Integration:** Unlocked/available/locked skill status
+**Dependencies:** `window.gameState`, `window.skillTreeManager`, `window.CharacterCore`
+**Integration Points:** Character stats menu, integrated with main menu system
+**Global Exports:** `window.characterStatsUI` - Stats UI instance
+
+**Benefits Achieved:**
+- **Modular Architecture:** Clean separation between core stats, progression, combat, and UI
+- **Unified API:** Single `CharacterSystem` interface for all character operations
+- **System Integration:** Seamless integration with combat, animation, and UI systems
+- **Maintainability:** Focused modules with clear responsibilities
+- **Extensibility:** Easy to add new character features or modify existing ones
+- **Backward Compatibility:** Existing code continues to work unchanged
+- **Performance:** Efficient character management with minimal overhead
+
 ### `entities.js` - Entity Management Utilities **[RECENTLY REFACTORED]**
 **Purpose:** Basic entity creation utilities and shared entity variables
 **Responsibilities:**
@@ -2004,6 +2347,127 @@ Enemies/
 
 ## 🎨 UI & INTERFACE SYSTEMS
 
+### **Menu System/** - Modular Menu System **[PHASE 3 REFACTORING COMPLETE]**
+**Purpose:** Complete modular menu system replacing monolithic menu.js with focused subsystems for better maintainability and organization
+**Architecture:** 5-subsystem modular architecture with clean separation of concerns
+**Responsibilities:**
+- Menu state management and navigation
+- Skill tree display and progression
+- Character stats interface
+- Controls configuration and rebinding
+- Input coordination and processing
+**Structure:**
+```
+Menu System/
+├── index.js              # System orchestrator and unified API
+├── controls/
+│   ├── controls_manager.js  # Control configurations (load/save)
+│   └── controls_ui.js       # Controls display and rebinding UI
+├── core/
+│   ├── menu_core.js         # Basic menu functionality and HTML structure
+│   └── menu_ui.js           # UI helper functions and gamepad status
+├── input/
+│   └── menu_input_handler.js # Centralized input coordination
+└── skills/
+    ├── skill_helpers.js     # Skill calculation utilities
+    ├── skill_tree_core.js   # Skill tree logic and navigation
+    └── skill_tree_ui.js     # Skill tree UI functions
+```
+
+#### **`Menu System/index.js` - System Orchestrator**
+**Purpose:** Central coordinator for all menu-related functionality and unified API export
+**Responsibilities:**
+- Menu state management (active menu, current player, current page)
+- System initialization and coordination
+- Unified API export via `window.MenuSystem`
+- **Complete menu system initialization** **[NEW]**
+- **State management for skill trees and character stats** **[NEW]**
+**Key Functions:**
+- `initMenu()` - Complete menu system initialization
+- `showMenu()`, `hideMenu()` - Menu display coordination
+- `showSkillTreeForPlayer(playerIndex)` - Skill tree display for specific player
+- `showCharacterStatsForPlayer(playerIndex)` - Character stats for specific player
+- `getMenuState()`, `setMenuState()` - State management
+**Key Classes:** None (coordinator functions)
+**Key Features:**
+- **Unified Menu API:** All menu functions accessible via `window.MenuSystem.*`
+- **State Persistence:** Maintains menu state across different menu types
+- **Player-Specific Menus:** Skill trees and stats per player
+- **Backward Compatibility:** Exports functions expected by existing code
+**Dependencies:** All Menu System modules
+**Integration Points:** Called by game.js, used throughout the application
+**Global Exports:** `window.MenuSystem` - Complete menu API
+**Note:** Replaces monolithic menu.js with modular architecture (January 2026)
+
+#### **`Menu System/controls/` - Controls Management**
+**Purpose:** Control configuration, saving, loading, and rebinding system
+**Files:** `controls_manager.js`, `controls_ui.js`
+**Responsibilities:**
+- Control key/button mappings
+- Save/load control configurations
+- Control rebinding interface
+- Gamepad support and detection
+**Key Functions:**
+- `loadControls()` - Load saved control configurations
+- `saveControls()` - Persist control changes
+- `startRebinding()` - Initiate key/button rebinding
+- `updateControlsDisplay()` - Refresh UI with current mappings
+**Integration Points:** Called during game initialization and menu access
+
+#### **`Menu System/core/` - Core Menu Infrastructure**
+**Purpose:** Basic menu functionality and HTML structure management
+**Files:** `menu_core.js`, `menu_ui.js`
+**Responsibilities:**
+- Menu HTML structure and DOM manipulation
+- Basic menu navigation logic
+- Gamepad status detection and display
+- UI helper functions and utilities
+**Key Functions:**
+- `initMenuCore()` - Core menu system setup
+- `showMainMenu()` - Main menu display
+- `showControlsMenu()` - Controls configuration menu
+- `updateGamepadStatus()` - Gamepad connection status
+**Integration Points:** Foundation for all menu subsystems
+
+#### **`Menu System/input/` - Input Coordination**
+**Purpose:** Centralized input handling for all menu interactions
+**Files:** `menu_input_handler.js`
+**Responsibilities:**
+- Menu input processing and routing
+- Skill tree navigation (WASD/Enter/Escape)
+- Character stats navigation
+- Debounced input handling
+- **Input coordination moved from game.js** **[PHASE 3]**
+**Key Functions:**
+- `handleSkillTreeKeys(gameState, keys, lastSkillTreeToggleTime)` - Skill tree input coordination
+- `handleCharacterStatsKeys(gameState, keys, lastSkillTreeToggleTime)` - Character stats input coordination
+- `lastSkillTreeToggleTime` - Debounce timer for menu interactions
+**Key Features:**
+- **Parameter-Based Design:** Accepts game state and input parameters explicitly
+- **Clean Separation:** Menu input logic isolated from game loop
+- **Debounced Operations:** Prevents rapid menu toggling
+**Integration Points:** Called by game.js update loop with parameters
+**Note:** Input coordination functions moved from game.js (Phase 3) with parameter-based interface
+
+#### **`Menu System/skills/` - Skill Tree System**
+**Purpose:** Complete skill tree interface and progression management
+**Files:** `skill_helpers.js`, `skill_tree_core.js`, `skill_tree_ui.js`
+**Responsibilities:**
+- Skill tree navigation and selection
+- Skill unlocking and progression
+- Skill information display
+- Skill point management
+**Key Functions:**
+- `renderSkillTree()` - Main skill tree rendering
+- `moveCursor()` - Navigation within skill grid
+- `tryUnlockSelectedSkill()` - Skill unlocking logic
+- `updateSelectedSkillInfo()` - Skill details display
+- `switchSkillTreePage()` - Page navigation (main/secondary)
+- `getSkillLevelDisplay()`, `getCurrentEffectDisplay()`, `getNextEffectDisplay()` - Skill info formatting
+- `getPrerequisitesDisplay()`, `getSkillPointCost()` - Requirements display
+- `calculateTotalPassiveEffect()` - Effect calculations
+**Integration Points:** Called when opening skill trees for players
+
 ### `ui.js` - UI Rendering & Character Selection **[PHASES 1 & 2 COMPLETED]**
 **Purpose:** Core UI rendering, display management, and character selection system
 **Responsibilities:**
@@ -2041,28 +2505,7 @@ Enemies/
 **Global Exports:** `window.UISystem` - All functions and state variables
 **Note:** Character selection system moved from `game.js` (Phase 1), uses parameter-passing for clean architecture
 
-### `menu.js` - Menu System & Input Coordination **[PHASE 3 REFACTORING COMPLETE]**
-**Purpose:** Game menus and navigation with state management, plus input coordination for skill trees and character stats
-**Responsibilities:**
-- Main menu display and navigation
-- Settings management and controls
-- Menu state transitions
-- **Skill tree input coordination** **[MOVED FROM game.js - PHASE 3]**
-- **Character stats input coordination** **[MOVED FROM game.js - PHASE 3]**
-- **Key press tracking for menu interactions** **[MOVED FROM game.js - PHASE 3]**
-**Key Functions:**
-- `showMainMenu()` - Menu display
-- `handleMenuInput()` - Menu navigation
-- `showControlsMenu()` - Controls configuration
-- **`handleSkillTreeKeys(gameState, keys, lastSkillTreeToggleTime)` - Skill tree input coordination** **[MOVED FROM game.js - PHASE 3]**
-- **`handleCharacterStatsKeys(gameState, keys, lastSkillTreeToggleTime)` - Character stats input coordination** **[MOVED FROM game.js - PHASE 3]**
-**Key Variables:**
-- **`key5Pressed`, `key5WasPressed`, etc. (18 variables)` - Key press tracking for skill trees and character stats** **[MOVED FROM game.js - PHASE 3]**
-- **`lastSkillTreeToggleTime` - Debounce timer for menu interactions** **[MOVED FROM game.js - PHASE 3]**
-**Global Exports:** `window.MenuSystem.handleSkillTreeKeys`, `window.MenuSystem.handleCharacterStatsKeys`, `window.MenuSystem.lastSkillTreeToggleTime` **[PHASE 3]**
-**Dependencies:** `ui.js`, `game_state.js`, `constants.js`
-**Integration Points:** Game state transitions, called by game.js update loop
-**Note:** Input coordination functions moved from `game.js` (Phase 3) with parameter-based interface for clean architecture
+
 
 ### `css/skill-tree.css` - Skill Tree Styling
 **Purpose:** CSS styling for skill tree interface

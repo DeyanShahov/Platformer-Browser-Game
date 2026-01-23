@@ -14,9 +14,14 @@
     <script src="data/skill-data.js"></script>
     <script src="skills.js"></script>
     <script src="micro_skill_tree.js"></script>
-    <script src="character_info.js"></script>
-    <script src="character_stats_ui.js"></script>
-    <script src="combat_system.js"></script>
+    <!-- Character System - Modular Architecture -->
+    <script src="Character System/core/character_info.js"></script>
+    <script src="Character System/core/character_core.js"></script>
+    <script src="Character System/progression/experience_system.js"></script>
+    <script src="Character System/progression/stat_distribution.js"></script>
+    <script src="Character System/combat/character_combat.js"></script>
+    <script src="Character System/ui/character_stats_ui.js"></script>
+    <script src="Character System/index.js"></script>
     <!-- Combat System - Modular Architecture -->
     <script src="Combat System/combat_attributes.js"></script>
     <script src="Combat System/combat_calculator.js"></script>
@@ -57,7 +62,16 @@
     <script src="player_system.js"></script>
     <script src="game.js"></script>
     <script src="ui.js"></script>
-    <script src="menu.js"></script>
+    <!-- Menu System - Modular Architecture -->
+    <script src="Menu System/core/menu_ui.js"></script>
+    <script src="Menu System/controls/controls_manager.js"></script>
+    <script src="Menu System/controls/controls_ui.js"></script>
+    <script src="Menu System/skills/skill_helpers.js"></script>
+    <script src="Menu System/skills/skill_tree_core.js"></script>
+    <script src="Menu System/skills/skill_tree_ui.js"></script>
+    <script src="Menu System/input/menu_input_handler.js"></script>
+    <script src="Menu System/core/menu_core.js"></script>
+    <script src="Menu System/index.js"></script>
     <script src="render.js"></script>
     <!-- Animation System Scripts -->
     <script src="Animation System/animation_data.js"></script>
