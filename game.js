@@ -2,11 +2,6 @@
 // GLOBAL DECLARATIONS - Available immediately when file loads
 // ===========================================
 
-// CHARACTER SELECTION SYSTEM MOVED TO ui.js (PHASE 1)
-// let playerSelections = {}; // Temporary selections - MOVED TO ui.js
-// let confirmedSelections = {}; // Confirmed/final selections - MOVED TO ui.js
-// let activePlayers = new Set(); // Track which players have joined - MOVED TO ui.js
-// let detectedPlayers = 1; // Keyboard always available - MOVED TO ui.js
 
 // Separate game state string from GameState instance
 window.gameStateString = 'start'; // 'start', 'playing'
@@ -24,30 +19,6 @@ const characters = [
 
 // Make globally available immediately
 window.characters = characters;
-// CHARACTER SELECTION SYSTEM MOVED TO ui.js (PHASE 1)
-// window.activePlayers = activePlayers;     // MOVED TO ui.js
-// window.playerSelections = playerSelections; // MOVED TO ui.js
-// window.confirmedSelections = confirmedSelections; // MOVED TO ui.js
-
-// Game logic and loop
-
-// ===========================================
-// CHARACTER SELECTION SYSTEM MOVED TO ui.js (PHASE 1)
-// ===========================================
-// All character selection functions and variables have been moved to ui.js
-// with proper parameter passing to maintain functionality
-
-// ===========================================
-// PLAYER SYSTEM - MOVED TO player_system.js (PHASE 9)
-// ===========================================
-// All player-related functions and input handling moved to player_system.js
-// for better separation of concerns and organization
-
-// ===========================================
-// COMBAT HELPER FUNCTIONS - MOVED TO combat_system.js (PHASE 2)
-// ===========================================
-// calculateHitBoxPosition(entity, animationSystem) - MOVED TO combat_system.js
-// addDamageNumberToTarget(attacker, target, damage, isCritical, damageNumberManager) - MOVED TO combat_system.js
 
 // Player class - moved from entities.js
 class Player {
@@ -264,12 +235,6 @@ function update(dt) {
   }
 }
 
-// ===========================================
-// PHASE 6: COORDINATION FUNCTIONS MOVED TO base_enemy.js
-// ===========================================
-// updateEnemyAI() - MOVED TO BaseEnemy.updateEnemyAI() instance method
-// handleEnemyMovement() - MOVED TO BaseEnemy.handleMovement() instance method
-// checkIfEntityIsInCollision() - MOVED TO BaseEnemy.checkIfInCollision() instance method
 
 /**
  * Main game loop - handles frame timing and system updates
@@ -337,13 +302,3 @@ function loop(ts) {
   requestAnimationFrame(loop);
 }
 
-// ===========================================
-// PHASE 5: GAME SETUP - MOVED TO main.js
-// ===========================================
-// initGameWithSelections() function has been moved to main.js
-// with new parameter-based signature for better separation of concerns
-
-// ===========================================
-// CHARACTER SELECTION SYSTEM EXPORTS MOVED TO ui.js (PHASE 1)
-// ===========================================
-// All exports now available through window.UISystem

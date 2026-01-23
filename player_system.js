@@ -1,21 +1,7 @@
-/**
- * Player System - Handles player-specific logic including combat, input processing, and updates
- * Moved from game.js during refactoring phase 9 for better separation of concerns
- */
-
 // ===========================================
 // PLAYER UPDATE SYSTEM
 // ===========================================
 
-/**
- * Player movement using unified collision system
- * Uses handlePlayerMovement from Collision System for consistent behavior
- */
-
-/**
- * Player movement handled by collision system (Dependency Injection)
- * Uses window.handleMovement() from collision.js for collision-aware movement
- */
 
 /**
  * Updates a single player entity with combat logic, input processing, and physics

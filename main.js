@@ -49,9 +49,6 @@ function initGame() {
   initStartScreen();
 }
 
-// ===========================================
-// PHASE 5: GAME SETUP - MOVED FROM game.js
-// ===========================================
 
 // Initialize game with selected players and characters
 function initGameWithSelections(activePlayers, playerSelections, confirmedSelections, characters) {
