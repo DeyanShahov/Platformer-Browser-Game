@@ -9,7 +9,7 @@ let microSkillCursorCol = 0;
 
 // Show micro skill tree for a specific ACTIVE skill
 function showMicroTreeForSkill(skillType) {
-  if (currentSkillTreePlayer === null) return;
+  if (window.MenuSystem.currentSkillTreePlayer === null) return;
 
   const skillInfo = SKILL_TREE[skillType];
   if (!skillInfo.microTree) {
@@ -85,8 +85,8 @@ function renderMicroSkillTree() {
 
       if (microSkill) {
         // Check selection status
-        const isSelected = window.microSkillTreeManager.isMicroSkillSelected(currentSkillTreePlayer, currentMicroSkillParent, skillIndex);
-        const canSelect = window.microSkillTreeManager.canSelectMicroSkill(currentSkillTreePlayer, currentMicroSkillParent, skillIndex);
+        const isSelected = window.microSkillTreeManager.isMicroSkillSelected(window.MenuSystem.currentSkillTreePlayer, currentMicroSkillParent, skillIndex);
+        const canSelect = window.microSkillTreeManager.canSelectMicroSkill(window.MenuSystem.currentSkillTreePlayer, currentMicroSkillParent, skillIndex);
 
         if (isSelected) {
           skillIcon.classList.add('unlocked'); // Green border like main skill tree
@@ -165,9 +165,9 @@ function updateMicroCursorPosition() {
 
 // Update selected micro skill info panel
 function updateSelectedMicroSkillInfo() {
-  if (!currentMicroSkillParent || currentSkillTreePlayer === null) return;
+  if (!currentMicroSkillParent || window.MenuSystem.currentSkillTreePlayer === null) return;
 
-  const player = window.players[currentSkillTreePlayer];
+  const player = window.players[window.MenuSystem.currentSkillTreePlayer];
   const parentSkillInfo = SKILL_TREE[currentMicroSkillParent];
   const microSkills = parentSkillInfo.microTree.skills;
   const skillIndex = microSkillCursorRow * 3 + microSkillCursorCol;
@@ -192,10 +192,10 @@ function updateSelectedMicroSkillInfo() {
     const skillPointCost = getMicroSkillPointCost(parentSkillInfo.microTree);
 
     // Status (for micro skills, it's about selection availability)
-    const statusText = window.microSkillTreeManager.getMicroSkillStatus(currentSkillTreePlayer, currentMicroSkillParent, skillIndex);
+    const statusText = window.microSkillTreeManager.getMicroSkillStatus(window.MenuSystem.currentSkillTreePlayer, currentMicroSkillParent, skillIndex);
 
     // Current Effect vs Next Effect display (for micro skills, current shows if selected, next shows the effect)
-    const currentEffect = getMicroCurrentEffect(currentSkillTreePlayer, currentMicroSkillParent, skillIndex, microSkill);
+    const currentEffect = getMicroCurrentEffect(window.MenuSystem.currentSkillTreePlayer, currentMicroSkillParent, skillIndex, microSkill);
     const nextEffect = getMicroNextEffect(microSkill);
 
     const effectsHTML = `
@@ -222,7 +222,7 @@ function updateSelectedMicroSkillInfo() {
     requirementsEl.innerHTML = fullInfo;
 
     // Update select button
-    const canSelect = window.microSkillTreeManager.canSelectMicroSkill(currentSkillTreePlayer, currentMicroSkillParent, skillIndex);
+    const canSelect = window.microSkillTreeManager.canSelectMicroSkill(window.MenuSystem.currentSkillTreePlayer, currentMicroSkillParent, skillIndex);
     selectBtn.style.display = canSelect ? 'block' : 'none';
     selectBtn.textContent = 'Избери микро умение';
     selectBtn.disabled = !canSelect;
@@ -331,7 +331,7 @@ function getMicroCurrentEffect(playerIndex, parentSkillType, skillIndex, microSk
 // Helper function to get micro skill next effect
 function getMicroNextEffect(microSkill) {
   // For micro skills, check if it's already selected (since they're single-level)
-  const isSelected = window.microSkillTreeManager.isMicroSkillSelected(currentSkillTreePlayer, currentMicroSkillParent, microSkillCursorRow * 3 + microSkillCursorCol);
+  const isSelected = window.microSkillTreeManager.isMicroSkillSelected(window.MenuSystem.currentSkillTreePlayer, currentMicroSkillParent, microSkillCursorRow * 3 + microSkillCursorCol);
 
   if (isSelected) {
     // Micro skills are single-level, so when selected, show "Максимално развитие"
@@ -456,7 +456,7 @@ function handleSelectMicroSkillClick() {
 
   if (microSkillType) {
     // Try to select the micro skill
-    const success = window.microSkillTreeManager.selectMicroSkill(currentSkillTreePlayer, currentMicroSkillParent, skillIndex);
+    const success = window.microSkillTreeManager.selectMicroSkill(window.MenuSystem.currentSkillTreePlayer, currentMicroSkillParent, skillIndex);
 
     if (success) {
       console.log(`Selected micro skill: ${microSkillType} for parent skill: ${skillInfo.name}`);

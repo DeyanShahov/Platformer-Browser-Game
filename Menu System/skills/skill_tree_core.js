@@ -591,10 +591,7 @@ function switchSkillTreePage(page) {
     console.log(`Switched to skill tree page: ${page}`);
 }
 
-// Placeholder for micro tree functionality (will be implemented later)
-function showMicroTreeForSkill(skillType) {
-    console.log(`Micro tree for skill ${skillType} not implemented yet`);
-}
+
 
 // Global exports for backward compatibility
 window.SkillTreeCore = {

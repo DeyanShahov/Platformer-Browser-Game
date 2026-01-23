@@ -240,11 +240,7 @@ function handleCharacterStatsKeys(gameState, keys) {
     keyEqualsWasPressed = keyEqualsPressed;
 }
 
-// Placeholder for micro tree functionality (to be implemented later)
-function hideMicroTree() {
-    console.log('[Menu Input] Micro tree hide not implemented yet');
-    // This will be implemented when micro skill trees are added
-}
+
 
 // Reset all key states (useful for cleanup)
 function resetKeyStates() {

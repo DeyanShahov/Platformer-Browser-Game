@@ -443,7 +443,7 @@ class MicroSkillTreeManager {
       return false;
     }
 
-    return system.canSelectMicroSkill(window.players[playerIndex], parentSkillType, skillIndex, microTree, this);
+    return system.canSelectMicroSkill(window.gameState.players[playerIndex], parentSkillType, skillIndex, microTree, this);
   }
 
   // Select a micro skill for a player (delegates to progression system)
@@ -457,12 +457,12 @@ class MicroSkillTreeManager {
       return false;
     }
 
-    return system.selectMicroSkill(window.players[playerIndex], parentSkillType, skillIndex, microTree, this);
+    return system.selectMicroSkill(window.gameState.players[playerIndex], parentSkillType, skillIndex, microTree, this);
   }
 
   // Check if a micro skill is selected
   isMicroSkillSelected(playerIndex, parentSkillType, skillIndex) {
-    const player = window.players[playerIndex];
+    const player = window.gameState.players[playerIndex];
     this.initializePlayerMicroSkills(player);
     const selectedSkills = player.selectedMicroSkills.get(parentSkillType) || new Set();
 
@@ -502,7 +502,7 @@ class MicroSkillTreeManager {
 
   // Get all selected micro skills for a parent skill
   getSelectedMicroSkills(playerIndex, parentSkillType) {
-    const player = window.players[playerIndex];
+    const player = window.gameState.players[playerIndex];
     this.initializePlayerMicroSkills(player);
     if (!player.selectedMicroSkills.has(parentSkillType)) {
       player.selectedMicroSkills.set(parentSkillType, new Set());
