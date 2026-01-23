@@ -644,20 +644,22 @@ Combat System/
 #### Key Changes:
 1. **`Level System/` Directory Structure:**
    ```
-   Level System/
-   ├── level_data.js       # LevelData class and validation
-   ├── level_registry.js   # LevelRegistry for level management
-   ├── level_loader.js     # Level loading utilities
-   ├── level_manager.js    # LevelManager for game integration
-   └── levels/
-       ├── tutorial/
-       │   └── tutorial_1.js
-       ├── combat/
-       │   └── combat_room_1.js
-       ├── boss/
-       │   └── boss_level.js
-       └── special/
-           └── end_game.js
+Level System/
+├── level_data.js       # LevelData class and validation
+├── level_registry.js   # LevelRegistry for level management
+├── level_loader.js     # Level loading utilities
+├── level_manager.js    # LevelManager for game integration
+├── exit_system/
+│   └── exit_point.js   # Level exit and transition management
+└── levels/
+    ├── tutorial/
+    │   └── tutorial_1.js
+    ├── combat/
+    │   └── combat_room_1.js
+    ├── boss/
+    │   └── boss_level.js
+    └── special/
+        └── end_game.js
    ```
 
 2. **File Reorganization:**
@@ -2571,19 +2573,27 @@ Menu System/
 
 ## 🔧 UTILITIES & HELPERS
 
-### `input.js` - Input Processing System
-**Purpose:** Handles all user input from keyboard, mouse, and controllers
+### `Menu System/input/input.js` - Basic Input Handling
+**Purpose:** Basic keyboard input handling with menu/game state filtering
 **Responsibilities:**
-- Input device detection
-- Key state tracking
-- Controller support
-- Input buffering and debouncing
+- Keyboard event handling (keydown/keyup)
+- Menu key filtering (Escape, menu keys always work)
+- Game state awareness (only game keys work when not in menu)
+- Global key state tracking
+- Input system initialization
 **Key Functions:**
-- `updateInput()` - Input state updates
+- Event listeners for keydown/keyup events
 - `isKeyPressed(key)` - Key state checking
-- `getControllerState(controllerId)` - Controller input
-**Dependencies:** `constants.js`
-**Integration Points:** Game update loop
+- Menu/game state filtering logic
+**Key Features:**
+- **Menu Priority:** Menu keys (Escape, m, 5-0, t, y, u, i) work always
+- **Game State Filtering:** Game keys only work when not in menu and game started
+- **Global State Tracking:** Keys object exported globally via `window.keys`
+- **Event Capture:** Uses capture event listeners for reliable input handling
+**Dependencies:** None (standalone input handling)
+**Integration Points:** Loaded early in game initialization; provides global `window.keys` object
+**Global Exports:** `window.keys` - Key state object, `isKeyPressed()` - Key checking function
+**Note:** Basic input system focused on keyboard handling with menu/game state awareness
 
 ### `collision.js` - Collision Detection System **[RECENTLY ENHANCED - AI DISTANCE FIXES + PLAYER MOVEMENT]**
 **Purpose:** Advanced collision detection and resolution with unified AI distance calculation system and player movement physics
