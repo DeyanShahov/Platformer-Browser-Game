@@ -343,14 +343,7 @@ class TriggerSpawner {
         const spawnedIds = [];
 
         for (const entityConfig of trigger.entities) {
-            // **Нова опция** - random позиция ако е зададено
-            if (entityConfig.randomPosition && this.levelManager.currentLevel?.boundaries) {
-                const boundaries = this.levelManager.currentLevel.boundaries;
-                entityConfig.x = boundaries.left + Math.random() * (boundaries.right - boundaries.left);
-                entityConfig.y = boundaries.top + Math.random() * (boundaries.bottom - boundaries.top);
-                entityConfig.z = boundaries.zMin + Math.random() * (boundaries.zMax - boundaries.zMin);
-                console.log(`[TriggerSpawner] Generated random position: (${entityConfig.x.toFixed(1)}, ${entityConfig.y.toFixed(1)}, ${entityConfig.z.toFixed(1)})`);
-            }
+            // LevelManager.spawnEntity now handles entityConfig.randomPosition directly
 
             try {
                 const entityId = await this.levelManager.spawnEntity(entityConfig);

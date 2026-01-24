@@ -102,5 +102,6 @@ window.MenuSystem = {
     set currentSkillPage(value) { currentSkillPage = value; }
 };
 
-// Initialize menu system when loaded
-initMenu();
+// window.MenuSystem is now ready to be used by other scripts
+// The initialization will be triggered by the main game logic
+

@@ -6,6 +6,10 @@
 
 class LevelManager {
     constructor(gameState, animationSystem, combatSystem, collisionSystem) {
+        // Game Mode
+        this.gameMode = 'story'; // 'story' or 'endless'
+        this.currentStage = 0;
+
         // Dependency injection for clean architecture
         this.gameState = gameState;
         this.animationSystem = animationSystem;
@@ -163,6 +167,30 @@ class LevelManager {
     }
 
     // =========================
+    // ENDLESS MODE LOGIC
+    // =========================
+
+    /**
+     * Starts the Endless Mode.
+     */
+    startEndlessMode() {
+        console.log('[LevelManager] Starting Endless Mode');
+        this.gameMode = 'endless';
+        this.currentStage = 0; // Will be incremented to 1 by loadNextEndlessStage
+        this.loadNextEndlessStage();
+    }
+
+    /**
+     * Loads the next stage in Endless Mode.
+     */
+    loadNextEndlessStage() {
+        this.currentStage++;
+        console.log(`[LevelManager] Loading Endless Stage: ${this.currentStage}`);
+        // The 'endless_next' ID is a special signal for getLevelData
+        this.loadLevel('endless_next');
+    }
+
+    // =========================
     // ENTITY SPAWNING SYSTEM
     // =========================
 
@@ -199,6 +227,15 @@ class LevelManager {
         // Create the actual entity object based on type
         if (config.type === 'enemy') {
             if (config.enemyType === 'blue_slime') {
+                // **Dynamic position adjustment** if randomPosition is requested
+                if (config.randomPosition && this.currentLevel?.boundaries) {
+                    const boundaries = this.currentLevel.boundaries;
+                    config.x = boundaries.left + Math.random() * (boundaries.right - boundaries.left);
+                    config.y = boundaries.top + Math.random() * (boundaries.bottom - boundaries.top);
+                    config.z = boundaries.zMin + Math.random() * (boundaries.zMax - boundaries.zMin);
+                    console.log(`[LevelManager] Generated random position for ${config.enemyType}: (${config.x.toFixed(1)}, ${config.y.toFixed(1)}, ${config.z.toFixed(1)})`);
+                }
+
                 // Create real BlueSlime object using the existing function
                 entity = createBlueSlime(
                     config.x || config.position?.x || 0,
@@ -514,20 +551,17 @@ class LevelManager {
                 // Phase 1: Screen dimming (no UI yet)
                 if (elapsed >= this.fadeDuration) {
                     console.log(`[TRANSITION] Phase 1 complete - showing loading UI`);
-                    // this.transitionState = 'showing_ui';
-                    // this.showLoadingUI();
-                    // Skip showing_ui and go directly to loading
-                    this.transitionState = 'loading';
-                    this.performTransitionLoad();
+                    this.transitionState = 'showing_ui';
+                    this.showLoadingUI();
                 }
                 break;
 
-            // case 'showing_ui':
-            //     // Phase 2: Show loading screen and start level loading
-            //     console.log(`[TRANSITION] Phase 2 - showing loading screen`);
-            //     this.transitionState = 'loading';
-            //     this.performTransitionLoad();
-            //     break;
+            case 'showing_ui':
+                // Phase 2: Show loading screen and start level loading
+                console.log(`[TRANSITION] Phase 2 - showing loading screen`);
+                this.transitionState = 'loading';
+                this.performTransitionLoad();
+                break;
 
             case 'loading':
                 // Phase 2: Loading screen active - wait for level load to complete
@@ -566,13 +600,13 @@ class LevelManager {
     showLoadingUI() {
         console.log(`[TRANSITION] Showing loading screen`);
         // TODO: Implement UI system integration
-        // if (window.uiSystem?.showLoadingScreen) {
-        //     window.uiSystem.showLoadingScreen({
-        //         fromLevel: this.currentLevel?.name || 'Unknown',
-        //         toLevel: this.getLevelData(this.targetLevelId)?.name || 'Unknown',
-        //         progress: 0
-        //     });
-        // }
+        if (window.uiSystem?.showLoadingScreen) {
+            window.uiSystem.showLoadingScreen({
+                fromLevel: this.currentLevel?.name || 'Unknown',
+                toLevel: this.getLevelData(this.targetLevelId)?.name || 'Unknown',
+                progress: 0
+            });
+        }
     }
 
     /**
@@ -581,9 +615,9 @@ class LevelManager {
     hideLoadingUI() {
         console.log(`[TRANSITION] Hiding loading screen`);
         // TODO: Implement UI system integration
-        // if (window.uiSystem?.hideLoadingScreen) {
-        //     window.uiSystem.hideLoadingScreen();
-        // }
+        if (window.uiSystem?.hideLoadingScreen) {
+            window.uiSystem.hideLoadingScreen();
+        }
     }
 
     /**
@@ -821,6 +855,11 @@ class LevelManager {
      * @param {string} levelId - Level identifier
      */
     getLevelData(levelId) {
+        // Handle endless mode level generation
+        if (levelId === 'endless_next') {
+            return proceduralGenerator.generateStage(this.currentStage);
+        }
+
         // Try to get from registry first
         if (this.levelRegistry) {
             const levelData = this.levelRegistry.getLevel(levelId);
@@ -858,6 +897,13 @@ class LevelManager {
         // Show completion UI
         if (window.uiSystem?.showLevelComplete) {
             window.uiSystem.showLevelComplete(this.currentLevel);
+        }
+
+        // Handle endless mode progression
+        if (this.gameMode === 'endless') {
+            console.log('[LevelManager] Endless mode: loading next stage.');
+            setTimeout(() => this.loadNextEndlessStage(), 3000); // 3-second delay
+            return; // Exit early
         }
 
         // Handle transition based on mode

@@ -621,3 +621,54 @@ window.UISystem = {
   activePlayers,
   detectedPlayers
 };
+
+// ===========================================
+// TRANSITION UI
+// ===========================================
+
+/**
+ * Shows a loading screen for level transitions.
+ * @param {object} data - Data for the loading screen.
+ * @param {string} data.toLevel - The name of the level being loaded.
+ */
+function showLoadingScreen({ toLevel }) {
+    // Check if a loading screen already exists
+    if (document.getElementById('loadingScreen')) {
+        return;
+    }
+
+    const loadingScreen = document.createElement('div');
+    loadingScreen.id = 'loadingScreen';
+    loadingScreen.style.cssText = `
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background-color: rgba(0, 0, 0, 0.8);
+        color: white;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        z-index: 10000;
+        font-family: 'Arial', sans-serif;
+        font-size: 2em;
+    `;
+    loadingScreen.textContent = `Loading: ${toLevel}...`;
+
+    document.body.appendChild(loadingScreen);
+}
+
+/**
+ * Hides the loading screen.
+ */
+function hideLoadingScreen() {
+    const loadingScreen = document.getElementById('loadingScreen');
+    if (loadingScreen) {
+        loadingScreen.remove();
+    }
+}
+
+// Add to the global UI system
+window.UISystem.showLoadingScreen = showLoadingScreen;
+window.UISystem.hideLoadingScreen = hideLoadingScreen;

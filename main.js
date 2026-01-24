@@ -107,6 +107,11 @@ function initGameWithSelections(activePlayers, playerSelections, confirmedSelect
       console.warn('[MAIN] LevelManager not available, level system will not be initialized');
     }
 
+    // Initialize menu system so controls are loaded before player creation
+    if (window.MenuSystem && window.MenuSystem.initMenu) {
+      window.MenuSystem.initMenu();
+    }
+
     // Clear global arrays for backwards compatibility
     window.players = [];
     //console.log('[MAIN] window.players cleared and set to:', window.players);
@@ -166,11 +171,6 @@ function initGameWithSelections(activePlayers, playerSelections, confirmedSelect
         //console.warn(`No controls found for player ${playerId} (${playerKey})`);
       }
     });
-
-    // Initialize menu system
-    if (window.initMenu) {
-      window.initMenu();
-    }
 
     // Set game state to playing
     window.gameStateString = 'playing';

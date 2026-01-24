@@ -29,6 +29,7 @@ function createMenuHTML() {
         <div id="mainMenu" class="menu">
             <h2>Game Menu</h2>
             <div id="gamepadStatus"></div>
+            <button id="endlessModeBtn">Endless Mode</button>
             <button id="changeControlsBtn">Change Controls</button>
             <button id="backToGameBtn">Back to Game</button>
         </div>
@@ -102,10 +103,19 @@ function createMenuHTML() {
 // Set up menu event listeners
 function setupMenuEventListeners() {
     // Main menu buttons
+    const endlessModeBtn = document.getElementById('endlessModeBtn');
     const changeControlsBtn = document.getElementById('changeControlsBtn');
     const backToGameBtn = document.getElementById('backToGameBtn');
     const backToMainBtn = document.getElementById('backToMainBtn');
     const unlockSkillBtn = document.getElementById('unlockSkillBtn');
+
+    if (endlessModeBtn) {
+        endlessModeBtn.onclick = () => {
+            console.log('[Menu Core] Starting Endless Mode...');
+            window.levelManager.startEndlessMode();
+            hideMenu();
+        };
+    }
 
     if (changeControlsBtn) {
         changeControlsBtn.onclick = () => {
