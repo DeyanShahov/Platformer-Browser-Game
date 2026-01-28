@@ -12,7 +12,7 @@
 const requiredSystems = [
     'window.createEntity',
     'window.CharacterInfo',
-    'window.EnemyData',
+    // 'window.EnemyData',
     'window.createAttackProfile',
     'window.tickEnemyAI',
     'window.enemyCombatManager',
@@ -360,8 +360,8 @@ class BaseEnemy {
             if (hasCollision) {
                 // USE COLLISION SYSTEM DISTANCE CALCULATION - no custom Math.abs!
                 const distance = window.calculateEntityDistance ? window.calculateEntityDistance(this, entity) : 0;
-                console.log(`[COLLISION_DEBUG] Collision found with ${entity.entityType} (${entity.constructor.name}) at distance: ${distance.toFixed(1)} (enemy: ${this.x.toFixed(1)}, ${entity.entityType}: ${entity.x.toFixed(1)})`);
-                console.log(`[COLLISION_DEBUG] Enemy: ${this.constructor.name} pos(${this.x.toFixed(1)}, ${this.z.toFixed(1)}) | ${entity.entityType}: pos(${entity.x.toFixed(1)}, ${entity.z.toFixed(1)})`);
+                //console.log(`[COLLISION_DEBUG] Collision found with ${entity.entityType} (${entity.constructor.name}) at distance: ${distance.toFixed(1)} (enemy: ${this.x.toFixed(1)}, ${entity.entityType}: ${entity.x.toFixed(1)})`);
+                //console.log(`[COLLISION_DEBUG] Enemy: ${this.constructor.name} pos(${this.x.toFixed(1)}, ${this.z.toFixed(1)}) | ${entity.entityType}: pos(${entity.x.toFixed(1)}, ${entity.z.toFixed(1)})`);
                 return entity;
             }
         }

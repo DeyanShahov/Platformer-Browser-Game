@@ -1,13 +1,17 @@
 /**
  * Blue Slime Enemy Type
- * Specific implementation of a blue slime enemy
+ * Specific implementation of a blue slime enemy using centralized configuration system
  * Inherits from BaseEnemy and adds slime-specific behavior
  */
 
 class BlueSlime extends BaseEnemy {
     constructor(x, y, z, level = 1) {
-        // Blue Slime specific configuration
-        const config = {
+        // Get configuration from centralized manager
+        const config = EnemyTypeManager.getEnemyConfig('slime');
+        const completeData = EnemyTypeManager.getCompleteEnemyData('slime', null, level);
+
+        // Set up base configuration with stats from manager
+        const enemyConfig = {
             // Dimensions (scaled for sprite)
             w: 240,  // Visual width (2x scaled sprite: 120*2)
             h: 256,  // Visual height (2x scaled sprite: 128*2)
@@ -15,75 +19,49 @@ class BlueSlime extends BaseEnemy {
             collisionH: 70,   // Standardized fallback height
             zThickness: 3,   // Z thickness for 2.5D collision
 
-            // Stats (Blue Slime specific)
-            maxHealth: 80 + (level - 1) * 20, // 80 base + 20 per level
-            baseAttack: 8 + (level - 1) * 2,   // 8 base + 2 per level
-            baseDefense: 2,
-            speed: 40, // Slower than player
-
-            // Character info
-            strength: 5 + level,
-            criticalChance: 0.03, // 3% crit chance
+            // Stats (from centralized manager)
+            maxHealth: completeData.stats.maxHealth,
+            baseAttack: completeData.stats.baseAttack,
+            baseDefense: completeData.stats.baseDefense,
+            strength: completeData.stats.strength,
+            criticalChance: completeData.stats.criticalChance,
+            speed: completeData.stats.speed,
 
             // AI configuration
-            rarity: 'common',        // BT rarity level
-            intelligence: 'basic',   // BT intelligence level
+            rarity: config.rarity,        // BT rarity level
+            intelligence: config.intelligence,   // BT intelligence level
 
             // Animation
-            animationEntityType: 'blue_slime',
+            animationEntityType: config.animationEntityType,
+
+            // Rewards (from centralized manager)
+            experienceReward: completeData.rewards.experience,
+            goldReward: completeData.rewards.gold,
 
             // Level for rewards
-            level: level,
-
-            // TEST SCRIPT: Vertical ping-pong movement
-            // scriptConfig: {
-            //   scriptId: 'blue_slime_vertical_test',
-            //   type: window.enemyAIConfig?.SCRIPT_TYPE?.FULL || 'full'
-            // }
+            level: level
         };
 
         // Call BaseEnemy constructor with position and config
-        super(x, y, z, config);
-
-        // ADD THIS: Comprehensive script debugging
-        // console.log(`%c[BLUE SLIME DEBUG] Constructor - Script System Check`, 'color: #ff6b6b; font-weight: bold; font-size: 14px;');
-        // console.log('[BLUE SLIME DEBUG] scriptConfig:', this.scriptConfig);
-        // console.log('[BLUE SLIME DEBUG] window.enemyScripts exists:', !!window.enemyScripts);
-        // console.log('[BLUE SLIME DEBUG] window.enemyScriptManager exists:', !!window.enemyScriptManager);
-        // console.log('[BLUE SLIME DEBUG] window.enemyAIConfig exists:', !!window.enemyAIConfig);
-        // console.log('[BLUE SLIME DEBUG] SCRIPT_TYPE available:', !!window.enemyAIConfig?.SCRIPT_TYPE);
-
-        // if (this.scriptConfig?.scriptId) {
-        //   console.log(`[BLUE SLIME DEBUG] Looking for script: ${this.scriptConfig.scriptId}`);
-        //   const scriptExists = window.enemyScripts?.hasScript(this.scriptConfig.scriptId);
-        //   console.log(`[BLUE SLIME DEBUG] Script exists in registry: ${scriptExists}`);
-
-        //   if (scriptExists) {
-        //     const script = window.enemyScripts.getScript(this.scriptConfig.scriptId);
-        //     console.log(`[BLUE SLIME DEBUG] Script loaded:`, script);
-        //     console.log(`[BLUE SLIME DEBUG] Script type: ${script.type}`);
-        //     console.log(`[BLUE SLIME DEBUG] Has behaviorTree: ${!!script.behaviorTree}`);
-        //   }
-        // }
-
-        // Check if async initialization happened
-        // setTimeout(() => {
-        //   console.log(`%c[BLUE SLIME DEBUG] Post-constructor check (100ms delay)`, 'color: #4ecdc4; font-weight: bold;');
-        //   console.log('[BLUE SLIME DEBUG] activeScript:', !!this.activeScript);
-        //   if (this.activeScript) {
-        //     console.log('[BLUE SLIME DEBUG] activeScript details:', this.activeScript);
-        //   }
-        // }, 100);
+        super(x, y, z, enemyConfig);
 
         // Blue Slime specific properties
         this.level = level;
+        this.experienceReward = completeData.rewards.experience;
+        this.goldReward = completeData.rewards.gold;
 
+        // Log detailed enemy information for debugging and verification
         console.log(`[BLUE SLIME] Created Blue Slime (Level ${level}) at (${x}, ${y}) with ${this.maxHealth} HP`);
+        console.log(`[BLUE SLIME] - Stats: HP=${completeData.stats.maxHealth}, ATK=${completeData.stats.baseAttack}, DEF=${completeData.stats.baseDefense}`);
+        console.log(`[BLUE SLIME] - Rarity: ${completeData.config.rarity}, Intelligence: ${completeData.config.intelligence}`);
+        console.log(`[BLUE SLIME] - Rewards: ${completeData.rewards.experience} XP, ${completeData.rewards.gold} Gold`);
+        console.log(`[BLUE SLIME] - Special Abilities: [${completeData.config.specialAbilities.join(', ')}]`);
     }
 
     // Override attack profile for Blue Slime (only light attacks)
     createAttackProfile() {
-        return window.createAttackProfile ? window.createAttackProfile(["light"]) : null;
+        const config = EnemyTypeManager.getEnemyConfig('slime');
+        return window.createAttackProfile ? window.createAttackProfile(config.attackProfile) : null;
     }
 
     // Take damage from player attacks
@@ -108,14 +86,18 @@ class BlueSlime extends BaseEnemy {
         return damage;
     }
 
-    // Get experience reward for defeating this enemy
+    // Get experience reward for defeating this enemy (from centralized manager)
     getExperienceReward() {
-        return 150 + (this.level - 1) * 50; // 150 base + 50 per level
+        const config = EnemyTypeManager.getEnemyConfig('slime');
+        const rewards = EnemyTypeManager.getEnemyRewards(config, this.level);
+        return rewards.experience;
     }
 
-    // Get gold reward
+    // Get gold reward (from centralized manager)
     getGoldReward() {
-        return 15 + (this.level - 1) * 5; // 15 base + 5 per level
+        const config = EnemyTypeManager.getEnemyConfig('slime');
+        const rewards = EnemyTypeManager.getEnemyRewards(config, this.level);
+        return rewards.gold;
     }
 }
 

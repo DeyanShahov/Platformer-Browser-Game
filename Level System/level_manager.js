@@ -58,6 +58,9 @@ class LevelManager {
         // Game pause during transitions
         this.gamePaused = false;
 
+        // Transition coordination flag
+        this.isTransitioning = false;
+
         // Completion tracking - per-level using Map
         this.completionConditions = [];
         this.completionStatus = {};
@@ -160,6 +163,13 @@ class LevelManager {
         this.completionConditions = [];
         this.completionStatus = {};
 
+        // Reset exit points if manager exists
+        if (this.exitPointManager) {
+            console.log(`[LevelManager] Resetting exit point states for level ${this.currentLevel.id}`);
+            // Reset all exit points to their initial state using the new resetAll method
+            this.exitPointManager.resetAll();
+        }
+
         // Cleanup level-specific resources
         this.cleanupLevelResources();
 
@@ -224,24 +234,47 @@ class LevelManager {
     async spawnEntity(config) {
         let entity;
 
+        console.log(`[LevelManager] spawnEntity called with config:`, config);
+        console.log(`[LevelManager] currentLevel context:`, this.currentLevel ? 'AVAILABLE' : 'UNAVAILABLE');
+        if (this.currentLevel) {
+            console.log(`[LevelManager] currentLevel boundaries:`, this.currentLevel.boundaries);
+        }
+
+        // **Dynamic position adjustment** if randomPosition is requested (APPLIED TO ALL SPAWNING)
+        if (config.randomPosition) {
+            console.log(`[LevelManager] randomPosition flag detected, checking boundaries...`);
+            if (this.currentLevel?.boundaries) {
+                const boundaries = this.currentLevel.boundaries;
+                console.log(`[LevelManager] Using boundaries for random position:`, boundaries);
+                console.log(`[LevelManager] BEFORE random generation - config.x: ${config.x}, config.y: ${config.y}`);
+                config.x = boundaries.left + Math.random() * (boundaries.right - boundaries.left);
+                config.y = boundaries.top + Math.random() * (boundaries.bottom - boundaries.top);
+                config.z = boundaries.zMin + Math.random() * (boundaries.zMax - boundaries.zMin);
+                // Only log when we actually make a change (for debugging)
+                if (config.x !== undefined || config.y !== undefined || config.z !== undefined) {
+                    console.log(`[LevelManager] Generated random position for ${config.enemyType || config.type}: (${config.x.toFixed(1)}, ${config.y.toFixed(1)}, ${config.z.toFixed(1)})`);
+                }
+            } else {
+                console.warn(`[LevelManager] randomPosition requested but no boundaries available!`);
+            }
+        } else {
+            console.log(`[LevelManager] No randomPosition flag - using configured position:`, config.x, config.y, config.z);
+        }
+
+        // Final verification of position values before spawning
+        console.log(`[LevelManager] Final position before entity creation: x=${config.x}, y=${config.y}, z=${config.z}`);
+
         // Create the actual entity object based on type
         if (config.type === 'enemy') {
-            if (config.enemyType === 'blue_slime') {
-                // **Dynamic position adjustment** if randomPosition is requested
-                if (config.randomPosition && this.currentLevel?.boundaries) {
-                    const boundaries = this.currentLevel.boundaries;
-                    config.x = boundaries.left + Math.random() * (boundaries.right - boundaries.left);
-                    config.y = boundaries.top + Math.random() * (boundaries.bottom - boundaries.top);
-                    config.z = boundaries.zMin + Math.random() * (boundaries.zMax - boundaries.zMin);
-                    console.log(`[LevelManager] Generated random position for ${config.enemyType}: (${config.x.toFixed(1)}, ${config.y.toFixed(1)}, ${config.z.toFixed(1)})`);
-                }
-
-                // Create real BlueSlime object using the existing function
-                entity = createBlueSlime(
-                    config.x || config.position?.x || 0,
-                    config.y || config.position?.y || 0,
-                    config.z || config.position?.z || 0,
-                    config.level || 1
+            if (config.enemyType === 'blue_slime' || config.enemyType === 'slime') {
+                // Create enemy using centralized factory with proper type and subtype
+                entity = createEnemyWithData(
+                    config.enemyType,  // 'blue_slime'
+                    null,              // No subtype for basic blue slime
+                    config.level || 1,
+                    config.x,          // Pass x coordinate  
+                    config.y,          // Pass y coordinate
+                    config.z           // Pass z coordinate
                 );
                 console.log(`[LevelManager] Created BlueSlime at (${entity.x}, ${entity.y})`);
             } else {
@@ -519,6 +552,14 @@ class LevelManager {
     async startTransition(targetLevelId, transitionType = 'fade') {
         console.log(`[LevelManager] Starting transition to level: ${targetLevelId}`);
 
+        // Prevent multiple simultaneous transitions
+        if (this.isTransitioning) {
+            console.log(`[LevelManager] Transition already in progress, skipping new transition request`);
+            return;
+        }
+
+        this.isTransitioning = true; // Set the flag
+
         this.transitionState = 'fading_out';
         this.transitionStartTime = performance.now(); // Use performance.now() for reliable timing
         this.targetLevelId = targetLevelId;
@@ -589,6 +630,9 @@ class LevelManager {
                     console.log(`[LevelManager] Game unpaused after transition`);
 
                     console.log(`[TRANSITION] Level transition to ${this.targetLevelId} completed`);
+
+                    // Reset transition flag when transition is fully complete
+                    this.isTransitioning = false;
                 }
                 break;
         }
@@ -820,6 +864,7 @@ class LevelManager {
         } catch (error) {
             console.error('[LevelManager] Transition load failed:', error);
             this.transitionState = 'none'; // Cancel transition on error
+            this.isTransitioning = false; // Reset flag on error
         }
     }
 
@@ -879,7 +924,7 @@ class LevelManager {
      */
     getDefeatedEnemyCount() {
         const defeatedCount = this.completionStatus.defeatedEnemies || 0;
-        console.log(`[COMPLETION] Defeated enemies: ${defeatedCount}`);
+        //console.log(`[COMPLETION] Defeated enemies: ${defeatedCount}`);
         return defeatedCount;
     }
 

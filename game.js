@@ -302,3 +302,15 @@ function loop(ts) {
   requestAnimationFrame(loop);
 }
 
+// Test the trigger system fix
+if (typeof testTriggerSystemFix !== 'undefined') {
+  console.log('🧪 [GAME] Running trigger system fix verification...');
+  testTriggerSystemFix();
+}
+
+// Test the spawn count fix
+if (typeof testSpawnCountFix !== 'undefined') {
+  console.log('🧪 [GAME] Running spawn count fix verification...');
+  testSpawnCountFix();
+}
+

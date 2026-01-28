@@ -64,6 +64,7 @@ class ExitPoint {
         for (const player of players) {
             if (this.isPlayerInTriggerArea(player)) {
                 this.trigger(player);
+                // Note: trigger() will handle setting isTriggered based on successful activation
                 return true;
             }
         }
@@ -123,17 +124,22 @@ class ExitPoint {
 
         console.log(`[ExitPoint] Triggered by player at (${triggeringPlayer.x.toFixed(1)}, ${triggeringPlayer.y.toFixed(1)})`);
 
-        this.isTriggered = true;
         this.activationTime = Date.now();
 
         // Handle activation based on type
         if (this.autoActivate) {
             if (this.activationDelay > 0) {
                 setTimeout(() => {
-                    this.activate(triggeringPlayer);
+                    // Only set isTriggered after successful activation
+                    if (this.activate(triggeringPlayer)) {
+                        this.isTriggered = true;
+                    }
                 }, this.activationDelay);
             } else {
-                this.activate(triggeringPlayer);
+                // Only set isTriggered after successful activation
+                if (this.activate(triggeringPlayer)) {
+                    this.isTriggered = true;
+                }
             }
         }
     }
@@ -141,6 +147,7 @@ class ExitPoint {
     /**
      * Activate the exit point (perform transition)
      * @param {Object} triggeringPlayer - Player who triggered it
+     * @returns {boolean} Whether activation was successful
      */
     activate(triggeringPlayer) {
         console.log(`[ExitPoint] Activating exit point: ${this.id} with mode: ${this.activationMode}`);
@@ -150,6 +157,12 @@ class ExitPoint {
         console.log(`[ExitPoint] DEBUG - targetLevelId: ${this.targetLevelId}`);
         console.log(`[ExitPoint] DEBUG - transitionType: ${this.transitionType}`);
         console.log(`[ExitPoint] DEBUG - triggeringPlayer: ${triggeringPlayer ? 'EXISTS' : 'NULL'}`);
+
+        // Check if a transition is already in progress
+        if (window.levelManager && window.levelManager.isTransitioning) {
+            console.log(`[ExitPoint] Transition already in progress - blocking exit point activation`);
+            return false;
+        }
 
         // Check activation mode and level completion
         const levelCompleted = window.levelManager ?
@@ -166,18 +179,18 @@ class ExitPoint {
             case 'after_completion':
                 if (!levelCompleted) {
                     console.log(`[ExitPoint] ${this.id} requires level completion first - blocking transition`);
-                    return; // Don't activate if level not completed
+                    return false; // Don't activate if level not completed
                 }
                 console.log(`[ExitPoint] ${this.id} level completed - proceeding with transition`);
                 break;
 
             case 'never':
                 console.log(`[ExitPoint] ${this.id} is never activatable - blocking transition`);
-                return; // Never activate
+                return false; // Never activate
 
             default:
                 console.warn(`[ExitPoint] Unknown activation mode: ${this.activationMode} - blocking transition`);
-                return;
+                return false;
         }
 
         // Proceed with transition
@@ -186,6 +199,7 @@ class ExitPoint {
             window.levelManager.startTransition(this.targetLevelId, this.transitionType);
         } else {
             console.warn(`[ExitPoint] Cannot start transition - levelManager or targetLevelId missing`);
+            return false;
         }
 
         // Camera flash removed - transition system handles visual effects
@@ -201,6 +215,8 @@ class ExitPoint {
                 triggeringPlayer: triggeringPlayer
             });
         }
+
+        return true; // Activation successful
     }
 
     // =========================
@@ -412,6 +428,9 @@ class ExitPoint {
         this.isTriggered = false;
         this.activationTime = 0;
         this.pulsePhase = 0;
+        // Ensure the exit point can be activated again for level transitions
+        this.isActive = true;
+        console.log(`[ExitPoint] Reset: ${this.id} - ready for next use`);
     }
 
     // =========================
@@ -556,6 +575,18 @@ class ExitPointManager {
      */
     getAllExitPoints() {
         return Array.from(this.exitPoints.values());
+    }
+
+    /**
+     * Reset all exit points in the manager
+     */
+    resetAll() {
+        console.log('[ExitPointManager] Resetting all exit points');
+        const exitPoints = this.getAllExitPoints();
+        exitPoints.forEach(exitPoint => {
+            exitPoint.reset();
+        });
+        console.log('[ExitPointManager] All exit points reset complete');
     }
 
     /**

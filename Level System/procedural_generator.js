@@ -9,8 +9,18 @@ class ProceduralLevelGenerator {
      */
     generateStage(currentStage) {
         // Calculate enemy count and level based on the formulas
-        const enemyCount = ((currentStage - 1) % 3) + 1;
-        const enemyLevel = Math.floor((currentStage - 1) / 3) + 1;
+        const baseEnemyCount = ((currentStage - 1) % 3) + 1;
+
+        // Calculate running count for incremental spawning with reset behavior
+        //const runningCount = currentStage;
+        const resetEvery = 3;
+        // const runningCount = ((currentStage - 1) % resetEvery) + 1;
+        // const enemyCount = (runningCount % resetEvery) === 0 ? 1 :
+        //     ((runningCount - 1) % resetEvery) + 1;
+        const enemyCount = ((currentStage - 1) % resetEvery) + 1;
+
+
+        const enemyLevel = Math.ceil(currentStage / resetEvery);
 
         // Start with the static arena template from the window object
         const levelConfig = { ...window.ENDLESS_ARENA_TEMPLATE };
@@ -21,15 +31,36 @@ class ProceduralLevelGenerator {
         levelConfig.id = `endless_stage_${currentStage}`;
         levelConfig.name = `Maximum Progress - Stage ${currentStage}`;
 
-        // 2. Generate entities
+        // 2. Generate entities with dynamic enemy types using our new system
         levelConfig.entities = [];
         for (let i = 0; i < enemyCount; i++) {
+            // Determine enemy type based on stage number for progression
+            const enemyTypeKey = (currentStage - 1) % 3;
+            const enemyTypeMap = {
+                0: 'slime',      // stage % 3 === 0 (stages 3,6,9,...)
+                1: 'slime',      // stage % 3 === 1 (stages 1,4,7,...)
+                2: 'slime'       // stage % 3 === 2 (stages 2,5,8,...) - elite variant
+            };
+
+            // Determine subtype based on stage progression
+            let enemySubType = null;
+
+            // Special case for stages that should spawn bosses
+            if (enemyTypeKey === 2 && (currentStage % 3 === 0) && (currentStage > 3)) {
+                // Starting from stage 6, every 3rd stage gets a boss instead of elite
+                enemySubType = 'boss';
+            } else if (enemyTypeKey === 2) {
+                // Stage 2, 5, 8, ... get elite slimes
+                enemySubType = 'elite';
+            }
+
             levelConfig.entities.push({
                 type: 'enemy',
-                enemyType: 'blue_slime',
+                enemyType: enemyTypeMap[enemyTypeKey],
+                enemySubType: enemySubType,
                 level: enemyLevel,
                 spawnTrigger: 'immediate',
-                randomPosition: true // LevelManager will handle positioning
+                randomPosition: true
             });
         }
 
