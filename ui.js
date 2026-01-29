@@ -622,6 +622,136 @@ window.UISystem = {
   detectedPlayers
 };
 
+// Add enemy card rendering to UI system
+// window.UISystem.renderEnemyCards = renderEnemyCards; // Removed - function not available this way
+
+// Instead, define the enemy card functionality directly in this file to avoid loading issues
+// Enemy Card Component for RPG-style UI elements
+// This component creates and renders enemy status cards above enemies
+
+/**
+ * Create and render an enemy status card above an enemy entity
+ * @param {Object} ctx - Canvas context
+ * @param {Object} enemy - Enemy entity object
+ */
+function renderEnemyCard(ctx, enemy) {
+  if (!enemy || !enemy.x || !enemy.y || !enemy.enemyData) return;
+
+  // Get hit box position for proper card placement
+  let cardX, cardY;
+
+  if (window.calculateHitBoxPosition) {
+    const hitBoxPos = window.calculateHitBoxPosition(enemy, window.animationSystem);
+
+    // Position card above the hit box (centered horizontally, slightly above vertically)
+    cardX = hitBoxPos.x + hitBoxPos.width / 2;
+    cardY = hitBoxPos.y - 40; // 30px above hit box top
+  } else {
+    // Fallback positioning if hitbox calculation fails
+    cardX = enemy.x + enemy.w / 2;
+    cardY = enemy.y - enemy.h - enemy.z - 40;
+  }
+
+  // Determine card color based on enemy rarity
+  let circleColor = '#FFFFFF'; // Default white for normal enemies
+  switch (enemy.rarity) {
+    case 'elite':
+      circleColor = '#FFA500'; // Orange for elites
+      break;
+    case 'boss':
+      circleColor = '#FF0000'; // Red for bosses
+      break;
+    default:
+      circleColor = '#FFFFFF'; // White for normal enemies
+  }
+
+  // NEW LAYOUT: Horizontal layout with circle on left side
+  const circleRadius = 12; // Increased from 12 to 20 for better visibility
+  const spacing = 8; // Consistent spacing between elements
+  const textStartX = circleRadius + spacing * 2; // Start position after circle and spacing
+
+  // Calculate card position - center it above the enemy
+  const centerX = cardX;
+  const centerY = cardY;
+
+  // Position elements horizontally with circle on left side
+  const circleY = centerY; // Center the circle vertically
+  const nameY = circleY - 10; // Name slightly above circle center (adjust for visual balance)
+  const barY = circleY + 10; // Health bar below circle center
+  const healthValueY = barY + 6; // Health value below bar
+
+  // Draw enemy level circle on the left side of the card
+  ctx.beginPath();
+  ctx.arc(centerX - textStartX - circleRadius, circleY, circleRadius, 0, Math.PI * 2);
+  ctx.fillStyle = circleColor;
+  ctx.fill();
+  ctx.strokeStyle = '#000000';
+  ctx.lineWidth = 2;
+  ctx.stroke();
+
+  // Draw level number (centered in circle)
+  ctx.fillStyle = '#000000';
+  ctx.font = '16px Arial'; // Increased font size for better readability
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  ctx.fillText(enemy.level.toString(), centerX - textStartX - circleRadius, circleY);
+
+  // Draw enemy name to the right of circle (aligned vertically with circle)
+  const enemyInfo = enemy.enemyData.getEnemyInfo();
+  const nameText = enemyInfo.displayName || 'Enemy';
+
+  ctx.fillStyle = '#FFFFFF';
+  ctx.font = '14px Arial'; // Increased font size for better readability
+  ctx.textAlign = 'left'; // Left align the text to the right of circle
+  ctx.fillText(nameText, centerX - textStartX, nameY);
+
+  // Draw health bar below name (aligned with text start)
+  const barWidth = 80; // Increased width for better visual appeal
+  const barHeight = 10;
+  const barX = centerX - textStartX; // Align bar with text start
+
+  ctx.fillStyle = '#888888';
+  ctx.fillRect(barX, barY, barWidth, barHeight);
+
+  // Draw health fill (red)
+  const healthPercent = enemy.maxHealth > 0 ? enemy.health / enemy.maxHealth : 0;
+  const fillWidth = barWidth * healthPercent;
+
+  ctx.fillStyle = '#FF0000';
+  ctx.fillRect(barX, barY, fillWidth, barHeight);
+
+  // Draw health bar border
+  ctx.strokeStyle = '#000000';
+  ctx.lineWidth = 1;
+  ctx.strokeRect(barX, barY, barWidth, barHeight);
+
+  // Draw health value centered in the bar (below the bar)
+  const healthText = `${Math.floor(enemy.health)}/${enemy.maxHealth}`;
+  ctx.fillStyle = '#FFFFFF';
+  ctx.font = '12px Arial'; // Slightly smaller for better fit
+  ctx.textAlign = 'center';
+  ctx.fillText(healthText, barX + barWidth / 2, healthValueY);
+}
+
+/**
+ * Render all active enemy cards
+ * @param {Array} enemies - Array of enemy entities
+ * @param {Object} ctx - Canvas context
+ */
+function renderEnemyCards(ctx, enemies) {
+  if (!enemies || !ctx) return;
+
+  enemies.forEach(enemy => {
+    // Only render cards for living enemies
+    if (enemy && enemy.health > 0 && !enemy.isDying) {
+      renderEnemyCard(ctx, enemy);
+    }
+  });
+}
+
+// Export for global access - ensure it's available globally
+window.renderEnemyCards = renderEnemyCards;
+
 // ===========================================
 // TRANSITION UI
 // ===========================================
@@ -632,14 +762,14 @@ window.UISystem = {
  * @param {string} data.toLevel - The name of the level being loaded.
  */
 function showLoadingScreen({ toLevel }) {
-    // Check if a loading screen already exists
-    if (document.getElementById('loadingScreen')) {
-        return;
-    }
+  // Check if a loading screen already exists
+  if (document.getElementById('loadingScreen')) {
+    return;
+  }
 
-    const loadingScreen = document.createElement('div');
-    loadingScreen.id = 'loadingScreen';
-    loadingScreen.style.cssText = `
+  const loadingScreen = document.createElement('div');
+  loadingScreen.id = 'loadingScreen';
+  loadingScreen.style.cssText = `
         position: fixed;
         top: 0;
         left: 0;
@@ -654,19 +784,19 @@ function showLoadingScreen({ toLevel }) {
         font-family: 'Arial', sans-serif;
         font-size: 2em;
     `;
-    loadingScreen.textContent = `Loading: ${toLevel}...`;
+  loadingScreen.textContent = `Loading: ${toLevel}...`;
 
-    document.body.appendChild(loadingScreen);
+  document.body.appendChild(loadingScreen);
 }
 
 /**
  * Hides the loading screen.
  */
 function hideLoadingScreen() {
-    const loadingScreen = document.getElementById('loadingScreen');
-    if (loadingScreen) {
-        loadingScreen.remove();
-    }
+  const loadingScreen = document.getElementById('loadingScreen');
+  if (loadingScreen) {
+    loadingScreen.remove();
+  }
 }
 
 // Add to the global UI system
