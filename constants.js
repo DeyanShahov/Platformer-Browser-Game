@@ -44,11 +44,11 @@ const ACTION_TYPES = {
 // Usage: Set individual flags to false to disable specific visualizations
 // Or set SHOW_HITBOXES to false to disable all hitbox drawing
 const DEBUG_MODE = {
-  SHOW_HITBOXES: true,        // Master switch for all hitbox types
-  SHOW_PLAYER_BOX: true,      // Yellow collision box for player
-  SHOW_HURT_BOXES: true,      // Orange hurt boxes for entities
-  SHOW_ATTACK_BOXES: true,    // Red attack boxes during attacks
-  SHOW_ENTITY_LABELS: true,   // White text with Z-coordinates and render order
+  SHOW_HITBOXES: false,        // Master switch for all hitbox types
+  SHOW_PLAYER_BOX: false,      // Yellow collision box for player
+  SHOW_HURT_BOXES: false,      // Orange hurt boxes for entities
+  SHOW_ATTACK_BOXES: false,    // Red attack boxes during attacks
+  SHOW_ENTITY_LABELS: false,   // White text with Z-coordinates and render order
   SHOW_DAMAGE_NUMBERS: true,   // Floating damage numbers
-  SHOW_HIT_EFFECTS: true,     // White hit circles when entities are hit
+  SHOW_HIT_EFFECTS: false,     // White hit circles when entities are hit
 };

@@ -47,6 +47,20 @@ function render() {
     renderEntityLabels(entity, index);
   });
 
+  // Render enemy cards for all enemies
+  try {
+    if (typeof window.renderEnemyCards === 'function') {
+      const enemies = window.gameState ? window.gameState.getEntitiesByType('enemy') :
+        (window.enemy ? [window.enemy] : []);
+      if (enemies.length > 0) {
+        window.renderEnemyCards(ctx, enemies);
+      }
+    }
+  } catch (error) {
+    // Silent fail - don't break the game if enemy cards fail
+    // console.warn('Enemy cards rendering failed:', error);
+  }
+
   // Restore camera transform if it was applied
   if (cameraApplied && window.cameraController && window.cameraController.restoreTransform) {
     window.cameraController.restoreTransform();
@@ -243,7 +257,11 @@ function renderTransitionText(ctx, opacity) {
 function renderEntityLabels(entity, index) {
   // За противници - показва информация
   if (entity.entityType === 'enemy' && entity.enemyData) {
-    renderEnemyLabels(entity);
+    // Check if renderEnemyLabels function exists before calling it
+    if (typeof renderEnemyLabels === 'function') {
+      renderEnemyLabels(entity);
+    }
+    // Otherwise, skip rendering enemy labels (we now use enemy cards instead)
   }
 
   // За играчи - може да се добави по-късно
@@ -255,18 +273,34 @@ function renderEntityLabels(entity, index) {
   renderDebugLabels(entity, index);
 }
 
-function renderEnemyLabels(entity) {
-  const enemyInfo = entity.enemyData.getEnemyInfo();
-
-  // Use game logic function for health status and color (moved from render.js to game.js)
-  const healthData = getEnemyHealthStatus(entity);
-
-  // Enemy info line
-  ctx.fillStyle = healthData.healthColor;
-  ctx.font = "14px Arial";
-  ctx.fillText(`${enemyInfo.displayName} (Lv.${enemyInfo.level}) - ${entity.health}/${entity.maxHealth} HP ${healthData.healthStatus}`,
-    entity.x, entity.y - entity.h - entity.z - 40);
-}
+// function renderEnemyLabels(entity) {
+//   const enemyInfo = entity.enemyData.getEnemyInfo();
+//
+//   // Use game logic function for health status and color (moved from render.js to game.js)
+//   const healthData = getEnemyHealthStatus(entity);
+//
+//   // Calculate hit box position for proper label placement above hitbox
+//   let labelX, labelY;
+//
+//   if (window.calculateHitBoxPosition) {
+//     // Use the same hitbox calculation logic as damage numbers for consistency
+//     const hitBoxPos = window.calculateHitBoxPosition(entity, window.animationSystem);
+//
+//     // Position label above the hit box (centered horizontally, slightly above vertically)
+//     labelX = hitBoxPos.x + hitBoxPos.width / 2;
+//     labelY = hitBoxPos.y - 15; // 15px above the top of hit box
+//   } else {
+//     // Fallback to original positioning if hitbox calculation fails
+//     labelX = entity.x;
+//     labelY = entity.y - entity.h - entity.z - 40;
+//   }
+//
+//   // Enemy info line
+//   ctx.fillStyle = healthData.healthColor;
+//   ctx.font = "14px Arial";
+//   ctx.fillText(`${enemyInfo.displayName} (Lv.${enemyInfo.level}) - ${entity.health}/${entity.maxHealth} HP ${healthData.healthStatus}`,
+//     labelX, labelY);
+// }
 
 function renderDebugLabels(entity, index) {
   // Check debug flag before rendering entity labels
